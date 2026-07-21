@@ -1,326 +1,415 @@
 <!DOCTYPE html>
-<html dir="rtl" lang="he">
+<html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ממיר שיחת וואטסאפ ל-PDF (גרסה משפטית)</title>
-    
-    <!-- PWA Manifest -->
-    <link rel="manifest" href="manifest.json">
-    
-    <!-- JSZip Library -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <title>הדוח המיסטי שלי</title>
+    <!-- חיבור הלוגו המיסטי המוזהב -->
+    <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="logo.svg">
     
     <style>
-        /* === CSS Variables & Reset === */
-        :root { 
-            --bg-body: #efeae2; 
-            --bg-me: #d9fdd3; 
-            --bg-other: #ffffff; 
-            --text-main: #111b21; 
-            --text-time: #667781; 
-            --brand-color: #008069;
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f4f8; padding: 20px; line-height: 1.6;}
+        .container { max-width: 850px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { text-align: center; color: #2c3e50; }
+        
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .form-row .form-group { flex: 1; margin-bottom: 0; }
+        
+        @media (max-width: 600px) {
+            .form-row { flex-direction: column; gap: 15px; }
         }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-body); margin: 0; padding: 20px; color: var(--text-main); }
-        
-        /* === UI Controls === */
-        .controls-container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; max-width: 800px; margin-left: auto; margin-right: auto; }
-        .filters { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; margin-bottom: 15px; }
-        button { cursor: pointer; background-color: var(--brand-color); color: white; border: none; border-radius: 5px; padding: 10px 20px; font-weight: bold; font-size: 1.1em; transition: background-color 0.2s; }
-        button:hover { background-color: #016b58; }
-        #loading { display: none; color: var(--brand-color); font-weight: bold; margin-top: 10px; }
-        
-        /* === Chat Layout === */
-        #chat-container { max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 8px; }
-        .message { 
-            max-width: 75%; 
-            padding: 8px 12px; 
-            border-radius: 10px; 
-            position: relative; 
-            line-height: 1.5; 
-            box-shadow: 0 1px 2px rgba(0,0,0,0.1); 
-            word-wrap: break-word; 
-            page-break-inside: avoid; /* מונע חיתוך בועה באמצע עמוד */
-            break-inside: avoid;
-        }
-        .msg-me { align-self: flex-end; background-color: var(--bg-me); border-top-left-radius: 0; }
-        .msg-other { align-self: flex-start; background-color: var(--bg-other); border-top-right-radius: 0; }
-        .sender { font-weight: bold; font-size: 0.85em; margin-bottom: 4px; color: #128c7e; }
-        .time { font-size: 0.7em; color: var(--text-time); display: block; text-align: left; margin-top: 4px; }
-        
-        .msg-text { direction: rtl; unicode-bidi: embed; } /* מבטיח ששמות קבצים באנגלית לא ישבשו את כיוון השורה */
 
-        .media-attachment { 
-            display: block;
-            max-width: 100%; 
-            max-height: 400px; 
-            border-radius: 8px; 
-            margin-top: 8px; 
-            page-break-inside: avoid; /* מונע חיתוך תמונה באמצע עמוד */
-            break-inside: avoid;
-        }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; }
+        input { width: 100%; padding: 12px; box-sizing: border-box; border: 1px solid #bdc3c7; border-radius: 6px; font-size: 16px; transition: border 0.3s; }
+        input:focus { border-color: #3498db; outline: none; }
         
-        #docHeader { display: none; text-align: center; font-size: 1.4em; font-weight: bold; color: var(--text-main); padding-bottom: 10px; margin-bottom: 20px; border-bottom: 2px solid var(--brand-color); }
+        .action-buttons-top { display: flex; gap: 15px; margin-top: 20px; }
+        .main-btn { background-color: #3498db; color: white; flex: 1; padding: 15px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s;}
+        .main-btn:hover { background-color: #2980b9; }
+        .main-btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
+        
+        .premium-btn { background-color: #f39c12; color: white; flex: 1; padding: 15px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s;}
+        .premium-btn:hover { background-color: #d68910; }
+        
+        #results { margin-top: 30px; display: none; }
+        #contentToPrint { background-color: #ffffff; padding: 20px; border: 2px solid #ecf0f1; border-radius: 8px; }
+        
+        #contentToPrint h2 { text-decoration: underline; text-underline-offset: 8px; color: #2c3e50; margin-bottom: 25px;}
+        
+        .result-section { margin-bottom: 15px; }
+        
+        .result-item { background: #f8f9fa; padding: 15px; margin-bottom: 12px; border-radius: 6px; border-right: 5px solid #3498db; }
+        .result-item.highlight { background: #e8f4fd; }
+        
+        .result-item h4 { margin: 0 0 8px 0; color: #2c3e50; font-size: 1.1em; }
+        .result-item p { margin: 0 0 5px 0; color: #555; }
+        
+        .actions { display: flex; gap: 15px; margin-top: 25px; }
+        .whatsapp-btn { background-color: #25D366; color: white; flex: 1; padding: 15px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
+        .pdf-btn { background-color: #e74c3c; color: white; flex: 1; padding: 15px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
+        
+        #loadingMsg { display: none; text-align: center; color: #3498db; font-weight: bold; margin-top: 15px; font-size: 1.1em;}
 
-        /* === Print Rules === */
         @media print {
-            body { padding: 0; background-color: white; }
-            .controls-container { display: none !important; }
-            #docHeader { display: block !important; }
-            .msg-me, .msg-other { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+            body { background-color: white; padding: 0; }
+            .container { box-shadow: none; padding: 0; }
+            .form-row, h1, .action-buttons-top, .actions, #loadingMsg { display: none !important; }
+            #results { display: block !important; border: none; margin: 0; padding: 0; }
+            #contentToPrint { border: none; padding: 0; }
+            .result-item { page-break-inside: avoid; border-right: 4px solid black; }
         }
     </style>
 </head>
 <body>
 
-<div class="controls-container">
-    <h2>ממיר שיחות וואטסאפ ל-PDF (תקינות משפטית)</h2>
-    <p>בחר קובץ ZIP מהמכשיר, או שלח אותו ישירות מתפריט השיתוף של וואטסאפ. המערכת נאמנה ב-100% לקובץ המקור.</p>
-    
-    <input type="file" id="fileInput" accept=".zip">
-    <div id="loading">טוען קבצים ומפענח, אנא המתן...</div>
-    
-    <div id="settings" style="display:none; margin-top: 20px;">
-        <div class="filters">
-            <label>השם שלך:</label><select id="myName" onchange="WhatsAppApp.renderDOM()"></select>
+    <div class="container">
+        <h1>הדוח המיסטי שלי</h1>
+        
+        <div class="form-row">
+            <div class="form-group"><label>שם פרטי (חובה):</label><input type="text" id="firstName"></div>
+            <div class="form-group"><label>שם פרטי נוסף (לא חובה):</label><input type="text" id="middleName"></div>
         </div>
-        <div class="filters">
-            <label>שם נמען (אופציונלי):</label><input type="text" id="otherAlias" oninput="WhatsAppApp.renderDOM()">
+        <div class="form-row">
+            <div class="form-group"><label>שם משפחה (חובה):</label><input type="text" id="lastName"></div>
+            <div class="form-group"><label>שם משפחה נוסף (לא חובה):</label><input type="text" id="extraLastName"></div>
         </div>
-        <div class="filters">
-            <label>טלפון (אופציונלי):</label><input type="text" id="otherPhone" oninput="WhatsAppApp.renderDOM()">
+
+        <div class="form-row">
+            <div class="form-group"><label>מספר טלפון נייד:</label><input type="tel" id="phone" placeholder="למשל: 0501234567"></div>
+            <div class="form-group"><label>מספר תעודת זהות (לא חובה):</label><input type="text" id="idNumber" placeholder="הכנס תעודת זהות"></div>
         </div>
-        <div class="filters">
-            <label>מתאריך:</label><input type="date" id="startDate" onchange="WhatsAppApp.renderDOM()">
-            <label>עד תאריך:</label><input type="date" id="endDate" onchange="WhatsAppApp.renderDOM()">
-            <button onclick="window.print()">🖨️ פתח חלון הדפסה ל-PDF</button>
+
+        <div class="form-row">
+            <div class="form-group"><label>תאריך לידה (חובה):</label><input type="date" id="birthDate"></div>
+            <div class="form-group"><label>שעת לידה (ברירת מחדל 12:00):</label><input type="time" id="birthTime" value="12:00"></div>
+            <div class="form-group"><label>עיר לידה (עברית/אנגלית):</label><input type="text" id="city" placeholder="למשל: חיפה, London"></div>
+        </div>
+
+        <div class="action-buttons-top">
+            <button id="calcBtn" class="main-btn" onclick="calculateAll()">הפק דוח בסיסי</button>
+            <button class="premium-btn" onclick="showPremiumAlert()">הפק דוח עמוק</button>
+        </div>
+        
+        <div id="loadingMsg">מעבד נתונים מול כוכבי השמיים ומאגרי התאריכים... נא להמתין...</div>
+
+        <div id="results">
+            <div id="contentToPrint">
+                <h2><span id="resName"></span> - דוח מיסטי בסיסי</h2>
+                
+                <div class="result-section">
+                    <div id="resAstro"></div>
+                </div>
+
+                <div class="result-section">
+                    <div id="resNamesNum"></div>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <button class="whatsapp-btn" onclick="sendWhatsApp()">שלח דוח לוואטסאפ</button>
+                <button class="pdf-btn" onclick="downloadPDF()">הורד דוח כ-PDF</button>
+            </div>
         </div>
     </div>
-</div>
 
-<div id="docHeader"></div>
-<div id="chat-container"></div>
+    <script>
+        // --- מילונים ---
+        const gematriaDict = {
+            'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,
+            'כ':20,'ך':20,'ל':30,'מ':40,'ם':40,'נ':50,'ן':50,'ס':60,'ע':70,
+            'פ':80,'ף':80,'צ':90,'ץ':90,'ק':100,'ר':200,'ש':300,'ת':400
+        };
 
-<script>
-    /**
-     * Modular Architecture: WhatsAppApp
-     * Handles state, parsing, and rendering with strict fidelity to the source file.
-     */
-    const WhatsAppApp = {
-        state: {
-            messages: [],
-            mediaUrls: {},
-            originalFileName: "WhatsApp_Chat"
-        },
+        const numerologyTexts = {
+            1: "מנהיגות מולדת, עצמאות וכוח רצון עז. אנשי ה-1 הם חלוצים, יזמים ובעלי ביטחון עצמי גבוה שאינם חוששים לסלול דרך חדשה ולפרוץ גבולות. הם ניחנים באנרגיה דינמית, יכולת קבלת החלטות מהירה ורצון עמוק להצליח ולהוביל. בעבודה הם זקוקים לעצמאות רבה, מתקשים לקבל מרות, ולרוב יפרחו בתפקידי ניהול, יזמות או כעצמאיים. האתגר המרכזי שלהם הוא ללמוד לעבוד בשיתוף פעולה, לפתח סבלנות כלפי הקצב של אחרים ולהימנע מאנוכיות או שתלטנות יתר.",
+            2: "זוגיות, שותפות, דיפלומטיה ורגישות רגשית גבוהה. אנשי ה-2 ניחנים באינטואיציה מדהימה, אמפתיות ויכולת נדירה להכיל ולהבין את מורכבות האחר. הם מגשרים טבעיים השואפים תמיד להרמוניה, לשלום ולסביבה רגועה. בקריירה הם יפרחו במקצועות טיפוליים, ייעוץ, גישור ועבודה הדוקה בצוות. הם חברים ובני זוג נאמנים ומסורים ביותר. האתגר שלהם הוא לשמור על הגבולות האישיים, לא לאבד את עצמם בתוך מערכות יחסים, ולהעז לעמוד על שלהם ולבטא את צרכיהם מבלי לחשוש מעימותים.",
+            3: "ביטוי עצמי, יצירתיות, שמחת חיים וכריזמה מתפרצת. אנשי ה-3 הם תקשורתיים מאוד, אופטימיים, מלאי הומור ויודעים להשתמש במילים כדי להקסים ולשכנע בקלות. הם נמשכים באופן טבעי לאמנות, במה, כתיבה, שיווק ותקשורת. יש להם יכולת להאיר כל חדר שאליו הם נכנסים והם אהובים מאוד בחברה. האתגר המרכזי שלהם הוא לשמור על מיקוד ומשמעת עצמית, להימנע מפיזור אנרגטי על פני יותר מדי פרויקטים במקביל, ולהתמיד במשימות היומיומיות השוחקות עד לסיומן המוצלח.",
+            4: "יציבות, סדר, משמעת קפדנית ועבודה קשה. אנשי ה-4 הם הבסיס האיתן שאפשר לסמוך עליו בכל מצב משבר. הם פרקטיים, מאורגנים מאוד, יורדים לפרטים הקטנים וניחנים ביכולת התמדה וריכוז יוצאי דופן. הם המבצעים שמוציאים רעיונות תיאורטיים אל הפועל, ומצוינים בניהול פרויקטים, כספים, הנדסה וכל תחום שדורש בניית מבנה יציב. הם מעריכים מסורת, אמינות וביטחון. האתגר שלהם הוא לגלות יותר גמישות מחשבתית, להיפתח לשינויים מרעננים, ולא לתת לשגרה ולנוקשות לכבות את היצירתיות ואת הספונטניות בחייהם.",
+            5: "חופש, הרפתקנות, תנועה מתמדת ושינויים. אנשי ה-5 זקוקים למרחב נשימה ענק, אוהבים לטייל, לחקור תרבויות, להתנסות ולחוות ריגושים חדשים. הם מסתגלים בקלות למצבים משתנים וניחנים בחשיבה מהירה, קליטה מצוינת ויכולת אלתור מבריקה. בעבודה הם יחפשו גיוון מתמיד ויברחו מכל מסגרת כובלת, ולכן יתאימו במיוחד למכירות, תיירות, יחסי ציבור ויזמות עצמאית. האתגר שלהם הוא ללמוד לקחת אחריות לטווח ארוך, למצוא עוגן יציב בחייהם שיאזן את חוסר השקט הפנימי התמידי, ולא לנטוש פרויקטים ומערכות יחסים ברגע שמתחיל להיות מעט קשה או משעמם.",
+            6: "האהבה, המשפחתיות, ההרמוניה והשירות המסור לזולת. אנשי ה-6 הם המטפלים והמגוננים של היקום - חמים, דואגים, מעניקים, אסתטיים ואוהבי יופי אמיתיים. המשפחה, הבית, והחברים הקרובים הם לחלוטין מרכז חייהם והם ייקחו אחריות מלאה על רווחת סביבתם. יצליחו במקצועות הטיפול, החינוך, העיצוב (אופנה ופנים) והייעוץ. האתגר הגדול שלהם הוא ללמוד לשחרר שליטה, לא להתערב יותר מדי בחייהם ובהחלטותיהם של האנשים שהם אוהבים, והכי חשוב – לזכור לטפל, לפנק ולהעניק אהבה גם לעצמם, ולא לרוקן את המצברים שלהם למען אחרים.",
+            7: "רוחניות, העמקה, חשיבה חקרנית ואינטואיציה חדה כתער. אנשי ה-7 הם הוגי דעות וחוקרים טבעיים שזקוקים לזמן איכות של שקט ופרטיות כדי להטעין מצברים. הם אינם מסתפקים בתשובות שטחיות או סמול-טוק, ותמיד יחפשו את האמת הנסתרת, הסיבות הפסיכולוגיות והמשמעות העמוקה של החיים. יצליחו מאוד במחקר, אקדמיה, פסיכולוגיה, פילוסופיה וגם בטכנולוגיה מורכבת. האתגר שלהם הוא לא להסתגר ולהתבודד יתר על המידה במגדל השן שלהם, ללמוד לתקשר את רגשותיהם הפגיעים לסביבה, ולמצוא איזון בריא בין העולם הרוחני העשיר שלהם לבין חיי היומיום והקשרים האנושיים.",
+            8: "עוצמה, סמכות, שפע חומרי, סטאטוס והישגיות בקנה מידה גדול. אנשי ה-8 נולדו לנהל מערכות מורכבות, להוביל מיזמים ולעשות עסקים ברמה הגבוהה ביותר. יש להם אנרגיה חזקה המקרינה סמכות, כושר שיפוט ואבחנה מצוינים, אמביציה אדירה ויכולת נדירה להוציא תוכניות שאפתניות אל הפועל תחת לחץ. האתגר העיקרי שלהם הוא למצוא את האיזון העדין והנכון בין החומר לרוח, לזכור שערכם האמיתי לא נמדד רק בכסף ובהצלחה כלכלית, ולשמור על מוסריות, אמפתיה וחמלה כלפי האנשים שעובדים לצידם בדרך המפרכת אל הפסגה.",
+            9: "הומניטריות, נתינה אוניברסלית ללא תנאי, אצילות נפש וסיום מעגלים. אנשי ה-9 הם נשמות עתיקות בעלות חמלה עצומה, ראייה מרחבית ורוחב לב נדיר. הם רואים את התמונה הגדולה של האנושות כולה, מתקשים לשאת סבל של אחרים, ושואפים לתקן את העולם ולהשפיע לטובה. הם יצליחו וימצאו סיפוק בפוליטיקה חברתית, רפואה, אמנות בעלת מסר, עבודה סוציאלית וארגוני התנדבות בינלאומיים. האתגר הגדול שלהם הוא ללמוד לסלוח לעצמם ולאחרים, לשחרר את פצעי העבר בכבוד, להבין שלא ניתן להציל את כל העולם לבדם, ולשים לב גם לפרטים הקטנים ולצרכים של סביבתם המיידית והקרובה."
+        };
 
-        init() {
-            document.getElementById('fileInput').addEventListener('change', (e) => this.handleFileUpload(e.target.files[0]));
-            this.checkPWASharedFile();
-        },
+        const zodiacSigns = [
+            { name: "טלה", desc: "מזל אש דינמי ויצרי. הטלה הוא הפורץ, היזם והאמיץ שבאזור. נולדת עם אנרגיה מתפרצת, כנות ישירה ורצון עז להוביל ולנצח. האתגר שלך: פיתוח סבלנות וללמוד להקשיב לאחרים. <br><strong>מזלות מתאימים במיוחד:</strong> אריה, קשת, תאומים ומאזניים." },
+            { name: "שור", desc: "מזל אדמה יציב ופרקטי. השור מייצג התמדה, חיבור לחושים וחוזק פנימי. אתה אוהב נוחות, אסתטיקה וניתן לסמוך עליך ב-100%. האתגר שלך: לשחרר עקשנות וקיבעון, ולא לפחד משינויים. <br><strong>מזלות מתאימים במיוחד:</strong> בתולה, גדי, סרטן ודגים." },
+            { name: "תאומים", desc: "מזל אוויר אינטלקטואלי ומהיר. אתה סקרן ללא תקנה, בעל יכולת פנומנלית לקלוט מידע וגישה קלילה לחיים. האתגר שלך: קושי בהתחייבויות ארוכות טווח והצורך ללמוד להעמיק במקום לרפרף. <br><strong>מזלות מתאימים במיוחד:</strong> מאזניים, דלי, טלה ואריה." },
+            { name: "סרטן", desc: "מזל מים רגשי ועמוק. יש לך אינטואיציה עמוקה שגובלת בקסם, אתה מכיל ומגונן כמו חומת מגן על האנשים שאתה אוהב. האתגר שלך: נטייה להיעלב בקלות וקושי לשחרר את העבר. <br><strong>מזלות מתאימים במיוחד:</strong> עקרב, דגים, שור ובתולה." },
+            { name: "אריה", desc: "מזל אש מלכותי וזורח. כריזמטי, נדיב, בעל לב ענק ואצילות. אתה נהנה להיות במרכז תשומת הלב ומקרין חום רב לסביבתך. האתגר שלך: נטייה לדרמה, גאווה מופרזת וקושי לקבל ביקורת. <br><strong>מזלות מתאימים במיוחד:</strong> טלה, קשת, תאומים ומאזניים." },
+            { name: "בתולה", desc: "מזל אדמה מאורגן, אנליטי וביקורתי. אתה רואה את הפרטים הקטנים ביותר ושואף תמיד לשלמות עם מוסר עבודה יוצא דופן. האתגר שלך: נטייה לביקורת עצמית, דאגנות יתר והצורך ללמוד לשחרר. <br><strong>מזלות מתאימים במיוחד:</strong> שור, גדי, סרטן ועקרב." },
+            { name: "מאזניים", desc: "מזל אוויר אסתטי ודיפלומטי. אתה שואף תמיד לצדק והרמוניה, שונא עימותים ויודע לראות כל סיטואציה ממספר זוויות. האתגר שלך: קושי משמעותי בקבלת החלטות ופחד מעימותים הכרחיים. <br><strong>מזלות מתאימים במיוחד:</strong> תאומים, דלי, אריה וקשת." },
+            { name: "עקרב", desc: "מזל מים אינטנסיבי וחקור. אתה ניחן בעוצמה נפשית אדירה, נחישות של ברזל, ומחפש תמיד את האמת העירומה. האתגר שלך: נטייה לחשדנות, קושי עמוק לתת אמון וצורך כפייתי בשליטה. <br><strong>מזלות מתאימים במיוחד:</strong> סרטן, דגים, בתולה וגדי." },
+            { name: "קשת", desc: "מזל אש אופטימי וחופשי. ההרפתקן ותלמיד החיים הניצחי. אתה מונע מאופטימיות וצורך להרחיב אופקים. האתגר שלך: חוסר טאקט, חוסר סבלנות לשגרה וקושי להתחייב למסגרות נוקשות. <br><strong>מזלות מתאימים במיוחד:</strong> טלה, אריה, דלי ומאזניים." },
+            { name: "גדי", desc: "מזל אדמה שאפתן, מעשי ובוגר. איש העבודה והקריירה. אתה מציב יעדים ארוכי טווח ומטפס אל הפסגה בסבלנות ואחריות. האתגר שלך: פסימיות, נוקשות יתר והתמכרות לעבודה על חשבון חיי הרגש. <br><strong>מזלות מתאימים במיוחד:</strong> שור, בתולה, עקרב ודגים." },
+            { name: "דלי", desc: "מזל אוויר מקורי והומניטרי. חושב מחוץ לקופסה, ממציא רעיונות ומונע מאידיאלים של שוויון וצדק חברתי. האתגר שלך: ניתוק וקרירות רגשית בקשרים אינטימיים ונטייה למרדנות. <br><strong>מזלות מתאימים במיוחד:</strong> תאומים, מאזניים, קשת וטלה." },
+            { name: "דגים", desc: "מזל מים רוחני וחומל. בעל הנפש הרגישה והאמנותית ביותר. יכולת הזדהות מוחלטת עם כאבם של אחרים. האתגר שלך: חוסר גבולות אישיים שמוביל לניצול, והקושי לעמוד על קרקע המציאות. <br><strong>מזלות מתאימים במיוחד:</strong> סרטן, עקרב, שור וגדי." }
+        ];
 
-        toggleLoading(show) {
-            document.getElementById('loading').style.display = show ? 'block' : 'none';
-            if(show) document.getElementById('settings').style.display = 'none';
-        },
+        // הנה התיקון שלנו (Escaping) למילה נדל"ן כדי שהקוד לא יישבר!
+        const ascendantTexts = {
+            "טלה": "האופק בטלה מעניק חזות של אדם נמרץ ובעל תגובות פיזיות מהירות. הסביבה קולטת אותך כאדם ישיר והחלטי. <br><strong>מקצועות וכישרונות בולטים:</strong> יזמות עצמאית, ספורט מקצועי, צבא וביטחון, תפקידי ניהול ופיקוד השטח.",
+            "שור": "כשהאופק שלך בשור, הנוכחות הפיזית שלך מקרינה רוגע עמוק ויציבות. אנשים מרגישים שאפשר לסמוך עליך. <br><strong>מקצועות וכישרונות בולטים:</strong> בנקאות ופיננסים, נדל\"ן ואדריכלות, קולינריה (שפים/מסעדנות), ועיצוב ואמנות חומרית.",
+            "תאומים": "הנוכחות שלך בחדר היא קלילה, חברותית ותקשורתית במיוחד. נראה שאתה מתעניין בהכל ותמיד נמצא בתנועה. <br><strong>מקצועות וכישרונות בולטים:</strong> עיתונאות ותקשורת, כתיבה ועריכה, שיווק ומכירות, חינוך והוראה, ותכנות מחשבים.",
+            "סרטן": "ההילה הראשונית שאתה מקרין היא רכה, מכילה ואמפתית. אנשים נוטים להיפתח אליך ולשתף אותך בבעיותיהם. <br><strong>מקצועות וכישרונות בולטים:</strong> פסיכולוגיה ועבודה סוציאלית, רפואה וסיעוד, חינוך לגיל הרך, ניהול כוח אדם, ומקצועות האירוח.",
+            "אריה": "אופק דרמטי! כשאתה נכנס לחדר מרגישים אותך. אתה משדר כריזמה טבעית, גאווה וביטחון עצמי רב. <br><strong>מקצועות וכישרונות בולטים:</strong> משחק ובידור, ניהול בכיר, פוליטיקה, יחסי ציבור, והפקת אירועים גדולים.",
+            "בתולה": "האופק בבתולה גורם לך להיראות אדם רציני, מאורגן ושקול. הסביבה רואה בך מיד 'מבוגר אחראי' שיודע לפתור בעיות. <br><strong>מקצועות וכישרונות בולטים:</strong> הנהלת חשבונות וראיית חשבון, מדע ומחקר, תכנות, רפואה מדויקת, ועריכה ולשון.",
+            "מאזניים": "מביא עמו קסם אישי רב וחיוך כובש. אתה נראה לסביבה כאדם חברותי, נעים הליכות, מנומס ואסתטי מאוד. <br><strong>מקצועות וכישרונות בולטים:</strong> עריכת דין ומשפטים, גישור, דיפלומטיה ויחסי חוץ, ועיצוב פנים ואופנה.",
+            "עקרב": "אופק מגנטי ומרתק. המבט שלך לרוב נתפס כחודר ועמוק. אתה משדר עוצמה פנימית אדירה ומסתוריות. <br><strong>מקצועות וכישרונות בולטים:</strong> חקירות מודיעין ומשטרה, פסיכיאטריה, ניהול השקעות וסיכונים, ומחקר מדעי מעמיק.",
+            "קשת": "אתה נתפס מיד כאדם פתוח, אופטימי ומוכן תמיד להרפתקה. אתה משדר שמחת חיים וכנות מוחלטת. <br><strong>מקצועות וכישרונות בולטים:</strong> תיירות והדרכת טיולים בינלאומית, משפטים, פילוסופיה, אקדמיה ומרצות, וייצוג בינלאומי.",
+            "גדי": "הרושם הראשוני שאתה מייצר הוא סמכותי, רציני ומכובד מאוד. אנשים מתייחסים אליך ברצינות תהומית. <br><strong>מקצועות וכישרונות בולטים:</strong> ניהול מערכות גדולות, הנדסה, אדריכלות, ראיית חשבון, וניהול ממשלתי או מוסדי.",
+            "דלי": "חזות ייחודית וקצת אקסצנטרית. אתה משדר עצמאות מחשבתית ברורה, אינדיבידואליות ומקוריות מוחלטת. <br><strong>מקצועות וכישרונות בולטים:</strong> הייטק וטכנולוגיות עתיד, אסטרונומיה ומדעים, פעילות חברתית וזכויות אדם, ויזמות סטארט-אפים.",
+            "דגים": "החזות שלך מעבירה עדינות רבה, רגישות ורוחניות. אתה משדר אמפתיה עצומה ולאנשים קל מאוד להתקרב אליך. <br><strong>מקצועות וכישרונות בולטים:</strong> אמנות חזותית ומוזיקה, פסיכולוגיה, צילום, כתיבת שירה, ומקצועות הטיפול האלטרנטיבי וההילינג."
+        };
 
-        escapeHTML(str) {
-            return str.replace(/[&<>'"]/g, tag => ({
-                '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
-            }[tag]));
-        },
-
-        // --- PWA: Service Worker & File Share Logic ---
-        async checkPWASharedFile() {
-            if ('serviceWorker' in navigator) {
-                try {
-                    await navigator.serviceWorker.register('sw.js');
-                } catch (err) {
-                    console.error('Service Worker Registration Failed:', err);
-                }
+        // --- פונקציות עזר לחישובים ---
+        function calcGematria(word) {
+            let sum = 0;
+            if (!word) return 0;
+            for (let i = 0; i < word.length; i++) {
+                if (gematriaDict[word[i]]) sum += gematriaDict[word[i]];
             }
-
-            if ('caches' in window) {
-                try {
-                    const cache = await caches.open('shared-file-cache');
-                    const response = await cache.match('/shared-file');
-                    
-                    if (response) {
-                        let originalName = "WhatsApp_Chat.zip";
-                        const encodedName = response.headers.get('X-Original-Name');
-                        if (encodedName) {
-                            originalName = decodeURIComponent(encodedName);
-                        }
-                        
-                        const blob = await response.blob();
-                        const file = new File([blob], originalName, { type: "application/zip" });
-                        
-                        await cache.delete('/shared-file');
-                        this.handleFileUpload(file);
-                    }
-                } catch (err) {
-                    console.error('Error fetching shared file:', err);
-                }
-            }
-        },
-
-        // --- Core: File Processing ---
-        async handleFileUpload(file) {
-            if (!file) return;
-
-            this.state.originalFileName = file.name.replace(/\.[^/.]+$/, "");
-            document.title = this.state.originalFileName; // אילוץ שם הקובץ בהדפסה
-            this.toggleLoading(true);
-            
-            try {
-                const zip = await JSZip.loadAsync(file);
-                let textContent = "";
-                this.state.messages = [];
-                this.state.mediaUrls = {};
-
-                const fileNames = Object.keys(zip.files);
-                for (let filename of fileNames) {
-                    const zipEntry = zip.files[filename];
-                    if (zipEntry.dir) continue;
-
-                    if (filename.endsWith('.txt')) {
-                        textContent = await zipEntry.async("string");
-                    } else {
-                        const blob = await zipEntry.async("blob");
-                        const cleanName = filename.split('/').pop(); 
-                        this.state.mediaUrls[cleanName] = URL.createObjectURL(blob);
-                    }
-                }
-
-                if (textContent) {
-                    this.parseWhatsAppText(textContent);
-                } else {
-                    alert("לא נמצא קובץ טקסט בתוך ה-ZIP.");
-                    this.toggleLoading(false);
-                }
-            } catch (err) {
-                console.error(err);
-                alert("אירעה שגיאה בקריאת קובץ ה-ZIP. הקובץ עלול להיות פגום.");
-                this.toggleLoading(false);
-            }
-        },
-
-        // --- Core: Text Parsing ---
-        parseWhatsAppText(text) {
-            // ניקוי תווים בלתי נראים (כמו BOM)
-            const lines = text.replace(/[\uFEFF\r]/g, '').split('\n');
-            let currentMsg = null;
-            
-            // זיהוי שורת הודעה תקנית של וואטסאפ (מותאם לעברית ואנגלית)
-            const regex = /^[\u200E\u200F\s]*(\d{1,2}[./-]\d{1,2}[./-]\d{2,4})[,\s]+(\d{1,2}:\d{2}).*?-\s*(.*?):\s+(.*)$/i;
-            
-            lines.forEach(line => {
-                const match = line.match(regex);
-                if (match) {
-                    if (currentMsg) this.state.messages.push(currentMsg);
-                    
-                    let [d, m, y] = match[1].split(/[./-]/).map(Number);
-                    if (y < 100) y += 2000;
-                    let dateObj = (m > 12) ? new Date(y, d-1, m) : new Date(y, m-1, d);
-                    dateObj.setHours(0,0,0,0);
-                    
-                    currentMsg = { 
-                        time: match[1] + ' ' + match[2], 
-                        timestamp: dateObj, 
-                        sender: match[3].trim(), 
-                        text: match[4] 
-                    };
-                } else if (currentMsg) {
-                    // הודעה מרובת שורות - הוספת ירידת שורה במקום ליצור בועה חדשה
-                    currentMsg.text += '\n' + line; 
-                }
-            });
-            if (currentMsg) this.state.messages.push(currentMsg);
-            
-            this.setupUIFilters();
-        },
-
-        // --- UI: Setup Filters ---
-        setupUIFilters() {
-            const validDates = this.state.messages.map(m => m.timestamp).filter(d => !isNaN(d));
-            
-            if (validDates.length > 0) {
-                const formatDate = (d) => d.getFullYear() + '-' + ('0' + (d.getMonth() + 1)).slice(-2) + '-' + ('0' + d.getDate()).slice(-2);
-                document.getElementById('startDate').value = formatDate(validDates[0]);
-                document.getElementById('endDate').value = formatDate(validDates[validDates.length - 1]);
-            }
-            
-            let names = new Set(this.state.messages.map(m => m.sender));
-            let select = document.getElementById('myName');
-            select.innerHTML = '';
-            names.forEach(n => select.innerHTML += `<option value="${this.escapeHTML(n)}">${this.escapeHTML(n)}</option>`);
-            
-            document.getElementById('settings').style.display = 'block';
-            this.toggleLoading(false);
-            this.renderDOM();
-        },
-
-        // --- Core: DOM Rendering (Strict Fidelity) ---
-        renderDOM() {
-            const chatDiv = document.getElementById('chat-container'); 
-            chatDiv.innerHTML = '';
-            
-            const myName = document.getElementById('myName').value.trim();
-            const alias = document.getElementById('otherAlias').value.trim();
-            const phone = document.getElementById('otherPhone').value.trim();
-            
-            let start = new Date(document.getElementById('startDate').value); start.setHours(0,0,0,0);
-            let end = new Date(document.getElementById('endDate').value); end.setHours(23,59,59,999);
-
-            this.updateDocumentHeader(alias, phone, start, end);
-
-            this.state.messages.forEach(msg => {
-                if (msg.timestamp >= start && msg.timestamp <= end) {
-                    const isMe = (msg.sender === myName);
-                    
-                    // אבטחת הטקסט מפני קוד זדוני - הטקסט נשאר מדויק למקור (לא מוחקים שמות קבצים)
-                    let displayTxt = this.escapeHTML(msg.text);
-                    let mediaHtml = '';
-                    
-                    // חיבור תמונות אם שם הקובץ מופיע בטקסט
-                    for (let fileName in this.state.mediaUrls) {
-                        if (msg.text.includes(fileName)) {
-                            // התמונה תרונדר מיד מתחת לטקסט המקורי של ההודעה (שמכיל את שם הקובץ)
-                            mediaHtml += `<img src="${this.state.mediaUrls[fileName]}" class="media-attachment">`;
-                        }
-                    }
-                    
-                    // המרת ירידות שורה לפורמט HTML כדי שיוצגו כראוי בדפדפן
-                    displayTxt = displayTxt.replace(/\n/g, '<br>');
-                    
-                    const senderName = this.escapeHTML(alias || msg.sender);
-                    
-                    chatDiv.innerHTML += `
-                        <div class="message ${isMe ? 'msg-me' : 'msg-other'}">
-                            ${!isMe ? `<div class="sender">${senderName}</div>` : ''}
-                            ${displayTxt ? `<div class="msg-text">${displayTxt}</div>` : ''}
-                            ${mediaHtml}
-                            <span class="time">${this.escapeHTML(msg.time)}</span>
-                        </div>`;
-                }
-            });
-        },
-
-        updateDocumentHeader(alias, phone, start, end) {
-            let sDate = document.getElementById('startDate').value.split('-').reverse().join('/');
-            let eDate = document.getElementById('endDate').value.split('-').reverse().join('/');
-            let identifier = phone || alias;
-            
-            let headerText = "התכתבות";
-            if (identifier) headerText += " עם " + this.escapeHTML(identifier);
-            headerText += ` מתאריך ${sDate} עד ${eDate}`;
-            
-            document.getElementById('docHeader').innerHTML = headerText;
+            return sum;
         }
-    };
 
-    // Boot the app
-    window.addEventListener('DOMContentLoaded', () => WhatsAppApp.init());
+        function calcNumerology(number) {
+            if (!number || number === 0) return 0;
+            let sum = number;
+            while (sum > 9) {
+                let tempSum = 0;
+                let numStr = sum.toString();
+                for (let i = 0; i < numStr.length; i++) tempSum += parseInt(numStr[i]);
+                sum = tempSum;
+            }
+            return sum;
+        }
 
-</script>
+        function calcNumFromDigits(str) {
+            let onlyNumbers = str.replace(/\D/g, ''); 
+            let sum = 0;
+            for (let i = 0; i < onlyNumbers.length; i++) sum += parseInt(onlyNumbers[i]);
+            return sum;
+        }
+
+        function getZodiacIndex(day, month) {
+            if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) return 0;
+            if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) return 1;
+            if ((month == 5 && day >= 21) || (month == 6 && day <= 20)) return 2;
+            if ((month == 6 && day >= 21) || (month == 7 && day <= 22)) return 3;
+            if ((month == 7 && day >= 23) || (month == 8 && day <= 22)) return 4;
+            if ((month == 8 && day >= 23) || (month == 9 && day <= 22)) return 5;
+            if ((month == 9 && day >= 23) || (month == 10 && day <= 22)) return 6;
+            if ((month == 10 && day >= 23) || (month == 11 && day <= 21)) return 7;
+            if ((month == 11 && day >= 22) || (month == 12 && day <= 21)) return 8;
+            if ((month == 12 && day >= 22) || (month == 1 && day <= 19)) return 9;
+            if ((month == 1 && day >= 20) || (month == 2 && day <= 18)) return 10;
+            if ((month == 2 && day >= 19) || (month == 3 && day <= 20)) return 11;
+            return 0; 
+        }
+
+        function calculateAscendant(sunSignIndex, birthTimeStr) {
+            let parts = birthTimeStr.split(":");
+            let decimalTime = parseInt(parts[0]) + (parseInt(parts[1]) / 60);
+            let diffHours = decimalTime - 6;
+            if (diffHours < 0) diffHours += 24; 
+            let signOffset = Math.floor(diffHours / 2);
+            return zodiacSigns[(sunSignIndex + signOffset) % 12].name;
+        }
+
+        function showPremiumAlert() {
+            alert("הפקת דוח עמוק היא תכונת פרימיום אשר תהיה זמינה בקרוב ותהיה כרוכה בתשלום.\nבינתיים, תוכל ליהנות מהפקת הדוח הבסיסי המלא בחינם!");
+        }
+
+        // --- הפונקציה הראשית ---
+        async function calculateAll() {
+            const fName = document.getElementById('firstName').value.trim();
+            const mName = document.getElementById('middleName').value.trim();
+            const lName = document.getElementById('lastName').value.trim();
+            const eName = document.getElementById('extraLastName').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const idNumber = document.getElementById('idNumber').value.trim();
+            const dateVal = document.getElementById('birthDate').value;
+            const timeVal = document.getElementById('birthTime').value;
+            const city = document.getElementById('city').value.trim();
+
+            if (!fName || !lName || !dateVal || !city) {
+                alert("חובה למלא לפחות: שם פרטי, שם משפחה, תאריך לידה ועיר לידה.");
+                return;
+            }
+
+            document.getElementById('calcBtn').disabled = true;
+            document.getElementById('loadingMsg').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+
+            try {
+                let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}`);
+                let geoData = await geoRes.json();
+                if (geoData.length === 0) throw new Error("לא מצאנו את העיר, נסה לכתוב באנגלית או לבחור עיר מרכזית קרובה.");
+                
+                let lat = geoData[0].lat;
+                let lon = geoData[0].lon;
+
+                let sunsetRes = await fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&date=${dateVal}&formatted=0`);
+                let sunsetData = await sunsetRes.json();
+                let sunsetUTC = new Date(sunsetData.results.sunset);
+                let birthDateTime = new Date(`${dateVal}T${timeVal}:00`);
+                let isAfterSunset = birthDateTime > sunsetUTC;
+                
+                let hebrewDateReq = new Date(birthDateTime);
+                if (isAfterSunset) hebrewDateReq.setDate(hebrewDateReq.getDate() + 1);
+                
+                let hebcalRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${hebrewDateReq.getFullYear()}&gm=${hebrewDateReq.getMonth() + 1}&gd=${hebrewDateReq.getDate()}&g2h=1`);
+                let hebcalData = await hebcalRes.json();
+                let hebrewDateStr = hebcalData.hebrew;
+                
+                let currentHebYear = new Date().getFullYear() + 3760;
+                let nextBirthdayRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${currentHebYear}&hm=${hebcalData.hm}&hd=${hebcalData.hd}&h2g=1`);
+                let nextBirthdayData = await nextBirthdayRes.json();
+                let nextBirthdayDate = new Date(nextBirthdayData.gy, nextBirthdayData.gm - 1, nextBirthdayData.gd);
+                
+                if (nextBirthdayDate < new Date()) {
+                    currentHebYear += 1;
+                    let nextYearRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${currentHebYear}&hm=${hebcalData.hm}&hd=${hebcalData.hd}&h2g=1`);
+                    let nextYearData = await nextYearRes.json();
+                    nextBirthdayDate = new Date(nextYearData.gy, nextYearData.gm - 1, nextYearData.gd);
+                }
+
+                let nextDayStr = String(nextBirthdayDate.getDate()).padStart(2, '0');
+                let nextMonthStr = String(nextBirthdayDate.getMonth() + 1).padStart(2, '0');
+                let nextYearStr = nextBirthdayDate.getFullYear();
+                let nextBdayFormatted = `${nextDayStr}/${nextMonthStr}/${nextYearStr}`;
+
+                let dateObj = new Date(dateVal);
+                let zIndex = getZodiacIndex(dateObj.getDate(), dateObj.getMonth() + 1);
+                let sunSign = zodiacSigns[zIndex];
+                let ascendantSign = calculateAscendant(zIndex, timeVal);
+
+                let astroHtml = `
+                    <div class="result-item" style="background-color: #e8f4fd;">
+                        <p style="font-size: 1.2em; color: #2c3e50;">תאריך הלידה העברי המדויק שלך הוא: <strong style="font-size: 1.3em; color: #2980b9;">${hebrewDateStr}</strong></p>
+                        <p style="font-size: 0.85em; color: #7f8c8d; margin-top: -5px;">${isAfterSunset ? "(הלידה הייתה לאחר השקיעה, ולכן התאריך העברי הוא של היום שלמחרת הלועזי)" : "(הלידה התרחשה לפני השקיעה באותו היום)"}</p>
+                    </div>
+                    <div class="result-item" style="background-color: #e8f4fd;">
+                        <p style="font-size: 1.2em; color: #2c3e50;">יום ההולדת העברי הבא שלך יחול בתאריך: <strong style="font-size: 1.3em; color: #2980b9;">${nextBdayFormatted}</strong></p>
+                    </div>
+                    <div class="result-item">
+                        <h4>מזל שמש: ${sunSign.name}</h4>
+                        <p>${sunSign.desc}</p>
+                    </div>
+                    <div class="result-item">
+                        <h4>מזל אופק: ${ascendantSign}</h4>
+                        <p>${ascendantTexts[ascendantSign]}</p>
+                    </div>
+                `;
+                document.getElementById('resAstro').innerHTML = astroHtml;
+
+
+                let namesHtml = "";
+                let allNamesString = fName + (mName ? mName : "") + lName + (eName ? eName : "");
+                
+                const allNames = [
+                    { label: "שם פרטי", val: fName },
+                    { label: "שם פרטי נוסף", val: mName },
+                    { label: "שם משפחה", val: lName },
+                    { label: "שם משפחה נוסף", val: eName }
+                ];
+
+                allNames.forEach(nameObj => {
+                    if (nameObj.val) {
+                        let g = calcGematria(nameObj.val);
+                        let n = calcNumerology(g);
+                        namesHtml += `<div class="result-item">
+                            <h4>${nameObj.label}: ${nameObj.val} (${g})</h4>
+                            <p><strong>מספר נומרולוגי:</strong> ${n}</p>
+                            <p>${numerologyTexts[n]}</p>
+                        </div>`;
+                    }
+                });
+
+                let totalGematria = calcGematria(allNamesString);
+                let totalNamesNum = calcNumerology(totalGematria);
+                namesHtml += `<div class="result-item highlight">
+                    <h4>כל השמות יחד (${totalGematria})</h4>
+                    <p><strong>מספר נומרולוגי:</strong> ${totalNamesNum}</p>
+                    <p>${numerologyTexts[totalNamesNum]}</p>
+                </div>`;
+
+                let dateParts = dateVal.split('-');
+                let formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                let dateSum = calcNumFromDigits(dateVal);
+                let dateDestinyNum = calcNumerology(dateSum);
+                
+                namesHtml += `<div class="result-item">
+                    <h4>מספר מזל: ${formattedDate}</h4>
+                    <p><strong>מספר נומרולוגי:</strong> ${dateDestinyNum}</p>
+                    <p>${numerologyTexts[dateDestinyNum]}</p>
+                </div>`;
+
+                if (phone) {
+                    let phoneSum = calcNumFromDigits(phone);
+                    let phoneNum = calcNumerology(phoneSum);
+                    namesHtml += `<div class="result-item">
+                        <h4>מספר תקשורת: ${phone}</h4>
+                        <p><strong>מספר נומרולוגי:</strong> ${phoneNum}</p>
+                        <p>${numerologyTexts[phoneNum]}</p>
+                    </div>`;
+                }
+
+                if (idNumber) {
+                    let idSum = calcNumFromDigits(idNumber);
+                    let idNum = calcNumerology(idSum);
+                    namesHtml += `<div class="result-item">
+                        <h4>מספר זהות: ${idNumber}</h4>
+                        <p><strong>מספר נומרולוגי:</strong> ${idNum}</p>
+                        <p>${numerologyTexts[idNum]}</p>
+                    </div>`;
+                }
+
+                document.getElementById('resNamesNum').innerHTML = namesHtml;
+
+                let fullName = `${fName} ${lName}`;
+                document.getElementById('resName').innerText = fullName;
+                document.getElementById('resName').setAttribute('data-fullname', fullName);
+                
+                document.getElementById('results').style.display = 'block';
+
+            } catch (error) {
+                alert("אירעה שגיאה: " + error.message);
+            } finally {
+                document.getElementById('calcBtn').disabled = false;
+                document.getElementById('loadingMsg').style.display = 'none';
+            }
+        }
+
+        // --- פונקציות ייצוא ---
+        function sendWhatsApp() {
+            const phone = document.getElementById('phone').value.trim();
+            if (!phone) {
+                alert("אנא הזן מספר טלפון בטופס למעלה.");
+                return;
+            }
+            let cleanPhone = phone.replace(/^0/, '972').replace(/\D/g, ''); 
+            
+            let titleText = document.querySelector('#contentToPrint h2').innerText;
+            let textToShare = document.getElementById('contentToPrint').innerText;
+            
+            textToShare = textToShare.replace(titleText, titleText + "\n\n");
+            
+            window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(textToShare)}`;
+        }
+
+        function downloadPDF() {
+            let fullName = document.getElementById('resName').getAttribute('data-fullname') || 'משתמש';
+            let fileName = fullName.replace(/\s+/g, '_') + '_דוח_מיסטי';
+            
+            const originalTitle = document.title;
+            document.title = fileName;
+            
+            window.print();
+            
+            document.title = originalTitle;
+        }
+    </script>
 </body>
 </html>
