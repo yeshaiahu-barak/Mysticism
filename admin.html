@@ -5,7 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ניהול מאובטח - האפליקציה המיסטית</title>
     
-    <!-- ספרית Supabase וקובץ ההגדרות המרכזי -->
+    <!-- 
+      ==========================================================================
+      מודול 1: טעינת הגדרות תקשורת ומסד נתונים
+      [הערה למפתח]: ה-URL בקובץ config.js כולל את הנתיב /rest/v1/ לתקשורת תקינה.
+      ==========================================================================
+    -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     
@@ -22,7 +27,6 @@
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); padding: 40px; color: var(--text-color); }
         .dashboard-container, .login-container { max-width: 800px; margin: auto; background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
         
-        /* מסך התחברות */
         .login-container { max-width: 400px; text-align: center; margin-top: 50px; }
         .login-container h2 { color: var(--primary-color); margin-bottom: 20px; }
         .login-container input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #bdc3c7; border-radius: 6px; font-size: 16px; text-align: center; box-sizing: border-box; }
@@ -85,7 +89,9 @@
 
     <script>
         /* ==========================================================================
-           1. הגדרות ופרטי אימות מנהל
+           פרק 1: קבועים ואימות
+           [הערה למפתח]: פרטי הניהול כרגע קבועים בקוד. מומלץ לחבר ל-Supabase Auth
+           בעתיד במידה וידרשו מספר מנהלים.
            ========================================================================== */
         const ADMIN_USER = 'admin';
         const ADMIN_PASS = '1234';
@@ -114,7 +120,7 @@
         };
 
         /* ==========================================================================
-           2. ניהול כניסה למערכת הניהול
+           פרק 2: אימות כניסה
            ========================================================================== */
         function attemptLogin() {
             const user = document.getElementById('usernameInput').value;
@@ -130,12 +136,14 @@
         }
 
         /* ==========================================================================
-           3. שליפת נתונים סטטיסטיים וייצוא קבצים
+           פרק 3: שירותי נתונים ופונקציות השרת (RPC)
+           [הערה לבודק QA]:
+           - במידה ומופיעה שגיאת 401 בקונסולה, יש לוודא שפונקציית השרת get_log_stats
+             ו-get_full_log מוגדרות עם הרשאות EXECUTE מתאימות ל-anon role.
            ========================================================================== */
         async function fetchStats() {
             toggleLoading(true, 'טוען סטטיסטיקות מהשרת...');
             try {
-                // קריאה לפונקציית השרת המאובטחת
                 const { data, error } = await supabaseClient.rpc('get_log_stats');
                 if (error) throw error;
 
@@ -165,7 +173,7 @@
                 if (error) throw error;
 
                 if (data && data.length > 0) {
-                    let csv = "\uFEFF";
+                    let csv = "\uFEFF"; // UTF-8 BOM לתמיכה מלאה בעברית ב-Excel
                     let columns = Object.keys(data[0]);
                     let headers = columns.map(c => headerTranslations[c] || c);
                     csv += headers.join(",") + "\n";
