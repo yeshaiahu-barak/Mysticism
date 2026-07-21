@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הדוח המיסטי שלי</title>
+    
+    <!-- קישורים למערכת ה-PWA וללוגו הווקטורי המוזהב -->
+    <link rel="icon" href="logo.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="logo.svg">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3498db">
+    
+    <style>
+        /* --- עיצוב כללי ומבנה בסיסי --- */
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f0f4f8; padding: 20px; line-height: 1.6;}
+        .container { max-width: 850px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { text-align: center; color: #2c3e50; }
+        
+        /* סידור שורות הטופס ברספונסיביות מלאה */
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .form-row .form-group { flex: 1; margin-bottom: 0; min-width: 0; } 
+        
+        @media (max-width: 600px) {
+            .form-row { flex-direction: column; gap: 15px; }
+        }
+
+        /* עיצוב כותרות השדות - מוזזות שני תווים שמאלה */
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+            color: #3498db; 
+            font-size: 0.95em;
+            word-wrap: break-word;
+            transform: translateX(-2ch); 
+        }
+
+        /* --- עיצוב אחיד ותלת-ממדי לתיבות הקלט (רובריקות) --- */
+        input { 
+            width: 100%; 
+            height: 36px; 
+            padding: 6px 12px; 
+            box-sizing: border-box; 
+            border: 1px solid #ccd1d9; 
+            border-radius: 6px; 
+            font-size: 15px; 
+            background: #ffffff;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06); 
+            transition: all 0.3s ease; 
+            text-align: right; 
+        }
+        
+        input:focus { 
+            border-color: #3498db; 
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06), 0 0 8px rgba(52, 152, 219, 0.4); 
+            outline: none; 
+            background-color: #fdfefe;
+        }
+        
+        /* --- עיצוב כפתורים עליונים ותחתונים --- */
+        .action-buttons-top { display: flex; gap: 15px; margin-top: 20px; }
+        .main-btn { background-color: #3498db; color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s;}
+        .main-btn:hover { background-color: #2980b9; }
+        .main-btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
+        
+        .premium-btn { background-color: #f39c12; color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s;}
+        .premium-btn:hover { background-color: #d68910; }
+        
+        /* --- עיצוב אזור תוצאות הדוח --- */
+        #results { margin-top: 30px; display: none; }
+        #contentToPrint { background-color: #ffffff; padding: 20px; border: 2px solid #ecf0f1; border-radius: 8px; }
+        
+        #contentToPrint h2 { text-decoration: underline; text-underline-offset: 8px; color: #2c3e50; margin-bottom: 25px;}
+        
+        .result-section { margin-bottom: 15px; }
+        
+        /* היררכיית צבעים לכרטיסיות התוצאות */
+        .result-item { background: #f7fbfe; padding: 15px; margin-bottom: 12px; border-radius: 6px; border-right: 5px solid #85c1e9; }
+        .result-zodiac { background: #ebf5fb; border-right-color: #2980b9; }
+        .result-date { background: #d4e6f1; border-right-color: #1b4f72; }
+        
+        .result-item h4 { margin: 0 0 8px 0; color: #2c3e50; font-size: 1.1em; }
+        
+        /* יישור טקסט מלא (justify) לשני הצדדים לקריאה נקייה ומקצועית */
+        .result-item p { margin: 0 0 5px 0; color: #555; text-align: justify; }
+        
+        .light-text { color: #5d6d7e !important; }
+
+        /* כפתורי פעולה בתחתית הדוח */
+        .actions { display: flex; gap: 15px; margin-top: 25px; }
+        .whatsapp-btn { background-color: #25D366; color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
+        .pdf-btn { background-color: #e74c3c; color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
+        
+        #loadingMsg { display: none; text-align: center; color: #3498db; font-weight: bold; margin-top: 15px; font-size: 1.1em;}
+
+        /* התאמות עיצוב ייעודיות להדפסת PDF */
+        @media print {
+            body { background-color: white; padding: 0; }
+            .container { box-shadow: none; padding: 0; }
+            .form-row, h1, .action-buttons-top, .actions, #loadingMsg { display: none !important; }
+            #results { display: block !important; border: none; margin: 0; padding: 0; }
+            #contentToPrint { border: none; padding: 0; }
+            .result-item { page-break-inside: avoid; border-right: 4px solid black; text-align: justify; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>הדוח המיסטי שלי</h1>
+        
+        <!-- טופס הזנת נתונים עם תמיכה בהיסטוריית דפדפן (Autocomplete) ושדות ריקים -->
+        <div class="form-row">
+            <div class="form-group"><label>שם פרטי (חובה):</label><input type="text" id="firstName" name="first_name" autocomplete="given-name"></div>
+            <div class="form-group"><label>שם פרטי נוסף (לא חובה):</label><input type="text" id="middleName" name="middle_name" autocomplete="additional-name"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>שם משפחה (חובה):</label><input type="text" id="lastName" name="last_name" autocomplete="family-name"></div>
+            <div class="form-group"><label>שם משפחה נוסף (לא חובה):</label><input type="text" id="extraLastName" name="extra_last_name" autocomplete="off"></div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group"><label>מספר טלפון נייד (חובה):</label><input type="tel" id="phone" name="phone_number" autocomplete="tel"></div>
+            <div class="form-group"><label>מספר תעודת זהות (לא חובה):</label><input type="text" id="idNumber" name="id_number" autocomplete="off"></div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group"><label>תאריך לידה (חובה):</label><input type="date" id="birthDate" name="birth_date" autocomplete="bday"></div>
+            <div class="form-group"><label>שעת לידה (24 שעות):</label><input type="time" id="birthTime" name="birth_time" value="12:00"></div>
+            <div class="form-group"><label>עיר לידה (עברית/אנגלית):</label><input type="text" id="city" name="birth_city" value="ירושלים" autocomplete="address-level2"></div>
+        </div>
+
+        <div class="action-buttons-top">
+            <button id="calcBtn" class="main-btn" onclick="calculateAll()">הפק דוח בסיסי</button>
+            <button class="premium-btn" onclick="showPremiumAlert()">הפק דוח עמוק</button>
+        </div>
+        
+        <div id="loadingMsg">מעבד נתונים מול כוכבי השמיים ומאגרי התאריכים... נא להמתין...</div>
+
+        <!-- אזור הצגת התוצאות -->
+        <div id="results">
+            <div id="contentToPrint">
+                <h2><span id="resName"></span> - דוח מיסטי בסיסי</h2>
+                
+                <div class="result-section">
+                    <div id="resAstro"></div>
+                </div>
+
+                <div class="result-section">
+                    <div id="resNamesNum"></div>
+                </div>
+            </div>
+            
+            <div class="actions">
+                <button class="whatsapp-btn" onclick="sendWhatsApp()">שלח דוח לוואטסאפ</button>
+                <button class="pdf-btn" onclick="downloadPDF()">הורד דוח כ-PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /* ==========================================================================
+           מודול 1: מילונים ומאגרי מידע מיסטיים (גימטריה, נומרולוגיה, מזלות ואופק)
+           ========================================================================== */
+
+        // מילון ערכי הגימטריה האותיות העבריות
+        const gematriaDict = {
+            'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,
+            'כ':20,'ך':20,'ל':30,'מ':40,'ם':40,'נ':50,'ן':50,'ס':60,'ע':70,
+            'פ':80,'ף':80,'צ':90,'ץ':90,'ק':100,'ר':200,'ש':300,'ת':400
+        };
+
+        // מילון הפירושים הנומרולוגיים למספרים 1 עד 9
+        const numerologyTexts = {
+            1: "מנהיגות מולדת, עצמאות וכוח רצון עז. אנשי ה-1 הם חלוצים, יזמים ובעלי ביטחון עצמי גבוה שאינם חוששים לסלול דרך חדשה ולפרוץ גבולות. הם ניחנים באנרגיה דינמית, יכולת קבלת החלטות מהירה ורצון עמוק להצליח ולהוביל. בעבודה הם זקוקים לעצמאות רבה, מתקשים לקבל מרות, ולרוב יפרחו בתפקידי ניהול, יזמות או כעצמאיים. האתגר המרכזי שלהם הוא ללמוד לעבוד בשיתוף פעולה, לפתח סבלנות כלפי הקצב של אחרים ולהימנע מאנוכיות או שתלטנות יתר.",
+            2: "זוגיות, שותפות, דיפלומטיה ורגישות רגשית גבוהה. אנשי ה-2 ניחנים באינטואיציה מדהימה, אמפתיות ויכולת נדירה להכיל ולהבין את מורכבות האחר. הם מגשרים טבעיים השואפים תמיד להרמוניה, לשלום ולסביבה רגועה. בקריירה הם יפרחו במקצועות טיפוליים, ייעוץ, גישור ועבודה הדוקה בצוות. הם חברים ובני זוג נאמנים ומסורים ביותר. האתגר שלהם הוא לשמור על הגבולות האישיים, לא לאבד את עצמם בתוך מערכות יחסים, ולהעז לעמוד על שלהם ולבטא את צרכיהם מבלי לחשוש מעימותים.",
+            3: "ביטוי עצמי, יצירתיות, שמחת חיים וכריזמה מתפרצת. אנשי ה-3 הם תקשורתיים מאוד, אופטימיים, מלאי הומור ויודעים להשתמש במילים כדי להקסים ולשכנע בקלות. הם נמשכים באופן טבעי לאמנות, במה, כתיבה, שיווק ותקשורת. יש להם יכולת להאיר כל חדר שאליו הם נכנסים והם אהובים מאוד בחברה. האתגר המרכזי שלהם הוא לשמור על מיקוד ומשמעת עצמית, להימנע מפיזור אנרגטי על פני יותר מדי פרויקטים במקביל, ולהתמיד במשימות היומיומיות השוחקות עד לסיומן המוצלח.",
+            4: "יציבות, סדר, משמעת קפדנית ועבודה קשה. אנשי ה-4 הם הבסיס האיתן שאפשר לסמוך עליו בכל מצב משבר. הם פרקטיים, מאורגנים מאוד, יורדים לפרטים הקטנים וניחנים ביכולת התמדה וריכוז יוצאי דופן. הם המבצעים שמוציאים רעיונות תיאורטיים אל הפועל, ומצוינים בניהול פרויקטים, כספים, הנדסה וכל תחום שדורש בניית מבנה יציב. הם מעריכים מסורת, אמינות וביטחון. האתגר שלהם הוא לגלות יותר גמישות מחשבתית, להיפתח לשינויים מרעננים, ולא לתת לשגרה ולנוקשות לכבות את היצירתיות ואת הספונטניות בחייהם.",
+            5: "חופש, הרפתקנות, תנועה מתמדת ושינויים. אנשי ה-5 זקוקים למרחב נשימה ענק, אוהבים לטייל, לחקור תרבויות, להתנסות ולחוות ריגושים חדשים. הם מסתגלים בקלות למצבים משתנים וניחנים בחשיבה מהירה, קליטה מצוינת ויכולת אלתור מבריקה. בעבודה הם יחפשו גיוון מתמיד ויברחו מכל מסגרת כובלת, ולכן יתאימו במיוחד למכירות, תיירות, יחסי ציבור ויזמות עצמאית. האתגר שלהם הוא ללמוד לקחת אחריות לטווח ארוך, למצוא עוגן יציב בחייהם שיאזן את חוסר השקט הפנימי התמידי, ולא לנטוש פרויקטים ומערכות יחסים ברגע שמתחיל להיות מעט קשה או משעמם.",
+            6: "האהבה, המשפחתיות, ההרמוניה והשירות המסור לזולת. אנשי ה-6 הם המטפלים והמגוננים של היקום - חמים, דואגים, מעניקים, אסתטיים ואוהבי יופי אמיתיים. המשפחה, הבית, והחברים הקרובים הם לחלוטין מרכז חייהם והם ייקחו אחריות מלאה על רווחת סביבתם. יצליחו במקצועות הטיפול, החינוך, העיצוב (אופנה ופנים) והייעוץ. האתגר הגדול שלהם הוא ללמוד לשחרר שליטה, לא להתערב יותר מדי בחייהם ובהחלטותיהם של האנשים שהם אוהבים, והכי חשוב – לזכור לטפל, לפנק ולהעניק אהבה גם לעצמם, ולא לרוקן את המצברים שלהם למען אחרים.",
+            7: "רוחניות, העמקה, חשיבה חקרנית ואינטואיציה חדה כתער. אנשי ה-7 הם הוגי דעות וחוקרים טבעיים שזקוקים לזמן איכות של שקט ופרטיות כדי להטעין מצברים. הם אינם מסתפקים בתשובות שטחיות או סמול-טוק, ותמיד יחפשו את האמת הנסתרת, הסיבות הפסיכולוגיות והמשמעות העמוקה של החיים. יצליחו מאוד במחקר, אקדמיה, פסיכולוגיה, פילוסופיה וגם בטכנולוגיה מורכבת. האתגר שלהם הוא לא להסתגר ולהתבודד יתר על המידה במגדל השן שלהם, ללמוד לתקשר את רגשותיהם הפגיעים לסביבה, ולמצוא איזון בריא בין העולם הרוחני העשיר שלהם לבין חיי היומיום והקשרים האנושיים.",
+            8: "עוצמה, סמכות, שפע חומרי, סטאטוס והישגיות בקנה מידה גדול. אנשי ה-8 נולדו לנהל מערכות מורכבות, להוביל מיזמים ולעשות עסקים ברמה הגבוהה ביותר. יש להם אנרגיה חזקה המקרינה סמכות, כושר שיפוט ואבחנה מצוינים, אמביציה אדירה ויכולת נדירה להוציא תוכניות שאפתניות אל הפועל תחת לחץ. האתגר העיקרי שלהם הוא למצוא את האיזון העדין והנכון בין החומר לרוח, לזכור שערכם האמיתי לא נמדד רק בכסף ובהצלחה כלכלית, ולשמור על מוסריות, אמפתיה וחמלה כלפי האנשים שעובדים לצידם בדרך המפרכת אל הפסגה.",
+            9: "הומניטריות, נתינה אוניברסלית ללא תנאי, אצילות נפש וסיום מעגלים. אנשי ה-9 הם נשמות עתיקות בעלות חמלה עצומה, ראייה מרחבית ורוחב לב נדיר. הם רואים את התמונה הגדולה של האנושות כולה, מתקשים לשאת סבל של אחרים, ושואפים לתקן את העולם ולהשפיע לטובה. הם יצליחו וימצאו סיפוק בפוליטיקה חברתית, רפואה, אמנות בעלת מסר, עבודה סוציאלית וארגוני התנדבות בינלאומיים. האתגר הגדול שלהם הוא ללמוד לסלוח לעצמם ולאחרים, לשחרר את פצעי העבר בכבוד, להבין שלא ניתן להציל את כל העולם לבדם, ולשים לב גם לפרטים הקטנים ולצרכים של סביבתם המיידית והקרובה."
+        };
+
+        // מאגר המזלות (כולל התאמה זוגית כהמשך טבעי בפסקה ללא הדגשות)
+        const zodiacSigns = [
+            { name: "טלה", desc: "מזל אש דינמי ויצרי. הטלה הוא הפורץ, היזם והאמיץ שבאזור. נולדת עם אנרגיה מתפרצת, כנות ישירה ורצון עז להוביל ולנצח. האתגר שלך: פיתוח סבלנות וללמוד להקשיב לאחרים, כאשר ההתאמה הזוגית המומלצת היא עם אריה, קשת, תאומים ומאזניים." },
+            { name: "שור", desc: "מזל אדמה יציב ופרקטי. השור מייצג התמדה, חיבור לחושים וחוזק פנימי. אתה אוהב נוחות, אסתטיקה וניתן לסמוך עליך ב-100%. האתגר שלך: לשחרר עקשנות וקיבעון, ולא לפחד משינויים, לצד התאמה זוגית טבעית עם בתולה, גדי, סרטן ודגים." },
+            { name: "תאומים", desc: "מזל אוויר אינטלקטואלי ומהיר. אתה סקרן ללא תקנה, בעל יכולת פנומנלית לקלוט מידע וגישה קלילה לחיים. האתגר שלך: קושי בהתחייבויות ארוכות טווח והצורך ללמוד להעמיק במקום לרפרף, בשילוב התאמה זוגית עם מאזניים, דלי, טלה ואריה." },
+            { name: "סרטן", desc: "מזל מים רגשי ועמוק. יש לך אינטואיציה עמוקה שגובלת בקסם, אתה מכיל ומגונן כמו חומת מגן על האנשים שאתה אוהב. האתגר שלך: נטייה להיעלב בקלות וקושי לשחרר את העבר, יחד עם התאמה זוגית מופלאה לעקרב, דגים, שור ובתולה." },
+            { name: "אריה", desc: "מזל אש מלכותי וזורח. כריזמטי, נדיב, בעל לב ענק ואצילות. אתה נהנה להיות במרכז תשומת הלב ומקרין חום רב לסביבתך. האתגר שלך: נטייה לדרמה, גאווה מופרזת וקושי לקבל ביקורת, לצד התאמה זוגית מוצלחת עם טלה, קשת, תאומים ומאזניים." },
+            { name: "בתולה", desc: "מזל אדמה מאורגן, אנליטי וביקורתי. אתה רואה את הפרטים הקטנים ביותר ושואף תמיד לשלמות עם מוסר עבודה יוצא דופן. האתגר שלך: נטייה לביקורת עצמית, דאגנות יתר והצורך ללמוד לשחרר, בשילוב התאמה זוגית לשור, גדי, סרטן ועקרב." },
+            { name: "מאזניים", desc: "מזל אוויר אסתטי ודיפלומטי. אתה שואף תמיד לצדק והרמוניה, שונא עימותים ויודע לראות כל סיטואציה ממספר זוויות. האתגר שלך: קושי משמעותי בקבלת החלטות ופחד מעימותים הכרחיים, לצד התאמה זוגית עם תאומים, דלי, אריה וקשת." },
+            { name: "עקרב", desc: "מזל מים אינטנסיבי וחקור. אתה ניחן בעוצמה נפשית אדירה, נחישות של ברזל, ומחפש תמיד את האמת העירומה. האתגר שלך: נטייה לחשדנות, קושי עמוק לתת אמון וצורך כפייתי בשליטה, יחד עם התאמה זוגית לסרטן, דגים, בתולה וגדי." },
+            { name: "קשת", desc: "מזל אש אופטימי וחופשי. ההרפתקן ותלמיד החיים הניצחי. אתה מונע מאופטימיות וצורך להרחיב אופקים. האתגר שלך: חוסר טאקט, חוסר סבלנות לשגרה וקושי להתחייב למסגרות נוקשות, לצד התאמה זוגית עם טלה, אריה, דלי ומאזניים." },
+            { name: "גדי", desc: "מזל אדמה שאפתן, מעשי ובוגר. איש העבודה והקריירה. אתה מציב יעדים ארוכי טווח ומטפס אל הפסגה בסבלנות ואחריות. האתגר שלך: פסימיות, נוקשות יתר והתמכרות לעבודה על חשבון חיי הרגש, בשילוב התאמה זוגית לשור, בתולה, עקרב ודגים." },
+            { name: "דלי", desc: "מזל אוויר מקורי והומניטרי. חושב מחוץ לקופסה, ממציא רעיונות ומונע מאידיאלים של שוויון וצדק חברתי. האתגר שלך: ניתוק וקרירות רגשית בקשרים אינטימיים ונטייה למרדנות, יחד עם התאמה זוגית לתאומים, מאזניים, קשת וטלה." },
+            { name: "דגים", desc: "מזל מים רוחני וחומל. בעל הנפש הרגישה והאמנותית ביותר. יכולת הזדהות מוחלטת עם כאבם של אחרים. האתגר שלך: חוסר גבולות אישיים שמוביל לניצול, והקושי לעמוד על קרקע המציאות, יחד עם התאמה זוגית לסרטן, עקרב, שור וגדי." }
+        ];
+
+        // מאגר האופק (כולל כישרון מולד כהמשך טבעי בפסקה ללא הדגשות)
+        const ascendantTexts = {
+            "טלה": "האופק בטלה מעניק חזות של אדם נמרץ ובעל תגובות פיזיות מהירות. הסביבה קולטת אותך כאדם ישיר והחלטי, וניחן בכישרון מולד ליזמות עצמאית, ספורט מקצועי, צבא וביטחון ותפקידי ניהול ופיקוד בשטח.",
+            "שור": "כשהאופק שלך בשור, הנוכחות הפיזית שלך מקרינה רוגע עמוק ויציבות. אנשים מרגישים שאפשר לסמוך עליך, ויש לך כישרון מולד לבנקאות ופיננסים, נדל\"ן ואדריכלות, קולינריה ועיצוב ואמנות חומרית.",
+            "תאומים": "הנוכחות שלך בחדר היא קלילה, חברותית ותקשורתית במיוחד. נראה שאתה מתעניין בהכל ותמיד נמצא בתנועה, לצד כישרון מולד בעיתונאות, כתיבה ועריכה, שיווק, חינוך ותכנות מחשבים.",
+            "סרטן": "ההילה הראשונית שאתה מקרין היא רכה, מכילה ואמפתית. אנשים נוטים להיפתח אליך ולשתף אותך בבעיותיהם, ויש לך כישרון מולד בפסיכולוגיה, עבודה סוציאלית, רפואה, סיעוד וחינוך לגיל הרך.",
+            "אריה": "אופק דרמטי! כשאתה נכנס לחדר מרגישים אותך. אתה משדר כריזמה טבעית, גאווה וביטחון עצמי רב, וניחן בכישרון מולד למשחק ובידור, ניהול בכיר, פוליטיקה והפקת אירועים.",
+            "בתולה": "האופק בבתולה גורם לך להיראות אדם רציני, מאורגן ושקול. הסביבה רואה בך מיד 'מבוגר אחראי' שיודע פתור בעיות, לצד כישרון מולד בהנהלת חשבונות, מדע, מחקר ותכנות.",
+            "מאזניים": "מביא עמו קסם אישי רב וחיוך כובש. אתה נראה לסביבה כאדם חברותי, נעים הליכות ומונחה הרמוניה, עם כישרון מולד לעריכת דין, גישור, דיפלומטיה ועיצוב.",
+            "עקרב": "אופק מגנטי ומרתק. המבט שלך לרוב נתפס כחודר ועמוק. אתה משדר עוצמה פנימית אדירה ומסתוריות, לצד כישרון מולד בחקירות מודיעין, פסיכיאטריה וניהול השקעות.",
+            "קשת": "אתה נתפס מיד כאדם פתוח, אופטימי ומוכן תמיד להרפתקה. אתה משדר שמחת חיים וכנות מוחלטת, ויש לך כישרון מולד לתיירות בינלאומית, משפטים, פילוסופיה ואקדמיה.",
+            "גדי": "הרושם הראשוני שאתה מייצר הוא סמכותי, רציני ומכובד מאוד. אנשים מתייחסים אליך ברצינות תהומית, לצד כישרון מולד בניהול מערכות גדולות, הנדסה, אדריכלות וניהול ממשלתי.",
+            "דלי": "חזות ייחודית וקצת אקסצנטרית. אתה משדר עצמאות מחשבתית ברורה, אינדיבידואליות ומקוריות מוחלטת, ויש לך כישרון מולד בהייטק, אסטרונומיה, פעילות חברתית ויזמות סטארט-אפים.",
+            "דגים": "החזות שלך מעבירה עדינות רבה, רגישות ורוחניות. אתה משדר אמפתיה עצומה ולאנשים קל מאוד להתקרב אליך, לצד כישרון מולד באמנות, מוזיקה, פסיכולוגיה וטיפול אלטרנטיבי."
+        };
+
+
+        /* ==========================================================================
+           מודול 2: פונקציות עזר מתמטיות ונומרולוגיות
+           ========================================================================== */
+
+        // חישוב סכום גימטרי של מילה בודדת
+        function calcGematria(word) {
+            let sum = 0;
+            if (!word) return 0;
+            for (let i = 0; i < word.length; i++) {
+                if (gematriaDict[word[i]]) sum += gematriaDict[word[i]];
+            }
+            return sum;
+        }
+
+        // צמצום נומרולוגי לספרה אחת (1-9)
+        function calcNumerology(number) {
+            if (!number || number === 0) return 0;
+            let sum = number;
+            while (sum > 9) {
+                let tempSum = 0;
+                let numStr = sum.toString();
+                for (let i = 0; i < numStr.length; i++) tempSum += parseInt(numStr[i]);
+                sum = tempSum;
+            }
+            return sum;
+        }
+
+        // סכימת ספרות מתוך מחרוזת (עבור תאריכים, טלפונים ותעודות זהות)
+        function calcNumFromDigits(str) {
+            let onlyNumbers = str.replace(/\D/g, ''); 
+            let sum = 0;
+            for (let i = 0; i < onlyNumbers.length; i++) sum += parseInt(onlyNumbers[i]);
+            return sum;
+        }
+
+        // חישוב אינדקס המזל על פי יום וחודש לועזי
+        function getZodiacIndex(day, month) {
+            if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) return 0;
+            if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) return 1;
+            if ((month == 5 && day >= 21) || (month == 6 && day <= 20)) return 2;
+            if ((month == 6 && day >= 21) || (month == 7 && day <= 22)) return 3;
+            if ((month == 7 && day >= 23) || (month == 8 && day <= 22)) return 4;
+            if ((month == 8 && day >= 23) || (month == 9 && day <= 22)) return 5;
+            if ((month == 9 && day >= 23) || (month == 10 && day <= 22)) return 6;
+            if ((month == 10 && day >= 23) || (month == 11 && day <= 21)) return 7;
+            if ((month == 11 && day >= 22) || (month == 12 && day <= 21)) return 8;
+            if ((month == 12 && day >= 22) || (month == 1 && day <= 19)) return 9;
+            if ((month == 1 && day >= 20) || (month == 2 && day <= 18)) return 10;
+            if ((month == 2 && day >= 19) || (month == 3 && day <= 20)) return 11;
+            return 0; 
+        }
+
+        // חישוב מזל האופק על בסיס מזל השמש ושעת הלידה
+        function calculateAscendant(sunSignIndex, birthTimeStr) {
+            let parts = birthTimeStr.split(":");
+            let decimalTime = parseInt(parts[0]) + (parseInt(parts[1]) / 60);
+            let diffHours = decimalTime - 6;
+            if (diffHours < 0) diffHours += 24; 
+            let signOffset = Math.floor(diffHours / 2);
+            return zodiacSigns[(sunSignIndex + signOffset) % 12].name;
+        }
+
+        // התראה עבור דוח פרימיום בתשלום
+        function showPremiumAlert() {
+            alert("הפקת דוח עמוק היא תכונת פרימיום אשר תהיה זמינה בקרוב ותהיה כרוכה בתשלום.\nבינתיים, תוכל ליהנות מהפקת הדוח הבסיסי המלא בחינם!");
+        }
+
+
+        /* ==========================================================================
+           מודול 3, 4 ו-5: לוגיקת החישוב הראשית, קריאות ל-API וייצוא דוחות
+           ========================================================================== */
+
+        async function calculateAll() {
+            // איסוף הנתונים מהטופס
+            const fName = document.getElementById('firstName').value.trim();
+            const mName = document.getElementById('middleName').value.trim();
+            const lName = document.getElementById('lastName').value.trim();
+            const eName = document.getElementById('extraLastName').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const idNumber = document.getElementById('idNumber').value.trim();
+            const dateVal = document.getElementById('birthDate').value;
+            const timeVal = document.getElementById('birthTime').value;
+            const city = document.getElementById('city').value.trim();
+
+            // אימות שדות חובה
+            if (!fName || !lName || !phone || !dateVal) {
+                alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון ותאריך לידה.");
+                return;
+            }
+
+            document.getElementById('calcBtn').disabled = true;
+            document.getElementById('loadingMsg').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+
+            try {
+                // איתור קואורדינטות לפי עיר הלידה בעזרת Nominatim API
+                let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}`);
+                let geoData = await geoRes.json();
+                if (geoData.length === 0) throw new Error("לא מצאנו את העיר, נסה לכתוב באנגלית או לבחור עיר מרכזית קרובה.");
+                
+                let lat = geoData[0].lat;
+                let lon = geoData[0].lon;
+
+                // בדיקת שעת השקיעה באותו היום בעזרת Sunrise-Sunset API
+                let sunsetRes = await fetch(`https://api.sunrise-sunset.org/json?lat=${lat}&lng=${lon}&date=${dateVal}&formatted=0`);
+                let sunsetData = await sunsetRes.json();
+                let sunsetUTC = new Date(sunsetData.results.sunset);
+                let birthDateTime = new Date(`${dateVal}T${timeVal}:00`);
+                let isAfterSunset = birthDateTime > sunsetUTC;
+                
+                // התאמת התאריך העברי לפי שעת השקיעה (הלכה יהודית)
+                let hebrewDateReq = new Date(birthDateTime);
+                if (isAfterSunset) hebrewDateReq.setDate(hebrewDateReq.getDate() + 1);
+                
+                // המרה לתאריך עברי בעזרת Hebcal API
+                let hebcalRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${hebrewDateReq.getFullYear()}&gm=${hebrewDateReq.getMonth() + 1}&gd=${hebrewDateReq.getDate()}&g2h=1`);
+                let hebcalData = await hebcalRes.json();
+                let hebrewDateStr = hebcalData.hebrew;
+                
+                // חישוב יום ההולדת העברי הבא
+                let currentHebYear = new Date().getFullYear() + 3760;
+                let nextBirthdayRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${currentHebYear}&hm=${hebcalData.hm}&hd=${hebcalData.hd}&h2g=1`);
+                let nextBirthdayData = await nextBirthdayRes.json();
+                let nextBirthdayDate = new Date(nextBirthdayData.gy, nextBirthdayData.gm - 1, nextBirthdayData.gd);
+                
+                if (nextBirthdayDate < new Date()) {
+                    currentHebYear += 1;
+                    let nextYearRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${currentHebYear}&hm=${hebcalData.hm}&hd=${hebcalData.hd}&h2g=1`);
+                    let nextYearData = await nextYearRes.json();
+                    nextBirthdayDate = new Date(nextYearData.gy, nextYearData.gm - 1, nextYearData.gd);
+                }
+
+                let nextDayStr = String(nextBirthdayDate.getDate()).padStart(2, '0');
+                let nextMonthStr = String(nextBirthdayDate.getMonth() + 1).padStart(2, '0');
+                let nextYearStr = nextBirthdayDate.getFullYear();
+                let nextBdayFormatted = `${nextDayStr}/${nextMonthStr}/${nextYearStr}`;
+
+                // חישוב מזלות ואופק
+                let dateObj = new Date(dateVal);
+                let zIndex = getZodiacIndex(dateObj.getDate(), dateObj.getMonth() + 1);
+                let sunSign = zodiacSigns[zIndex];
+                let ascendantSign = calculateAscendant(zIndex, timeVal);
+
+                // רינדור חלק אסטרולוגיה ותאריכים מחושבים
+                let astroHtml = `
+                    <div class="result-item result-date">
+                        <p style="font-size: 1.2em; color: #1b4f72;">תאריך הלידה העברי המדויק שלך הוא: <strong style="font-size: 1.3em;">${hebrewDateStr}</strong></p>
+                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: -5px;">${isAfterSunset ? "(הלידה הייתה לאחר השקיעה, ולכן התאריך העברי הוא של היום שלמחרת הלועזי)" : "(הלידה התרחשה לפני השקיעה באותו היום)"}</p>
+                    </div>
+                    <div class="result-item result-date">
+                        <p style="font-size: 1.2em; color: #1b4f72;">יום ההולדת העברי הבא שלך יחול בתאריך: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong></p>
+                    </div>
+                    <div class="result-item result-zodiac">
+                        <h4>מזל שמש: ${sunSign.name}</h4>
+                        <p class="light-text">${sunSign.desc}</p>
+                    </div>
+                    <div class="result-item result-zodiac">
+                        <h4>מזל אופק: ${ascendantSign}</h4>
+                        <p class="light-text">${ascendantTexts[ascendantSign]}</p>
+                    </div>
+                `;
+                document.getElementById('resAstro').innerHTML = astroHtml;
+
+
+                // רינדור חלק נומרולוגיה ושמות
+                let namesHtml = "";
+                let allNamesString = fName + (mName ? mName : "") + lName + (eName ? eName : "");
+                
+                const allNames = [
+                    { label: "שם פרטי", val: fName },
+                    { label: "שם פרטי נוסף", val: mName },
+                    { label: "שם משפחה", val: lName },
+                    { label: "שם משפחה נוסף", val: eName }
+                ];
+
+                allNames.forEach(nameObj => {
+                    if (nameObj.val) {
+                        let g = calcGematria(nameObj.val);
+                        let n = calcNumerology(g);
+                        namesHtml += `<div class="result-item">
+                            <h4>${nameObj.label}: ${nameObj.val} (${g})</h4>
+                            <p><strong>מספר נומרולוגי:</strong> ${n}</p>
+                            <p class="light-text">${numerologyTexts[n]}</p>
+                        </div>`;
+                    }
+                });
+
+                let totalGematria = calcGematria(allNamesString);
+                let totalNamesNum = calcNumerology(totalGematria);
+                namesHtml += `<div class="result-item">
+                    <h4>כל השמות יחד (${totalGematria})</h4>
+                    <p><strong>מספר נומרולוגי:</strong> ${totalNamesNum}</p>
+                    <p class="light-text">${numerologyTexts[totalNamesNum]}</p>
+                </div>`;
+
+                let dateParts = dateVal.split('-');
+                let formattedDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                let dateSum = calcNumFromDigits(dateVal);
+                let dateDestinyNum = calcNumerology(dateSum);
+                
+                namesHtml += `<div class="result-item">
+                    <h4>מספר מזל: ${formattedDate}</h4>
+                    <p><strong>מספר נומרולוגי:</strong> ${dateDestinyNum}</p>
+                    <p class="light-text">${numerologyTexts[dateDestinyNum]}</p>
+                </div>`;
+
+                if (phone) {
+                    let phoneSum = calcNumFromDigits(phone);
+                    let phoneNum = calcNumerology(phoneSum);
+                    namesHtml += `<div class="result-item">
+                        <h4>מספר תקשורת: ${phone}</h4>
+                        <p><strong>מספר נומרולוגי:</strong> ${phoneNum}</p>
+                        <p class="light-text">${numerologyTexts[phoneNum]}</p>
+                    </div>`;
+                }
+
+                if (idNumber) {
+                    let idSum = calcNumFromDigits(idNumber);
+                    let idNum = calcNumerology(idSum);
+                    namesHtml += `<div class="result-item">
+                        <h4>מספר זהות: ${idNumber}</h4>
+                        <p><strong>מספר נומרולוגי:</strong> ${idNum}</p>
+                        <p class="light-text">${numerologyTexts[idNum]}</p>
+                    </div>`;
+                }
+
+                document.getElementById('resNamesNum').innerHTML = namesHtml;
+
+                let fullName = `${fName} ${lName}`;
+                document.getElementById('resName').innerText = fullName;
+                document.getElementById('resName').setAttribute('data-fullname', fullName);
+                
+                document.getElementById('results').style.display = 'block';
+
+            } catch (error) {
+                alert("אירעה שגיאה: " + error.message);
+            } finally {
+                document.getElementById('calcBtn').disabled = false;
+                document.getElementById('loadingMsg').style.display = 'none';
+            }
+        }
+
+        // פונקציית שיתוף בוואטסאפ
+        function sendWhatsApp() {
+            const phone = document.getElementById('phone').value.trim();
+            if (!phone) {
+                alert("אנא הזן מספר טלפון בטופס למעלה.");
+                return;
+            }
+            let cleanPhone = phone.replace(/^0/, '972').replace(/\D/g, ''); 
+            
+            let titleText = document.querySelector('#contentToPrint h2').innerText;
+            let textToShare = document.getElementById('contentToPrint').innerText;
+            
+            textToShare = textToShare.replace(titleText, titleText + "\n\n");
+            
+            window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(textToShare)}`;
+        }
+
+        // פונקציית הורדת PDF דרך חלון ההדפסה של הדפדפן
+        function downloadPDF() {
+            let fullName = document.getElementById('resName').getAttribute('data-fullname') || 'משתמש';
+            let fileName = fullName.replace(/\s+/g, '_') + '_דוח_מיסטי';
+            
+            const originalTitle = document.title;
+            document.title = fileName;
+            
+            window.print();
+            
+            document.title = originalTitle;
+        }
+        
+        /* ==========================================================================
+           מודול 6: רישום Service Worker להפעלת אפליקציית PWA ניידת
+           ========================================================================== */
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./sw.js')
+                .then((reg) => console.log('Service worker registered.', reg))
+                .catch((err) => console.log('Service worker not registered.', err));
+            });
+        }
+    </script>
+</body>
+</html>
