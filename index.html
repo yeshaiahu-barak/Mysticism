@@ -79,14 +79,16 @@
         </div>
 
         <div class="form-row">
-            <div class="form-group"><label>מספר טלפון נייד:</label><input type="tel" id="phone" placeholder="למשל: 0501234567"></div>
+            <!-- שונה לחובה לפי דרישתך -->
+            <div class="form-group"><label>מספר טלפון נייד (חובה):</label><input type="tel" id="phone" placeholder="למשל: 0501234567"></div>
             <div class="form-group"><label>מספר תעודת זהות (לא חובה):</label><input type="text" id="idNumber" placeholder="הכנס תעודת זהות"></div>
         </div>
 
         <div class="form-row">
             <div class="form-group"><label>תאריך לידה (חובה):</label><input type="date" id="birthDate"></div>
             <div class="form-group"><label>שעת לידה (ברירת מחדל 12:00):</label><input type="time" id="birthTime" value="12:00"></div>
-            <div class="form-group"><label>עיר לידה (עברית/אנגלית):</label><input type="text" id="city" placeholder="למשל: חיפה, London"></div>
+            <!-- נוסף הערך 'ירושלים' כברירת מחדל בעזרת המאפיין value -->
+            <div class="form-group"><label>עיר לידה (עברית/אנגלית):</label><input type="text" id="city" value="ירושלים" placeholder="למשל: חיפה, London"></div>
         </div>
 
         <div class="action-buttons-top">
@@ -234,8 +236,9 @@
             const timeVal = document.getElementById('birthTime').value;
             const city = document.getElementById('city').value.trim();
 
-            if (!fName || !lName || !dateVal || !city) {
-                alert("חובה למלא לפחות: שם פרטי, שם משפחה, תאריך לידה ועיר לידה.");
+            // תיקון קריטי: נוספה דרישה מפורשת לבדוק ששדה הטלפון (phone) אינו ריק!
+            if (!fName || !lName || !phone || !dateVal || !city) {
+                alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון, תאריך לידה ועיר לידה.");
                 return;
             }
 
@@ -412,7 +415,7 @@
             document.title = originalTitle;
         }
         
-        // --- קוד רישום ה-Service Worker להפעלת PWA (התקנה בנייד) ---
+        // --- רישום PWA ---
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
