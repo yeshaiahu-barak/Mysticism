@@ -1,30 +1,16 @@
 {
-  "name": "ממיר וואטסאפ ל-PDF",
-  "short_name": "וואטסאפ ל-PDF",
+  "name": "הדוח המיסטי שלי",
+  "short_name": "דוח מיסטי",
   "start_url": "./index.html",
   "display": "standalone",
-  "background_color": "#efeae2",
-  "theme_color": "#008069",
-"icons": [
+  "background_color": "#f0f4f8",
+  "theme_color": "#3498db",
+  "description": "אפליקציה להפקת דוח נומרולוגי ואסטרולוגי מקיף",
+  "icons": [
     {
-      "src": "./logo.svg",
-      "sizes": "512x512",
+      "src": "logo.svg",
+      "sizes": "any",
       "type": "image/svg+xml"
     }
-  ],
-  "share_target": {
-    "action": "./index.html",
-    "method": "POST",
-    "enctype": "multipart/form-data",
-    "params": {
-      "title": "title",
-      "text": "text",
-      "files": [
-        {
-          "name": "file",
-          "accept": ["application/zip", "application/x-zip-compressed"]
-        }
-      ]
-    }
-  }
+  ]
 }
