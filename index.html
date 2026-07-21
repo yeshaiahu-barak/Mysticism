@@ -10,13 +10,7 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3498db">
     
-    <!-- 
-      ==========================================================================
-      מודול 1: טעינת ספריות חיצוניות וקונפיגורציה
-      ==========================================================================
-      [הערה למפתח]: חובה לטעון את ספרית Supabase הראשית לפני config.js כדי למנוע
-      שגיאת ReferenceError (supabase is not defined).
-    -->
+    <!-- ספרית Supabase וקובץ ההגדרות המרכזי -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     
@@ -99,7 +93,6 @@
         
         #loadingMsg { display: none; text-align: center; color: var(--primary-color); font-weight: bold; margin-top: 15px; font-size: 1.1em;}
 
-        /* [הערה לבודק QA]: התאמת עיצוב ייעודית למצב הדפסה / ייצוא ל-PDF */
         @media print {
             body { background-color: white; padding: 0; }
             .container { box-shadow: none; padding: 0; }
@@ -115,7 +108,6 @@
     <div class="container">
         <h1>הדוח המיסטי שלי</h1>
         
-        <!-- טופס הזנת פרטים -->
         <div class="form-row">
             <div class="form-group"><label>שם פרטי (חובה):</label><input type="text" id="firstName" autocomplete="given-name"></div>
             <div class="form-group"><label>שם פרטי נוסף (לא חובה):</label><input type="text" id="middleName" autocomplete="additional-name"></div>
@@ -133,7 +125,12 @@
         <div class="form-row">
             <div class="form-group"><label>תאריך לידה (חובה):</label><input type="date" id="birthDate" autocomplete="bday"></div>
             <div class="form-group"><label>שעת לידה (24 שעות):</label><input type="time" id="birthTime" value="12:00"></div>
-            <div class="form-group"><label>עיר לידה (עברית/אנגלית):</label><input type="text" id="city" value="ירושלים" autocomplete="address-level2"></div>
+            <!-- שדה עיר עם בחירה מהירה וקלה מתוך רשימה מתעדכנת -->
+            <div class="form-group">
+                <label>עיר לידה (עברית/אנגלית):</label>
+                <input type="text" id="city" value="ירושלים" list="citiesOptions" autocomplete="off" oninput="fetchCitySuggestions(this.value)">
+                <datalist id="citiesOptions"></datalist>
+            </div>
         </div>
 
         <div class="action-buttons-top">
@@ -143,7 +140,6 @@
         
         <div id="loadingMsg">מעבד נתונים מול כוכבי השמיים ומאגרי התאריכים... נא להמתין...</div>
 
-        <!-- אזור הצגת התוצאות -->
         <div id="results">
             <div id="contentToPrint">
                 <h2><span id="resName"></span> - דוח מיסטי</h2>
@@ -160,8 +156,7 @@
 
     <script>
         /* ==========================================================================
-           פרק 1: מילוני נתונים וגיבוי מקומי (Data Dictionaries & Fallbacks)
-           [הערה למפתח]: ערכים אלו משמשים כמנגנון Fallback סטטי למקרה של ניתוק רשת.
+           1. מילוני נתונים וגיבוי מקומי
            ========================================================================== */
         const gematriaDict = {
             'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,
@@ -212,11 +207,31 @@
         };
 
         /* ==========================================================================
-           פרק 2: שירותי ענן וסנכרון אופליין (Cloud Services & Offline Sync)
-           [הערה לבודק QA]:
-           - לבדיקת אופליין: נתק את החיבור לרשת וודא שהלוג נשמר ב-localStorage
-             תחת המפתח 'offlineReportsLog'.
-           - בעת חיבור מחדש (אירוע 'online'), הבודק יראה סנכרון אוטומטי מול Supabase.
+           2. מנגנון השלמה אוטומטית לעיר (Lightweight City Autocomplete)
+           ========================================================================== */
+        let cityTimeout = null;
+        async function fetchCitySuggestions(query) {
+            if (!query || query.length < 2) return;
+            clearTimeout(cityTimeout);
+            cityTimeout = setTimeout(async () => {
+                try {
+                    let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+                    let data = await res.json();
+                    let datalist = document.getElementById('citiesOptions');
+                    datalist.innerHTML = '';
+                    data.forEach(item => {
+                        let option = document.createElement('option');
+                        option.value = item.display_name.split(',')[0];
+                        datalist.appendChild(option);
+                    });
+                } catch (err) {
+                    console.warn("שגיאה בטעינת הצעות ערים:", err);
+                }
+            }, 300);
+        }
+
+        /* ==========================================================================
+           3. שירותי ענן וסנכרון לוגים
            ========================================================================== */
         async function loadDynamicTexts() {
             if (!navigator.onLine) return; 
@@ -297,8 +312,7 @@
         });
 
         /* ==========================================================================
-           פרק 3: אלגוריתמים וחישובים (Mathematical & Astrological Engine)
-           [הערה למפתח]: פונקציות טהורות ללא תלות ב-DOM, מותאמות למבנה מודולרי.
+           4. אלגוריתמים וחישובים מיסטיים
            ========================================================================== */
         function calcGematria(word) {
             let sum = 0;
@@ -352,12 +366,15 @@
         }
 
         /* ==========================================================================
-           פרק 4: בקרת ממשק ואימות נתונים (UI Handlers & Validation)
-           [הערה לבודק QA]:
-           - חובה לבדוק הזנת אותיות באנגלית בשדות השם -> אמורה לקפוץ התרעה.
-           - חובה לבדוק הזנת אותיות בשדה טלפון -> אמורה לקפוץ התרעה.
+           5. בקרת ממשק ואימות נתונים
            ========================================================================== */
         async function handleUserAction(actionType) {
+            // טיפול מיידי בדוח העמוק - מציג הודעה ולא דורש הזנת נתונים תקינים
+            if (actionType === 'deep_report') {
+                alert("הפקת דוח עמוק נמצאת עדיין בפיתוח.");
+                return;
+            }
+
             const fName = document.getElementById('firstName').value.trim();
             const mName = document.getElementById('middleName').value.trim();
             const lName = document.getElementById('lastName').value.trim();
@@ -366,13 +383,13 @@
             const idNumber = document.getElementById('idNumber').value.trim();
             const dateVal = document.getElementById('birthDate').value;
 
-            // רישום ללוג מבוצע תמיד ראשון לפי אפיון המערכת
-            if (actionType === 'basic_report' || actionType === 'deep_report') {
+            // רישום ללוג לדוח הבסיסי
+            if (actionType === 'basic_report') {
                 await writeToExperimentLog(actionType);
             }
 
             // אימות שדות חובה ותקינות קלט
-            if (actionType === 'basic_report' || actionType === 'deep_report') {
+            if (actionType === 'basic_report') {
                 if (!fName || !lName || !phone || !dateVal) {
                     alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון ותאריך לידה.");
                     return;
@@ -400,9 +417,6 @@
 
             if (actionType === 'basic_report') {
                 runBasicReportCalculation();
-            } else if (actionType === 'deep_report') {
-                alert("הפקת דוח עמוק נמצאת עדיין בפיתוח.");
-                runBasicReportCalculation();
             } else if (actionType === 'whatsapp_share') {
                 executeWhatsAppShare();
             } else if (actionType === 'pdf_download') {
@@ -425,7 +439,6 @@
             document.getElementById('results').style.display = 'none';
 
             try {
-                // קריאות API גיאוגרפיות ותאריכים עבריים
                 let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}`);
                 let geoData = await geoRes.json();
                 if (geoData.length === 0) throw new Error("העיר לא נמצאה, אנא נסה עיר מרכזית קרובה.");
@@ -445,7 +458,6 @@
                 let sunSign = zodiacSigns[zIndex];
                 let ascendant = calculateAscendant(zIndex, timeVal);
 
-                // בניית פלט אסטרולוגי
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date">
                         <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebData.hebrew}</strong></p>
@@ -461,7 +473,6 @@
                     </div>
                 `;
 
-                // בניית פלט נומרולוגי
                 let namesHtml = "";
                 const namesList = [
                     { label: "שם פרטי", val: fName },
