@@ -3,50 +3,90 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>לוח בקרה - לוג ניסויים</title>
+    <title>ניהול מאובטח - האפליקציה המיסטית</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ecf0f1; padding: 40px; color: #2c3e50;}
-        .dashboard-container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ecf0f1; padding: 40px; color: #2c3e50; }
+        .dashboard-container, .login-container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        
+        /* עיצוב מסך התחברות */
+        .login-container { max-width: 400px; text-align: center; margin-top: 50px; }
+        .login-container h2 { color: #2980b9; margin-bottom: 20px; }
+        .login-container input { width: 100%; padding: 10px; margin-bottom: 15px; border: 1px solid #bdc3c7; border-radius: 6px; box-sizing: border-box; font-size: 16px; text-align: center; }
+        .login-btn { width: 100%; background-color: #34495e; color: white; padding: 12px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; transition: background 0.3s;}
+        .login-btn:hover { background-color: #2c3e50; }
+        .error-msg { color: #e74c3c; margin-bottom: 15px; display: none; font-weight: bold; }
+
+        /* לוח הבקרה מוסתר כברירת מחדל */
+        #dashboardWrapper { display: none; }
+        
         h1 { text-align: center; color: #2980b9; margin-bottom: 30px; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th, td { padding: 15px; text-align: right; border-bottom: 1px solid #ddd; }
         th { background-color: #3498db; color: white; font-size: 1.1em; }
         tr:hover { background-color: #f5f7fa; }
-        .refresh-btn { display: block; width: 200px; margin: 0 auto 20px auto; background-color: #27ae60; color: white; padding: 10px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; text-align: center;}
+        
+        .buttons-row { display: flex; gap: 15px; justify-content: center; margin-bottom: 20px; }
+        .refresh-btn { background-color: #27ae60; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; width: 250px;}
         .refresh-btn:hover { background-color: #2ecc71; }
-        #loading { text-align: center; font-weight: bold; color: #7f8c8d; display: none; }
+        .excel-btn { background-color: #f39c12; color: white; padding: 10px 20px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; width: 250px;}
+        .excel-btn:hover { background-color: #d68910; }
+        
+        #loading { text-align: center; font-weight: bold; color: #7f8c8d; display: none; margin-bottom: 15px;}
     </style>
 </head>
 <body>
 
-    <div class="dashboard-container">
-        <h1>📊 סטטיסטיקות שימוש - האפליקציה המיסטית</h1>
-        
-        <button class="refresh-btn" onclick="fetchStats()">רענן נתונים</button>
-        <div id="loading">מושך נתונים מהשרת...</div>
+    <!-- מסך התחברות -->
+    <div class="login-container" id="loginWrapper">
+        <h2>🔒 כניסת מנהל מערכת</h2>
+        <div class="error-msg" id="loginError">שם משתמש או סיסמה שגויים.</div>
+        <input type="text" id="usernameInput" placeholder="שם משתמש" autocomplete="off">
+        <input type="password" id="passwordInput" placeholder="סיסמה">
+        <button class="login-btn" onclick="attemptLogin()">היכנס</button>
+    </div>
 
-        <table>
-            <thead>
-                <tr>
-                    <th>סוג הפעולה</th>
-                    <th>כמות לחיצות כוללת</th>
-                    <th>תאריך לחיצה אחרונה</th>
-                </tr>
-            </thead>
-            <tbody id="statsBody">
-                <!-- הנתונים יוזרקו לכאן על ידי JavaScript -->
-            </tbody>
-        </table>
+    <!-- לוח הבקרה (יוסתר עד להתחברות מוצלחת) -->
+    <div id="dashboardWrapper">
+        <div class="dashboard-container">
+            <h1>📊 סטטיסטיקות שימוש - האפליקציה המיסטית</h1>
+            
+            <div class="buttons-row">
+                <button class="refresh-btn" onclick="fetchStats()">🔄 רענן נתונים</button>
+                <button class="excel-btn" onclick="exportFullLogToExcel()">📥 ייצוא דוח מלא לאקסל (CSV)</button>
+            </div>
+            
+            <div id="loading">מושך נתונים מהשרת...</div>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th>סוג הפעולה</th>
+                        <th>כמות לחיצות כוללת</th>
+                        <th>תאריך לחיצה אחרונה</th>
+                    </tr>
+                </thead>
+                <tbody id="statsBody">
+                    <!-- הנתונים יוזרקו לכאן -->
+                </tbody>
+            </table>
+        </div>
     </div>
 
     <script>
-        // חיבור למסד הנתונים
+        /* ==========================================
+           1. הגדרות מערכת ופרטי התחברות
+           ========================================== */
+        // הגדרות חיבור ל-Supabase
         const SUPABASE_URL = 'https://amzchhmwzxzyjqhobqia.supabase.co';       
         const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtemNoaG13enh6eWpxaG9icWlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2MjgzMDQsImV4cCI6MjEwMDIwNDMwNH0.xPQcYs9Fia6RYQye6IxihB8qviCdlWW3Yyg6ZJsnTw4'; 
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        // תרגום שמות הפעולות לעברית
+        // פרטי ההתחברות למסך הניהול (ניתן לשנות כאן)
+        const ADMIN_USER = 'admin';
+        const ADMIN_PASS = '1234';
+
+        // תרגום פעולות
         const actionTranslations = {
             'basic_report': 'הפקת דוח בסיסי',
             'deep_report': 'הפקת דוח עמוק',
@@ -54,24 +94,42 @@
             'pdf_download': 'הורדת קובץ PDF'
         };
 
+        /* ==========================================
+           2. מנגנון התחברות (Login Gate)
+           ========================================== */
+        function attemptLogin() {
+            const userVal = document.getElementById('usernameInput').value;
+            const passVal = document.getElementById('passwordInput').value;
+
+            if (userVal === ADMIN_USER && passVal === ADMIN_PASS) {
+                // התחברות מוצלחת - העלמת טופס הכניסה והצגת לוח הבקרה
+                document.getElementById('loginWrapper').style.display = 'none';
+                document.getElementById('dashboardWrapper').style.display = 'block';
+                
+                // טעינת הנתונים בפעם הראשונה מיד לאחר ההתחברות
+                fetchStats();
+            } else {
+                // שגיאה
+                document.getElementById('loginError').style.display = 'block';
+            }
+        }
+
+        /* ==========================================
+           3. פונקציית משיכת סטטיסטיקות
+           ========================================== */
         async function fetchStats() {
             document.getElementById('loading').style.display = 'block';
             document.getElementById('statsBody').innerHTML = '';
 
             try {
-                // הפעלת פונקציית השרת המאובטחת שיצרנו ב-SQL
                 const { data, error } = await supabaseClient.rpc('get_log_stats');
-
                 if (error) throw error;
 
                 let tableHtml = '';
                 if (data && data.length > 0) {
                     data.forEach(row => {
-                        // המרת התאריך לפורמט קריא בעברית
                         const dateObj = new Date(row.last_action);
                         const formattedDate = dateObj.toLocaleString('he-IL');
-                        
-                        // תרגום שם הפעולה (או הצגת המקור אם לא נמצא תרגום)
                         const actionName = actionTranslations[row.action] || row.action;
 
                         tableHtml += `
@@ -83,21 +141,104 @@
                         `;
                     });
                 } else {
-                    tableHtml = '<tr><td colspan="3" style="text-align: center;">עדיין אין נתונים בלוג הניסויים.</td></tr>';
+                    tableHtml = '<tr><td colspan="3" style="text-align: center;">עדיין אין נתונים בלוג.</td></tr>';
                 }
-
                 document.getElementById('statsBody').innerHTML = tableHtml;
-
             } catch (err) {
                 console.error("שגיאה במשיכת הנתונים:", err);
-                alert("הייתה שגיאה במשיכת הנתונים. אנא בדוק את הקונסולה.");
+                alert("שגיאה במשיכת הנתונים.");
             } finally {
                 document.getElementById('loading').style.display = 'none';
             }
         }
 
-        // טעינת הנתונים אוטומטית כשהדף נפתח
-        window.onload = fetchStats;
+/* ==========================================
+           4. פונקציית ייצוא דינמית לאקסל (CSV)
+           ========================================== */
+        async function exportFullLogToExcel() {
+            const loadingEl = document.getElementById('loading');
+            loadingEl.innerText = 'מכין קובץ דינמי לייצוא, אנא המתן...';
+            loadingEl.style.display = 'block';
+
+            try {
+                // משיכת כל הנתונים המלאים ממסד הנתונים
+                const { data, error } = await supabaseClient.rpc('get_full_log');
+
+                if (error) throw error;
+
+                if (data && data.length > 0) {
+                    let csvContent = "\uFEFF"; // קידוד לשמירה על תקינות העברית
+                    
+                    // מילון תרגום לעמודות המוכרות לנו במסד הנתונים
+                    const headerTranslations = {
+                        'created_at': 'תאריך ושעה',
+                        'action_type': 'סוג פעולה',
+                        'first_name': 'שם פרטי',
+                        'middle_name': 'שם פרטי נוסף',
+                        'last_name': 'שם משפחה',
+                        'extra_last_name': 'שם משפחה נוסף',
+                        'phone': 'טלפון',
+                        'id_number': 'תעודת זהות',
+                        'city': 'עיר',
+                        'birth_date': 'תאריך לידה',
+                        'birth_time': 'שעת לידה',
+                        'ip_address': 'כתובת IP',
+                        'device_info': 'פרטי מכשיר (דפדפן)'
+                    };
+
+                    // 1. קריאה אוטומטית של כל שמות העמודות מהשורה הראשונה שחזרה
+                    const dbColumns = Object.keys(data[0]);
+
+                    // 2. תרגום הכותרות לעברית (אם העמודה לא קיימת במילון, היא תישאר באנגלית)
+                    const translatedHeaders = dbColumns.map(col => headerTranslations[col] || col);
+                    csvContent += translatedHeaders.join(",") + "\n";
+
+                    // 3. מעבר דינמי על כל השורות וכל העמודות
+                    data.forEach(row => {
+                        const rowData = dbColumns.map(col => {
+                            let val = row[col];
+                            
+                            // עיצוב מיוחד לשדות ספציפיים
+                            if (col === 'created_at' && val) {
+                                val = new Date(val).toLocaleString('he-IL'); // תאריך קריא
+                            } else if (col === 'action_type' && val) {
+                                val = actionTranslations[val] || val; // תרגום פעולות כמו "הפקת דוח בסיסי"
+                            }
+
+                            // טיפול בשדות ריקים
+                            if (val === null || val === undefined) {
+                                val = "";
+                            }
+
+                            // עטיפת הנתון במרכאות כדי שפסיקים בטקסט לא ישברו את האקסל
+                            return `"${String(val).replace(/"/g, '""')}"`;
+                        });
+
+                        // צירוף כל השדות לשורה אחת והורדת שורה
+                        csvContent += rowData.join(",") + "\n";
+                    });
+
+                    // יצירת הקובץ והורדה
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement("a");
+                    const url = URL.createObjectURL(blob);
+                    link.setAttribute("href", url);
+                    link.setAttribute("download", "דוח_מיסטי_מלא_דינמי.csv");
+                    link.style.visibility = 'hidden';
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } else {
+                    alert("אין נתונים לייצוא.");
+                }
+            } catch (err) {
+                console.error("שגיאה בייצוא:", err);
+                alert("שגיאה בהכנת הקובץ. אנא בדוק את הקונסולה.");
+            } finally {
+                loadingEl.style.display = 'none';
+                loadingEl.innerText = 'מושך נתונים מהשרת...';
+            }
+        }
     </script>
 </body>
 </html>
