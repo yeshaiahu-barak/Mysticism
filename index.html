@@ -31,7 +31,7 @@
         h1, h2, h3 { text-align: center; color: var(--text-color); }
         
         .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
-        .form-group { flex: 1; margin-bottom: 0; min-width: 0; } 
+        .form-group { flex: 1; margin-bottom: 0; min-width: 0; position: relative; } 
         
         @media (max-width: 600px) {
             .form-row { flex-direction: column; gap: 15px; }
@@ -64,6 +64,33 @@
             border-color: var(--primary-color); 
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.04), 0 0 8px rgba(52, 152, 219, 0.3); 
             outline: none; 
+        }
+
+        .suggestions-box {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            left: 0;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-top: none;
+            border-radius: 0 0 6px 6px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            z-index: 1000;
+            max-height: 150px;
+            overflow-y: auto;
+            display: none;
+        }
+        .suggestion-item {
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            text-align: right;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .suggestion-item:hover {
+            background-color: #ebf5fb;
+            color: var(--primary-dark);
         }
         
         .action-buttons-top { display: flex; gap: 15px; margin-top: 25px; }
@@ -127,8 +154,8 @@
             <div class="form-group"><label>שעת לידה (24 שעות):</label><input type="time" id="birthTime" value="12:00"></div>
             <div class="form-group">
                 <label>עיר לידה (עברית/אנגלית):</label>
-                <input type="text" id="city" value="ירושלים" list="citiesOptions" autocomplete="off" oninput="fetchCitySuggestions(this.value)">
-                <datalist id="citiesOptions"></datalist>
+                <input type="text" id="city" value="ירושלים" autocomplete="off" oninput="fetchCitySuggestions(this.value)">
+                <div id="citySuggestionsBox" class="suggestions-box"></div>
             </div>
         </div>
 
@@ -204,24 +231,44 @@
 
         let cityTimeout = null;
         async function fetchCitySuggestions(query) {
-            if (!query || query.length < 2) return;
+            const box = document.getElementById('citySuggestionsBox');
+            if (!query || query.length < 2) {
+                box.style.display = 'none';
+                return;
+            }
             clearTimeout(cityTimeout);
             cityTimeout = setTimeout(async () => {
                 try {
                     let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
                     let data = await res.json();
-                    let datalist = document.getElementById('citiesOptions');
-                    datalist.innerHTML = '';
-                    data.forEach(item => {
-                        let option = document.createElement('option');
-                        option.value = item.display_name.split(',')[0];
-                        datalist.appendChild(option);
-                    });
+                    box.innerHTML = '';
+                    if (data && data.length > 0) {
+                        data.forEach(item => {
+                            let cityName = item.display_name.split(',')[0];
+                            let div = document.createElement('div');
+                            div.className = 'suggestion-item';
+                            div.innerText = cityName;
+                            div.onclick = () => {
+                                document.getElementById('city').value = cityName;
+                                box.style.display = 'none';
+                            };
+                            box.appendChild(div);
+                        });
+                        box.style.display = 'block';
+                    } else {
+                        box.style.display = 'none';
+                    }
                 } catch (err) {
-                    console.warn("שגיאה בטעינת הצעות ערים:", err);
+                    box.style.display = 'none';
                 }
             }, 300);
         }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#city') && !e.target.closest('#citySuggestionsBox')) {
+                document.getElementById('citySuggestionsBox').style.display = 'none';
+            }
+        });
 
         async function loadDynamicTexts() {
             if (!navigator.onLine) return; 
@@ -356,6 +403,7 @@
         }
 
         async function handleUserAction(actionType) {
+            // רישום אוטומטי ללוג בכל הקשת כפתור, עוד לפני שום בדיקת תקינות או עצירה
             await writeToExperimentLog(actionType);
 
             if (actionType === 'deep_report') {
@@ -443,26 +491,23 @@
                 let hebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${birthDt.getFullYear()}&gm=${birthDt.getMonth()+1}&gd=${birthDt.getDate()}&g2h=1`);
                 let hebData = await hebRes.json();
 
-                // חישוב מדויק של תאריך יום הולדת עברי עתידי קרוב
+                // חישוב מדויק של יום הולדת עברי עתידי קרוב (עם קפיצה אוטומטית לשנה הבאה אם התאריך כבר עבר השנה)
                 let today = new Date();
                 let todayHebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${today.getFullYear()}&gm=${today.getMonth()+1}&gd=${today.getDate()}&g2h=1`);
                 let todayHebData = await todayHebRes.json();
 
-                let targetHebYear = todayHebData.hy;
-                
-                // בדיקת תאריך יום ההולדת בשנה העברית הנוכחית לדיוק מלא מול התאריך הלועזי של היום
-                let candidateBdayRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHebYear}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
-                let candidateBdayData = await candidateBdayRes.json();
-                let candidateDate = new Date(candidateBdayData.gy, candidateBdayData.gm - 1, candidateBdayData.gd);
+                let targetHy = todayHebData.hy;
+                let bdayCheckRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
+                let bdayCheckData = await bdayCheckRes.json();
+                let bdayGregorian = new Date(bdayCheckData.gy, bdayCheckData.gm - 1, bdayCheckData.gd);
 
-                // אם התאריך העברי השנה כבר עבר, קפוץ לשנה העברית הבאה כדי לוודא שמוצג תאריך עתידי בלבד
-                if (candidateDate < today) {
-                    targetHebYear++;
-                    let nextBdayRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHebYear}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
-                    candidateBdayData = await nextBdayRes.json();
+                if (bdayGregorian < today) {
+                    targetHy++;
+                    let nextBdayRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
+                    bdayCheckData = await nextBdayRes.json();
                 }
 
-                let nextBdayFormatted = `${candidateBdayData.gd}/${candidateBdayData.gm}/${candidateBdayData.gy}`;
+                let nextBdayFormatted = `${bdayCheckData.gd}/${bdayCheckData.gm}/${bdayCheckData.gy}`;
 
                 let dateObj = new Date(dateVal);
                 let zIndex = getZodiacIndex(dateObj.getDate(), dateObj.getMonth() + 1);
@@ -472,8 +517,8 @@
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date">
                         <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebData.hebrew}</strong></p>
-                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong>${candidateBdayData.hebrew} (${nextBdayFormatted})</strong></p>
-                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">${isAfterSunset ? "(הלידה התרחשה לאחר השקיעה)" : "(הלידה התרחשה לפני השקיעה)"}</p>
+                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong>${bdayCheckData.hebrew} (${nextBdayFormatted})</strong></p>
+                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">(הלידה התרחשה בשעה ${timeVal} ${isAfterSunset ? 'לאחר השקיעה' : 'לפני השקיעה'} בעיר ${city})</p>
                     </div>
                     <div class="result-item result-zodiac">
                         <h4>מזל שמש: ${sunSign.name}</h4>
