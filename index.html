@@ -79,16 +79,16 @@
         </div>
 
         <div class="form-row">
-            <!-- שונה לחובה לפי דרישתך -->
-            <div class="form-group"><label>מספר טלפון נייד (חובה):</label><input type="tel" id="phone" placeholder="למשל: 0501234567"></div>
-            <div class="form-group"><label>מספר תעודת זהות (לא חובה):</label><input type="text" id="idNumber" placeholder="הכנס תעודת זהות"></div>
+            <!-- הוסרו מאפייני ה-placeholder מהשדות הבאים -->
+            <div class="form-group"><label>מספר טלפון נייד (חובה):</label><input type="tel" id="phone"></div>
+            <div class="form-group"><label>מספר תעודת זהות (לא חובה):</label><input type="text" id="idNumber"></div>
         </div>
 
         <div class="form-row">
             <div class="form-group"><label>תאריך לידה (חובה):</label><input type="date" id="birthDate"></div>
-            <div class="form-group"><label>שעת לידה (ברירת מחדל 12:00):</label><input type="time" id="birthTime" value="12:00"></div>
-            <!-- נוסף הערך 'ירושלים' כברירת מחדל בעזרת המאפיין value -->
-            <div class="form-group"><label>עיר לידה (עברית/אנגלית):</label><input type="text" id="city" value="ירושלים" placeholder="למשל: חיפה, London"></div>
+            <!-- הניסוח הוחלף להסבר נעים על פורמט 24 שעות -->
+            <div class="form-group"><label>שעת לידה (בפורמט 24 שעות, למשל 14:30):</label><input type="time" id="birthTime" value="12:00"></div>
+            <div class="form-group"><label>עיר לידה (עברית/אנגלית):</label><input type="text" id="city" value="ירושלים"></div>
         </div>
 
         <div class="action-buttons-top">
@@ -236,7 +236,6 @@
             const timeVal = document.getElementById('birthTime').value;
             const city = document.getElementById('city').value.trim();
 
-            // תיקון קריטי: נוספה דרישה מפורשת לבדוק ששדה הטלפון (phone) אינו ריק!
             if (!fName || !lName || !phone || !dateVal || !city) {
                 alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון, תאריך לידה ועיר לידה.");
                 return;
