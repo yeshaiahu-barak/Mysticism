@@ -155,21 +155,19 @@
         /* ==========================================
            4. פונקציית ייצוא לאקסל
            ========================================== */
-        async function exportFullLogToExcel() {
+async function exportFullLogToExcel() {
             const loadingEl = document.getElementById('loading');
             loadingEl.innerText = 'מכין קובץ לייצוא, אנא המתן...';
             loadingEl.style.display = 'block';
 
             try {
-                const { data, error } = await supabaseClient
-                    .from('reports_log')
-                    .select('*')
-                    .order('created_at', { ascending: false });
+                // הפנייה תוקנה: כעת אנו קוראים לפונקציית השרת המאובטחת שיצרנו ב-SQL
+                const { data, error } = await supabaseClient.rpc('get_full_log');
 
                 if (error) throw error;
 
                 if (data && data.length > 0) {
-                    let csvContent = "\uFEFF"; // הגדרת BOM לעברית תקינה
+                    let csvContent = "\uFEFF"; 
                     const headers = ["תאריך ושעה", "סוג פעולה", "שם פרטי", "שם משפחה", "טלפון", "תעודת זהות", "עיר", "תאריך לידה"];
                     csvContent += headers.join(",") + "\n";
 
