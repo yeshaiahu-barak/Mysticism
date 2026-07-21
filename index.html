@@ -31,25 +31,24 @@
             word-wrap: break-word;
         }
 
-        /* --- עיצוב חדש וסקסי לרובריקות (תיבות הקלט) --- */
+        /* --- רובריקות אחידות, סימטריות ובעלות מראה תלת-ממדי נקי --- */
         input { 
             width: 100%; 
-            height: 48px; /* גובה אחיד לכל הרובריקות */
+            height: 48px; 
             padding: 10px 14px; 
             box-sizing: border-box; 
-            /* מסגרת עדינה עם אפקט עומק פנימי ותלת-ממד */
             border: 1px solid #ccd1d9; 
             border-radius: 8px; 
             font-size: 16px; 
             background: #ffffff;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06); /* צללית פנימית לתלת ממד */
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06); 
             transition: all 0.3s ease; 
+            text-align: right; /* יישור אחיד לימין עבור טקסט ומספרים כאחד */
         }
         
-        /* אפקט מרהיב כשמקלידים או לוחצים על התיבה */
         input:focus { 
             border-color: #3498db; 
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06), 0 0 8px rgba(52, 152, 219, 0.4); /* זוהר חיצוני מיוחד */
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.06), 0 0 8px rgba(52, 152, 219, 0.4); 
             outline: none; 
             background-color: #fdfefe;
         }
@@ -260,8 +259,9 @@
             const timeVal = document.getElementById('birthTime').value;
             const city = document.getElementById('city').value.trim();
 
-            if (!fName || !lName || !phone || !dateVal || !city) {
-                alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון, תאריך לידה ועיר לידה.");
+            // עדכון הודעת האימות: הסרת האזכור של עיר הלידה שכן יש לה ברירת מחדל
+            if (!fName || !lName || !phone || !dateVal) {
+                alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון ותאריך לידה.");
                 return;
             }
 
