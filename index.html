@@ -68,14 +68,21 @@
         
         .result-section { margin-bottom: 15px; }
         
-        .result-item { background: #f8f9fa; padding: 15px; margin-bottom: 12px; border-radius: 6px; border-right: 5px solid #3498db; }
-        .result-item.highlight { background: #e8f4fd; }
+        /* --- היררכיית צבעים חדשה לתוצאות --- */
+        
+        /* ברירת מחדל (שמות ונומרולוגיה) - כחול ממש בהיר */
+        .result-item { background: #f7fbfe; padding: 15px; margin-bottom: 12px; border-radius: 6px; border-right: 5px solid #85c1e9; }
+        
+        /* מזלות ואופק - כחול ביניים */
+        .result-zodiac { background: #ebf5fb; border-right-color: #2980b9; }
+        
+        /* תאריכים מחושבים - כחול כהה בולט */
+        .result-date { background: #d4e6f1; border-right-color: #1b4f72; }
         
         .result-item h4 { margin: 0 0 8px 0; color: #2c3e50; font-size: 1.1em; }
         .result-item p { margin: 0 0 5px 0; color: #555; }
         
-        /* מחלקה טקסטואלית בהירה לפיענוחים כלליים */
-        .light-text { color: #7f8c8d !important; }
+        .light-text { color: #5d6d7e !important; }
 
         .actions { display: flex; gap: 15px; margin-top: 25px; }
         .whatsapp-btn { background-color: #25D366; color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
@@ -98,24 +105,25 @@
     <div class="container">
         <h1>הדוח המיסטי שלי</h1>
         
+        <!-- נוספו מאפייני autocomplete כדי שהדפדפן יזכור ויציע נתונים שהוזנו בעבר -->
         <div class="form-row">
-            <div class="form-group"><label>שם פרטי (חובה):</label><input type="text" id="firstName"></div>
-            <div class="form-group"><label>שם פרטי נוסף (לא חובה):</label><input type="text" id="middleName"></div>
+            <div class="form-group"><label>שם פרטי (חובה):</label><input type="text" id="firstName" autocomplete="given-name"></div>
+            <div class="form-group"><label>שם פרטי נוסף (לא חובה):</label><input type="text" id="middleName" autocomplete="additional-name"></div>
         </div>
         <div class="form-row">
-            <div class="form-group"><label>שם משפחה (חובה):</label><input type="text" id="lastName"></div>
-            <div class="form-group"><label>שם משפחה נוסף (לא חובה):</label><input type="text" id="extraLastName"></div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group"><label>מספר טלפון נייד (חובה):</label><input type="tel" id="phone"></div>
-            <div class="form-group"><label>מספר תעודת זהות (לא חובה):</label><input type="text" id="idNumber"></div>
+            <div class="form-group"><label>שם משפחה (חובה):</label><input type="text" id="lastName" autocomplete="family-name"></div>
+            <div class="form-group"><label>שם משפחה נוסף (לא חובה):</label><input type="text" id="extraLastName" autocomplete="off"></div>
         </div>
 
         <div class="form-row">
-            <div class="form-group"><label>תאריך לידה (חובה):</label><input type="date" id="birthDate"></div>
+            <div class="form-group"><label>מספר טלפון נייד (חובה):</label><input type="tel" id="phone" autocomplete="tel"></div>
+            <div class="form-group"><label>מספר תעודת זהות (לא חובה):</label><input type="text" id="idNumber" autocomplete="off"></div>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group"><label>תאריך לידה (חובה):</label><input type="date" id="birthDate" autocomplete="bday"></div>
             <div class="form-group"><label>שעת לידה (24 שעות):</label><input type="time" id="birthTime" value="12:00"></div>
-            <div class="form-group"><label>עיר לידה (עברית/אנגלית):</label><input type="text" id="city" value="ירושלים"></div>
+            <div class="form-group"><label>עיר לידה (עברית/אנגלית):</label><input type="text" id="city" value="ירושלים" autocomplete="address-level2"></div>
         </div>
 
         <div class="action-buttons-top">
@@ -314,20 +322,20 @@
                 let sunSign = zodiacSigns[zIndex];
                 let ascendantSign = calculateAscendant(zIndex, timeVal);
 
-                /* תאריכים מחושבים בלבד מקבלים צבע כחול כהה (#1b4f72), כל היתר עם כיתוב בהיר/משני */
+                /* תאריכים מחושבים מקבלים result-date (כחול כהה), ומזלות מקבלים result-zodiac (כחול ביניים) */
                 let astroHtml = `
-                    <div class="result-item" style="background-color: #e8f4fd;">
-                        <p style="font-size: 1.2em; color: #2c3e50;">תאריך הלידה העברי המדויק שלך הוא: <strong style="font-size: 1.3em; color: #1b4f72;">${hebrewDateStr}</strong></p>
-                        <p style="font-size: 0.85em; color: #7f8c8d; margin-top: -5px;">${isAfterSunset ? "(הלידה הייתה לאחר השקיעה, ולכן התאריך העברי הוא של היום שלמחרת הלועזי)" : "(הלידה התרחשה לפני השקיעה באותו היום)"}</p>
+                    <div class="result-item result-date">
+                        <p style="font-size: 1.2em; color: #1b4f72;">תאריך הלידה העברי המדויק שלך הוא: <strong style="font-size: 1.3em;">${hebrewDateStr}</strong></p>
+                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: -5px;">${isAfterSunset ? "(הלידה הייתה לאחר השקיעה, ולכן התאריך העברי הוא של היום שלמחרת הלועזי)" : "(הלידה התרחשה לפני השקיעה באותו היום)"}</p>
                     </div>
-                    <div class="result-item" style="background-color: #e8f4fd;">
-                        <p style="font-size: 1.2em; color: #2c3e50;">יום ההולדת העברי הבא שלך יחול בתאריך: <strong style="font-size: 1.3em; color: #1b4f72;">${nextBdayFormatted}</strong></p>
+                    <div class="result-item result-date">
+                        <p style="font-size: 1.2em; color: #1b4f72;">יום ההולדת העברי הבא שלך יחול בתאריך: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong></p>
                     </div>
-                    <div class="result-item">
+                    <div class="result-item result-zodiac">
                         <h4>מזל שמש: ${sunSign.name}</h4>
                         <p class="light-text">${sunSign.desc}</p>
                     </div>
-                    <div class="result-item">
+                    <div class="result-item result-zodiac">
                         <h4>מזל אופק: ${ascendantSign}</h4>
                         <p class="light-text">${ascendantTexts[ascendantSign]}</p>
                     </div>
@@ -359,7 +367,7 @@
 
                 let totalGematria = calcGematria(allNamesString);
                 let totalNamesNum = calcNumerology(totalGematria);
-                namesHtml += `<div class="result-item highlight">
+                namesHtml += `<div class="result-item">
                     <h4>כל השמות יחד (${totalGematria})</h4>
                     <p><strong>מספר נומרולוגי:</strong> ${totalNamesNum}</p>
                     <p class="light-text">${numerologyTexts[totalNamesNum]}</p>
