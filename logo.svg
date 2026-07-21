@@ -1,13 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
-    <!-- רקע: ירוק וואטסאפ -->
-    <rect width="512" height="512" rx="115" fill="#008069"/>
-    
-    <!-- מסגרת של בועת צ'אט -->
-    <path d="M 100 120 h 312 a 40 40 0 0 1 40 40 v 212 a 40 40 0 0 1 -40 40 h -200 l -72 72 v -72 a 40 40 0 0 1 -40 -40 v -212 a 40 40 0 0 1 40 -40 z" fill="none" stroke="#ffffff" stroke-width="20" stroke-linejoin="round"/>
-    
-    <!-- טקסט שורה ראשונה -->
-    <text x="256" y="235" font-family="Arial, Helvetica, sans-serif" font-size="100" font-weight="bold" fill="#ffffff" text-anchor="middle">TO</text>
-    
-    <!-- טקסט שורה שנייה -->
-    <text x="256" y="345" font-family="Arial, Helvetica, sans-serif" font-size="110" font-weight="bold" fill="#ffffff" text-anchor="middle">PDF</text>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <defs>
+    <!-- הגדרת צבעי מעבר (גרדיאנט) של זהב -->
+    <linearGradient id="gold" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F9D423" />
+      <stop offset="100%" stop-color="#FF4E50" />
+    </linearGradient>
+    <linearGradient id="goldLight" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFDF00" />
+      <stop offset="100%" stop-color="#DAA520" />
+    </linearGradient>
+  </defs>
+  
+  <!-- מעגל חיצוני -->
+  <circle cx="50" cy="50" r="45" fill="none" stroke="url(#goldLight)" stroke-width="4"/>
+  
+  <!-- גיאומטריה מיסטית (משולשים שלובים) -->
+  <path d="M50 15 L80 67 L20 67 Z" fill="none" stroke="url(#gold)" stroke-width="3"/>
+  <path d="M50 85 L20 33 L80 33 Z" fill="none" stroke="url(#gold)" stroke-width="3"/>
+  
+  <!-- עין/נקודה פנימית -->
+  <circle cx="50" cy="50" r="8" fill="url(#goldLight)"/>
 </svg>
