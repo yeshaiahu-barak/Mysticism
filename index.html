@@ -10,8 +10,9 @@
     <link rel="manifest" href="manifest.json">
     <meta name="theme-color" content="#3498db">
     
-    <!-- ספרית Supabase -->
+    <!-- ספרית Supabase וקובץ ההגדרות המרכזי -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
     
     <style>
         :root {
@@ -150,14 +151,7 @@
 
     <script>
         /* ==========================================================================
-           1. תצורה וחיבור לענן (Supabase Config & Client)
-           ========================================================================== */
-        const SUPABASE_URL = 'https://amzchhmwzxzyjqhobqia.supabase.co';       
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtemNoaG13enh6eWpxaG9icWlhIiwicm9sZSI6ImFub24iLCJpYXQiOjN9.eyJwQ3JvYiAzMi5ta0pjMjNEb3pMM3I2WVp1SXZZSW1mRmVtbU5vYWcxM2VuaDY'; 
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-        /* ==========================================================================
-           2. מילוני נתונים וגיבוי מקומי (Data Dictionaries & Fallbacks)
+           1. מילוני נתונים וגיבוי מקומי
            ========================================================================== */
         const gematriaDict = {
             'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,
@@ -208,7 +202,7 @@
         };
 
         /* ==========================================================================
-           3. שירותי ענן וסנכרון לוגים (Cloud Services & Offline Sync)
+           2. שירותי ענן וסנכרון לוגים
            ========================================================================== */
         async function loadDynamicTexts() {
             if (!navigator.onLine) return; 
@@ -289,7 +283,7 @@
         });
 
         /* ==========================================================================
-           4. אלגוריתמים וחישובים (Mathematical & Astrological Engine)
+           3. אלגוריתמים וחישובים מיסטיים
            ========================================================================== */
         function calcGematria(word) {
             let sum = 0;
@@ -343,7 +337,7 @@
         }
 
         /* ==========================================================================
-           5. בקרת ממשק ואימות נתונים (UI Handlers & Validation)
+           4. בקרת ממשק ואימות נתונים
            ========================================================================== */
         async function handleUserAction(actionType) {
             const fName = document.getElementById('firstName').value.trim();
@@ -354,7 +348,7 @@
             const idNumber = document.getElementById('idNumber').value.trim();
             const dateVal = document.getElementById('birthDate').value;
 
-            // דרישה: רישום ללוג תמיד קודם כל, עוד לפני כל בדיקה
+            // רישום ללוג תמיד קודם כל, עוד לפני כל בדיקה
             if (actionType === 'basic_report' || actionType === 'deep_report') {
                 await writeToExperimentLog(actionType);
             }
@@ -366,7 +360,6 @@
                     return;
                 }
 
-                // בדיקת עברית בלבד לשמות
                 const hebrewRegex = /^[\u0590-\u05FF\s'-]+$/;
                 if ((fName && !hebrewRegex.test(fName)) || 
                     (mName && !hebrewRegex.test(mName)) || 
@@ -376,7 +369,6 @@
                     return;
                 }
 
-                // בדיקת ספרות בלבד לטלפון ותעודת זהות
                 const digitsRegex = /^\d+$/;
                 if (!digitsRegex.test(phone)) {
                     alert("מספר טלפון חייב להכיל ספרות בלבד.");
@@ -388,7 +380,6 @@
                 }
             }
 
-            // ניתוב פעולות
             if (actionType === 'basic_report') {
                 runBasicReportCalculation();
             } else if (actionType === 'deep_report') {
@@ -410,14 +401,12 @@
             const timeVal = document.getElementById('birthTime').value;
             const city = document.getElementById('city').value.trim();
             const phone = document.getElementById('phone').value.trim();
-            const idNumber = document.getElementById('idNumber').value.trim();
 
             document.getElementById('calcBtn').disabled = true;
             document.getElementById('loadingMsg').style.display = 'block';
             document.getElementById('results').style.display = 'none';
 
             try {
-                // קריאות API גיאוגרפיות ותאריכים עבריים
                 let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}`);
                 let geoData = await geoRes.json();
                 if (geoData.length === 0) throw new Error("העיר לא נמצאה, אנא נסה עיר מרכזית קרובה.");
@@ -437,7 +426,6 @@
                 let sunSign = zodiacSigns[zIndex];
                 let ascendant = calculateAscendant(zIndex, timeVal);
 
-                // בניית פלט האסטרונומיה
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date">
                         <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebData.hebrew}</strong></p>
@@ -453,7 +441,6 @@
                     </div>
                 `;
 
-                // בניית פלט השמות והנומרולוגיה
                 let namesHtml = "";
                 const namesList = [
                     { label: "שם פרטי", val: fName },
