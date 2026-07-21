@@ -152,44 +152,78 @@
             }
         }
 
-        /* ==========================================
-           4. פונקציית ייצוא לאקסל
+/* ==========================================
+           4. פונקציית ייצוא דינמית לאקסל (CSV)
            ========================================== */
-async function exportFullLogToExcel() {
+        async function exportFullLogToExcel() {
             const loadingEl = document.getElementById('loading');
-            loadingEl.innerText = 'מכין קובץ לייצוא, אנא המתן...';
+            loadingEl.innerText = 'מכין קובץ דינמי לייצוא, אנא המתן...';
             loadingEl.style.display = 'block';
 
             try {
-                // הפנייה תוקנה: כעת אנו קוראים לפונקציית השרת המאובטחת שיצרנו ב-SQL
+                // משיכת כל הנתונים המלאים ממסד הנתונים
                 const { data, error } = await supabaseClient.rpc('get_full_log');
 
                 if (error) throw error;
 
                 if (data && data.length > 0) {
-                    let csvContent = "\uFEFF"; 
-                    const headers = ["תאריך ושעה", "סוג פעולה", "שם פרטי", "שם משפחה", "טלפון", "תעודת זהות", "עיר", "תאריך לידה"];
-                    csvContent += headers.join(",") + "\n";
+                    let csvContent = "\uFEFF"; // קידוד לשמירה על תקינות העברית
+                    
+                    // מילון תרגום לעמודות המוכרות לנו במסד הנתונים
+                    const headerTranslations = {
+                        'created_at': 'תאריך ושעה',
+                        'action_type': 'סוג פעולה',
+                        'first_name': 'שם פרטי',
+                        'middle_name': 'שם פרטי נוסף',
+                        'last_name': 'שם משפחה',
+                        'extra_last_name': 'שם משפחה נוסף',
+                        'phone': 'טלפון',
+                        'id_number': 'תעודת זהות',
+                        'city': 'עיר',
+                        'birth_date': 'תאריך לידה',
+                        'birth_time': 'שעת לידה',
+                        'ip_address': 'כתובת IP',
+                        'device_info': 'פרטי מכשיר (דפדפן)'
+                    };
 
+                    // 1. קריאה אוטומטית של כל שמות העמודות מהשורה הראשונה שחזרה
+                    const dbColumns = Object.keys(data[0]);
+
+                    // 2. תרגום הכותרות לעברית (אם העמודה לא קיימת במילון, היא תישאר באנגלית)
+                    const translatedHeaders = dbColumns.map(col => headerTranslations[col] || col);
+                    csvContent += translatedHeaders.join(",") + "\n";
+
+                    // 3. מעבר דינמי על כל השורות וכל העמודות
                     data.forEach(row => {
-                        const dateObj = new Date(row.created_at);
-                        const formattedDate = dateObj.toLocaleString('he-IL');
-                        const actionName = actionTranslations[row.action_type] || row.action_type;
+                        const rowData = dbColumns.map(col => {
+                            let val = row[col];
+                            
+                            // עיצוב מיוחד לשדות ספציפיים
+                            if (col === 'created_at' && val) {
+                                val = new Date(val).toLocaleString('he-IL'); // תאריך קריא
+                            } else if (col === 'action_type' && val) {
+                                val = actionTranslations[val] || val; // תרגום פעולות כמו "הפקת דוח בסיסי"
+                            }
 
-                        const rowData = [
-                            formattedDate, actionName, row.first_name || "", row.last_name || "",
-                            row.phone || "", row.id_number || "", row.city || "", row.birth_date || ""
-                        ];
+                            // טיפול בשדות ריקים
+                            if (val === null || val === undefined) {
+                                val = "";
+                            }
 
-                        const safeRowData = rowData.map(val => `"${String(val).replace(/"/g, '""')}"`);
-                        csvContent += safeRowData.join(",") + "\n";
+                            // עטיפת הנתון במרכאות כדי שפסיקים בטקסט לא ישברו את האקסל
+                            return `"${String(val).replace(/"/g, '""')}"`;
+                        });
+
+                        // צירוף כל השדות לשורה אחת והורדת שורה
+                        csvContent += rowData.join(",") + "\n";
                     });
 
+                    // יצירת הקובץ והורדה
                     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                     const link = document.createElement("a");
                     const url = URL.createObjectURL(blob);
                     link.setAttribute("href", url);
-                    link.setAttribute("download", "דוח_מיסטי_מלא.csv");
+                    link.setAttribute("download", "דוח_מיסטי_מלא_דינמי.csv");
                     link.style.visibility = 'hidden';
                     document.body.appendChild(link);
                     link.click();
@@ -199,7 +233,7 @@ async function exportFullLogToExcel() {
                 }
             } catch (err) {
                 console.error("שגיאה בייצוא:", err);
-                alert("שגיאה בהכנת הקובץ.");
+                alert("שגיאה בהכנת הקובץ. אנא בדוק את הקונסולה.");
             } finally {
                 loadingEl.style.display = 'none';
                 loadingEl.innerText = 'מושך נתונים מהשרת...';
