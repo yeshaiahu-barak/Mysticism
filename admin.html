@@ -4,7 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ניהול מאובטח - האפליקציה המיסטית</title>
+    
+    <!-- ספרית Supabase וקובץ ההגדרות המרכזי -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+    
     <style>
         :root {
             --primary-color: #2980b9;
@@ -81,12 +85,8 @@
 
     <script>
         /* ==========================================================================
-           1. תצורה ופרטי אימות
+           1. הגדרות ופרטי אימות מנהל
            ========================================================================== */
-        const SUPABASE_URL = 'https://amzchhmwzxzyjqhobqia.supabase.co';       
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtemNoaG13enh6eWpxaG9icWlhIiwicm9sZSI6ImFub24iLCJpYXQiOjN9.eyJwQ3JvYiAzMi5ta0pjMjNEb3pMM3I2WVp1SXZZSW1mRmVtbU5vYWcxM2VuaDY'; 
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
         const ADMIN_USER = 'admin';
         const ADMIN_PASS = '1234';
 
@@ -114,11 +114,13 @@
         };
 
         /* ==========================================================================
-           2. ניהול אימות כניסה
+           2. ניהול כניסה למערכת הניהול
            ========================================================================== */
         function attemptLogin() {
-            if (document.getElementById('usernameInput').value === ADMIN_USER && 
-                document.getElementById('passwordInput').value === ADMIN_PASS) {
+            const user = document.getElementById('usernameInput').value;
+            const pass = document.getElementById('passwordInput').value;
+
+            if (user === ADMIN_USER && pass === ADMIN_PASS) {
                 document.getElementById('loginWrapper').style.display = 'none';
                 document.getElementById('dashboardWrapper').style.display = 'block';
                 fetchStats();
@@ -128,11 +130,12 @@
         }
 
         /* ==========================================================================
-           3. שירותי סטטיסטיקות וייצוא נתונים
+           3. שליפת נתונים סטטיסטיים וייצוא קבצים
            ========================================================================== */
         async function fetchStats() {
-            toggleLoading(true);
+            toggleLoading(true, 'טוען סטטיסטיקות מהשרת...');
             try {
+                // קריאה לפונקציית השרת המאובטחת
                 const { data, error } = await supabaseClient.rpc('get_log_stats');
                 if (error) throw error;
 
@@ -149,6 +152,7 @@
                 document.getElementById('statsBody').innerHTML = html;
             } catch (err) {
                 console.error("שגיאה במשיכת סטטיסטיקות:", err);
+                alert("שגיאה במשיכת נתונים מהשרת. בדוק את הקונסולה.");
             } finally {
                 toggleLoading(false);
             }
@@ -186,6 +190,7 @@
                 }
             } catch (err) {
                 console.error("שגיאה בייצוא:", err);
+                alert("שגיאה בהכנת קובץ הייצוא.");
             } finally {
                 toggleLoading(false);
             }
