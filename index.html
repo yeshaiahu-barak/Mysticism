@@ -356,7 +356,6 @@
         }
 
         async function handleUserAction(actionType) {
-            // רישום ללוג בכל הקשת כפתור עם תאריך, שעה, IP, דפדפן ונתוני המסך
             await writeToExperimentLog(actionType);
 
             if (actionType === 'deep_report') {
@@ -440,23 +439,30 @@
                 let birthDt = new Date(`${dateVal}T${timeVal}:00`);
                 if (isAfterSunset) birthDt.setDate(birthDt.getDate() + 1);
 
+                // המרת תאריך לידה עברי
                 let hebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${birthDt.getFullYear()}&gm=${birthDt.getMonth()+1}&gd=${birthDt.getDate()}&g2h=1`);
                 let hebData = await hebRes.json();
 
-                // חישוב תאריך יום ההולדת העברי הבא (העתידי)
+                // חישוב מדויק של תאריך יום הולדת עברי עתידי קרוב
                 let today = new Date();
                 let todayHebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${today.getFullYear()}&gm=${today.getMonth()+1}&gd=${today.getDate()}&g2h=1`);
                 let todayHebData = await todayHebRes.json();
-                
+
                 let targetHebYear = todayHebData.hy;
-                let isBirthdayPassed = (hebData.hm < todayHebData.hm) || (hebData.hm === todayHebData.hm && hebData.hd < todayHebData.hd);
-                if (isBirthdayPassed) {
+                
+                // בדיקת תאריך יום ההולדת בשנה העברית הנוכחית לדיוק מלא מול התאריך הלועזי של היום
+                let candidateBdayRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHebYear}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
+                let candidateBdayData = await candidateBdayRes.json();
+                let candidateDate = new Date(candidateBdayData.gy, candidateBdayData.gm - 1, candidateBdayData.gd);
+
+                // אם התאריך העברי השנה כבר עבר, קפוץ לשנה העברית הבאה כדי לוודא שמוצג תאריך עתידי בלבד
+                if (candidateDate < today) {
                     targetHebYear++;
+                    let nextBdayRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHebYear}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
+                    candidateBdayData = await nextBdayRes.json();
                 }
 
-                let nextHebBdayRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHebYear}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
-                let nextHebBdayData = await nextHebBdayRes.json();
-                let nextBdayFormatted = `${nextHebBdayData.gd}/${nextHebBdayData.gm}/${nextHebBdayData.gy}`;
+                let nextBdayFormatted = `${candidateBdayData.gd}/${candidateBdayData.gm}/${candidateBdayData.gy}`;
 
                 let dateObj = new Date(dateVal);
                 let zIndex = getZodiacIndex(dateObj.getDate(), dateObj.getMonth() + 1);
@@ -466,7 +472,7 @@
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date">
                         <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebData.hebrew}</strong></p>
-                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong>${nextHebBdayData.hebrew} (${nextBdayFormatted})</strong></p>
+                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong>${candidateBdayData.hebrew} (${nextBdayFormatted})</strong></p>
                         <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">${isAfterSunset ? "(הלידה התרחשה לאחר השקיעה)" : "(הלידה התרחשה לפני השקיעה)"}</p>
                     </div>
                     <div class="result-item result-zodiac">
