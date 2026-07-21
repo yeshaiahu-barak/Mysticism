@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>לוח בקרה - לוג ניסויים</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #ecf0f1; padding: 40px; color: #2c3e50;}
+        .dashboard-container { max-width: 800px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h1 { text-align: center; color: #2980b9; margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 15px; text-align: right; border-bottom: 1px solid #ddd; }
+        th { background-color: #3498db; color: white; font-size: 1.1em; }
+        tr:hover { background-color: #f5f7fa; }
+        .refresh-btn { display: block; width: 200px; margin: 0 auto 20px auto; background-color: #27ae60; color: white; padding: 10px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; text-align: center;}
+        .refresh-btn:hover { background-color: #2ecc71; }
+        #loading { text-align: center; font-weight: bold; color: #7f8c8d; display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <h1>📊 סטטיסטיקות שימוש - האפליקציה המיסטית</h1>
+        
+        <button class="refresh-btn" onclick="fetchStats()">רענן נתונים</button>
+        <div id="loading">מושך נתונים מהשרת...</div>
+
+        <table>
+            <thead>
+                <tr>
+                    <th>סוג הפעולה</th>
+                    <th>כמות לחיצות כוללת</th>
+                    <th>תאריך לחיצה אחרונה</th>
+                </tr>
+            </thead>
+            <tbody id="statsBody">
+                <!-- הנתונים יוזרקו לכאן על ידי JavaScript -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        // חיבור למסד הנתונים
+        const SUPABASE_URL = 'https://amzchhmwzxzyjqhobqia.supabase.co/rest/v1/';       
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFtemNoaG13enh6eWpxaG9icWlhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ2MjgzMDQsImV4cCI6MjEwMDIwNDMwNH0.xPQcYs9Fia6RYQye6IxihB8qviCdlWW3Yyg6ZJsnTw4'; 
+        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // תרגום שמות הפעולות לעברית
+        const actionTranslations = {
+            'basic_report': 'הפקת דוח בסיסי',
+            'deep_report': 'הפקת דוח עמוק',
+            'whatsapp_share': 'שיתוף לוואטסאפ',
+            'pdf_download': 'הורדת קובץ PDF'
+        };
+
+        async function fetchStats() {
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('statsBody').innerHTML = '';
+
+            try {
+                // הפעלת פונקציית השרת המאובטחת שיצרנו ב-SQL
+                const { data, error } = await supabase.rpc('get_log_stats');
+
+                if (error) throw error;
+
+                let tableHtml = '';
+                if (data && data.length > 0) {
+                    data.forEach(row => {
+                        // המרת התאריך לפורמט קריא בעברית
+                        const dateObj = new Date(row.last_action);
+                        const formattedDate = dateObj.toLocaleString('he-IL');
+                        
+                        // תרגום שם הפעולה (או הצגת המקור אם לא נמצא תרגום)
+                        const actionName = actionTranslations[row.action] || row.action;
+
+                        tableHtml += `
+                            <tr>
+                                <td><strong>${actionName}</strong></td>
+                                <td>${row.total_clicks}</td>
+                                <td>${formattedDate}</td>
+                            </tr>
+                        `;
+                    });
+                } else {
+                    tableHtml = '<tr><td colspan="3" style="text-align: center;">עדיין אין נתונים בלוג הניסויים.</td></tr>';
+                }
+
+                document.getElementById('statsBody').innerHTML = tableHtml;
+
+            } catch (err) {
+                console.error("שגיאה במשיכת הנתונים:", err);
+                alert("הייתה שגיאה במשיכת הנתונים. אנא בדוק את הקונסולה.");
+            } finally {
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // טעינת הנתונים אוטומטית כשהדף נפתח
+        window.onload = fetchStats;
+    </script>
+</body>
+</html>
