@@ -24,7 +24,6 @@
             --card-bg: #ffffff;
             --text-color: #2c3e50;
             --border-color: #ccd1d9;
-            --success-color: #27ae60;
         }
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); padding: 20px; line-height: 1.6; color: var(--text-color); }
@@ -67,8 +66,6 @@
             outline: none; 
         }
         
-        .city-verification { font-size: 0.85em; color: var(--success-color); margin-top: 4px; font-weight: bold; min-height: 20px; }
-
         .action-buttons-top { display: flex; gap: 15px; margin-top: 25px; }
         .main-btn { background-color: var(--primary-color); color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s;}
         .main-btn:hover { background-color: var(--primary-dark); }
@@ -130,10 +127,8 @@
             <div class="form-group"><label>שעת לידה (24 שעות):</label><input type="time" id="birthTime" value="12:00"></div>
             <div class="form-group">
                 <label>עיר לידה (עברית/אנגלית):</label>
-                <input type="text" id="city" value="ירושלים" list="citiesOptions" autocomplete="off" oninput="fetchCitySuggestions(this.value)" onchange="verifyCityOnScreen(this.value)">
+                <input type="text" id="city" value="ירושלים" list="citiesOptions" autocomplete="off" oninput="fetchCitySuggestions(this.value)">
                 <datalist id="citiesOptions"></datalist>
-                <!-- חיווי ויזואלי לעין המשתמש לאימות העיר -->
-                <div id="verifiedCityDisplay" class="city-verification">עיר מאומתת: ירושלים</div>
             </div>
         </div>
 
@@ -228,27 +223,6 @@
             }, 300);
         }
 
-        // פונקציה לעדכון העיר המאומתת על המסך בזמן אמת לווידוא חזותי
-        async function verifyCityOnScreen(cityName) {
-            const displayEl = document.getElementById('verifiedCityDisplay');
-            if (!cityName) {
-                displayEl.innerText = "";
-                return;
-            }
-            try {
-                let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(cityName)}&limit=1`);
-                let data = await res.json();
-                if (data && data.length > 0) {
-                    let fullName = data[0].display_name;
-                    displayEl.innerText = `עיר מאומתת: ${fullName}`;
-                } else {
-                    displayEl.innerText = "עיר לא נמצאה במאגר הגיאוגרפי";
-                }
-            } catch (err) {
-                displayEl.innerText = "שגיאה באימות העיר מול השרת";
-            }
-        }
-
         async function loadDynamicTexts() {
             if (!navigator.onLine) return; 
             try {
@@ -269,15 +243,14 @@
             }
         }
 
-        // פונקציית רישום מעודכנת: מתעעדת ביום, שעה, IP, דפדפן וכל הנתונים שעל המסך בכל הקשת כפתור
         async function writeToExperimentLog(actionType) {
             try {
                 const now = new Date();
                 const logEntry = {
-                    action_date: now.toISOString().split('T')[0], // תאריך היום
-                    action_time: now.toTimeString().split(' ')[0], // שעה מדויקת
+                    action_date: now.toISOString().split('T')[0],
+                    action_time: now.toTimeString().split(' ')[0],
                     ip_address: await fetchUserIP(),
-                    browser_info: navigator.userAgent, // דפדפן
+                    browser_info: navigator.userAgent,
                     first_name: document.getElementById('firstName').value.trim() || null,
                     middle_name: document.getElementById('middleName').value.trim() || null,
                     last_name: document.getElementById('lastName').value.trim() || null,
@@ -329,7 +302,6 @@
         window.addEventListener('DOMContentLoaded', () => {
             loadDynamicTexts();
             if (navigator.onLine) syncOfflineLogs();
-            verifyCityOnScreen(document.getElementById('city').value);
         });
 
         function calcGematria(word) {
@@ -384,7 +356,7 @@
         }
 
         async function handleUserAction(actionType) {
-            // בכל לחיצה על כפתור מתבצעת כתיבה ללוג הכוללת את היום, השעה, ה-IP, הדפדפן וכל נתוני המסך
+            // רישום ללוג בכל הקשת כפתור עם תאריך, שעה, IP, דפדפן ונתוני המסך
             await writeToExperimentLog(actionType);
 
             if (actionType === 'deep_report') {
@@ -471,6 +443,21 @@
                 let hebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${birthDt.getFullYear()}&gm=${birthDt.getMonth()+1}&gd=${birthDt.getDate()}&g2h=1`);
                 let hebData = await hebRes.json();
 
+                // חישוב תאריך יום ההולדת העברי הבא (העתידי)
+                let today = new Date();
+                let todayHebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${today.getFullYear()}&gm=${today.getMonth()+1}&gd=${today.getDate()}&g2h=1`);
+                let todayHebData = await todayHebRes.json();
+                
+                let targetHebYear = todayHebData.hy;
+                let isBirthdayPassed = (hebData.hm < todayHebData.hm) || (hebData.hm === todayHebData.hm && hebData.hd < todayHebData.hd);
+                if (isBirthdayPassed) {
+                    targetHebYear++;
+                }
+
+                let nextHebBdayRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHebYear}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
+                let nextHebBdayData = await nextHebBdayRes.json();
+                let nextBdayFormatted = `${nextHebBdayData.gd}/${nextHebBdayData.gm}/${nextHebBdayData.gy}`;
+
                 let dateObj = new Date(dateVal);
                 let zIndex = getZodiacIndex(dateObj.getDate(), dateObj.getMonth() + 1);
                 let sunSign = zodiacSigns[zIndex];
@@ -479,7 +466,8 @@
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date">
                         <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebData.hebrew}</strong></p>
-                        <p style="font-size: 0.85em; color: #5d6d7e;">${isAfterSunset ? "(הלידה התרחשה לאחר השקיעה)" : "(הלידה התרחשה לפני השקיעה)"}</p>
+                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong>${nextHebBdayData.hebrew} (${nextBdayFormatted})</strong></p>
+                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">${isAfterSunset ? "(הלידה התרחשה לאחר השקיעה)" : "(הלידה התרחשה לפני השקיעה)"}</p>
                     </div>
                     <div class="result-item result-zodiac">
                         <h4>מזל שמש: ${sunSign.name}</h4>
