@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>הדוח המיסטי שלי</title>
     
-    <!-- הגדרות האפליקציה לנייד (PWA) והלוגו -->
     <link rel="icon" href="logo.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="logo.svg">
     <link rel="manifest" href="manifest.json">
@@ -17,13 +16,22 @@
         h1, h2, h3 { text-align: center; color: #2c3e50; }
         
         .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
-        .form-row .form-group { flex: 1; margin-bottom: 0; }
+        .form-row .form-group { flex: 1; margin-bottom: 0; min-width: 0; } /* min-width מונע גלישה של פלקסבוקס */
         
         @media (max-width: 600px) {
             .form-row { flex-direction: column; gap: 15px; }
         }
 
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #34495e; }
+        /* תיקון הגלישה: וידוא שהתוויות מתאימות את עצמן למסך וגולשות נכון */
+        .form-group label { 
+            display: block; 
+            margin-bottom: 5px; 
+            font-weight: bold; 
+            color: #34495e; 
+            font-size: 0.95em;
+            word-wrap: break-word;
+        }
+
         input { width: 100%; padding: 12px; box-sizing: border-box; border: 1px solid #bdc3c7; border-radius: 6px; font-size: 16px; transition: border 0.3s; }
         input:focus { border-color: #3498db; outline: none; }
         
@@ -79,16 +87,15 @@
         </div>
 
         <div class="form-row">
-            <!-- הוסרו מאפייני ה-placeholder מהשדות הבאים -->
             <div class="form-group"><label>מספר טלפון נייד (חובה):</label><input type="tel" id="phone"></div>
             <div class="form-group"><label>מספר תעודת זהות (לא חובה):</label><input type="text" id="idNumber"></div>
         </div>
 
         <div class="form-row">
             <div class="form-group"><label>תאריך לידה (חובה):</label><input type="date" id="birthDate"></div>
-            <!-- הניסוח הוחלף להסבר נעים על פורמט 24 שעות -->
-            <div class="form-group"><label>שעת לידה (בפורמט 24 שעות, למשל 14:30):</label><input type="time" id="birthTime" value="12:00"></div>
-            <div class="form-group"><label>עיר לידה (עברית/אנגלית):</label><input type="text" id="city" value="ירושלים"></div>
+            <!-- טקסט מקוצר ונעים יותר למניעת גלישה -->
+            <div class="form-group"><label>שעת לידה (24 שעות):</label><input type="time" id="birthTime" value="12:00"></div>
+            <div class="form-group"><label>עיר לידה:</label><input type="text" id="city" value="ירושלים"></div>
         </div>
 
         <div class="action-buttons-top">
@@ -119,7 +126,6 @@
     </div>
 
     <script>
-        // --- מילונים ---
         const gematriaDict = {
             'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,
             'כ':20,'ך':20,'ל':30,'מ':40,'ם':40,'נ':50,'ן':50,'ס':60,'ע':70,
