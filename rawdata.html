@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מסך ניהול - דוחות מיסטיקה</title>
+    <title>דוח נתונים גולמיים (Raw Data)</title>
     
-    <!-- טעינת ספריות קונפיגורציה -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
 
@@ -16,8 +15,8 @@
             --bg-color: #f4f7f6;
             --card-bg: #ffffff;
             --border-color: #bdc3c7;
+            --excel-color: #27ae60;
         }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
@@ -25,7 +24,6 @@
             padding: 20px;
             color: #333;
         }
-
         .container {
             max-width: 1200px;
             margin: 0 auto;
@@ -34,37 +32,40 @@
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
-
         h1 {
             color: var(--primary-color);
             border-bottom: 2px solid var(--accent-color);
             padding-bottom: 10px;
             margin-bottom: 20px;
         }
-
+        .nav-back {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--accent-color);
+            text-decoration: none;
+            font-weight: bold;
+        }
+        .nav-back:hover { text-decoration: underline; }
+        
         .filters-section {
             display: flex;
             flex-wrap: wrap;
-            gap: 20px;
+            gap: 15px;
             align-items: flex-end;
             background: #ecf0f1;
             padding: 20px;
             border-radius: 8px;
             margin-bottom: 30px;
         }
-
         .form-group {
             display: flex;
             flex-direction: column;
             gap: 5px;
         }
-
         .form-group label {
             font-weight: bold;
             color: var(--primary-color);
         }
-
-        /* מאפיין step="1" בקוד ה-HTML מאפשר בחירת שניות */
         .form-group input[type="datetime-local"] {
             padding: 10px;
             border: 1px solid var(--border-color);
@@ -72,108 +73,80 @@
             font-size: 16px;
             font-family: inherit;
         }
-
         .action-btn {
             background-color: var(--accent-color);
             color: white;
-            padding: 10px 25px;
+            padding: 10px 20px;
             border: none;
             border-radius: 4px;
             font-size: 16px;
             cursor: pointer;
             font-weight: bold;
-            transition: background-color 0.3s;
-            height: 42px; /* יישור קו עם השדות */
+            height: 42px;
         }
+        .action-btn:hover { background-color: #2980b9; }
+        
+        .export-btn {
+            background-color: var(--excel-color);
+            display: none; /* יוסתר עד שיהיו נתונים */
+        }
+        .export-btn:hover { background-color: #2ecc71; }
 
-        .action-btn:hover {
-            background-color: #2980b9;
-        }
-
-        /* עיצוב הטבלה */
-        .table-responsive {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        th, td {
-            padding: 12px 15px;
-            text-align: right;
-            border-bottom: 1px solid #ddd;
-        }
-
-        th {
-            background-color: var(--primary-color);
-            color: white;
-            position: sticky;
-            top: 0;
-        }
-
-        tr:hover {
-            background-color: #f5f5f5;
-        }
-
-        .loading {
-            text-align: center;
-            font-size: 18px;
-            color: var(--accent-color);
-            font-weight: bold;
-            display: none;
-            margin: 20px 0;
-        }
+        .table-responsive { overflow-x: auto; max-height: 600px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px 15px; text-align: right; border-bottom: 1px solid #ddd; white-space: nowrap; }
+        th { background-color: var(--primary-color); color: white; position: sticky; top: 0; }
+        tr:hover { background-color: #f5f5f5; }
+        .loading { text-align: center; font-size: 18px; color: var(--accent-color); font-weight: bold; display: none; margin: 20px 0; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>פאנל ניהול - הפקת דוחות</h1>
+        <a href="admin.html" class="nav-back">← חזרה למסך הניהול הראשי</a>
+        
+        <h1>דוח נתונים גולמיים (Raw Data)</h1>
 
-        <!-- אזור הסינון - תאריכים ושעות -->
         <div class="filters-section">
             <div class="form-group">
                 <label for="fromDate">מתאריך ושעה:</label>
                 <input type="datetime-local" id="fromDate" step="1">
             </div>
-            
             <div class="form-group">
                 <label for="toDate">עד תאריך ושעה:</label>
                 <input type="datetime-local" id="toDate" step="1">
             </div>
-
-            <button class="action-btn" onclick="generateAdminReport()">הפק דוח</button>
+            <button class="action-btn" onclick="generateReport()">הפק דוח למסך</button>
+            
+            <!-- כפתור הייצוא החדש -->
+            <button id="exportBtn" class="action-btn export-btn" onclick="exportToCSV()">ייצא ל-Sheets (CSV)</button>
         </div>
 
-        <div id="loadingMsg" class="loading">טוען נתונים ממסד הנתונים, אנא המתן...</div>
+        <div id="loadingMsg" class="loading">טוען נתונים...</div>
 
-        <!-- אזור הצגת הטבלה -->
         <div class="table-responsive">
             <table id="reportTable">
                 <thead>
                     <tr>
-                        <th>תאריך פעולה (מערכת)</th>
+                        <th>תאריך פעולה</th>
                         <th>סוג פעולה</th>
                         <th>IP</th>
                         <th>שם מלא</th>
                         <th>טלפון</th>
                         <th>ת.ז</th>
                         <th>עיר לידה</th>
-                        <th>תאריך לידה (משתמש)</th>
+                        <th>תאריך לידה</th>
                     </tr>
                 </thead>
-                <tbody id="tableBody">
-                    <!-- הנתונים יוזרקו לכאן על ידי JavaScript -->
-                </tbody>
+                <tbody id="tableBody"></tbody>
             </table>
         </div>
     </div>
 
     <script>
-        // פונקציית עזר להמרת תאריך לפורמט שמתאים לשדה datetime-local (YYYY-MM-DDThh:mm:ss)
+        // משתנה גלובלי לשמירת הנתונים הגולמיים לצורך הייצוא
+        let currentReportData = [];
+
         function formatDateTimeLocal(dateObj) {
             const year = dateObj.getFullYear();
             const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -184,92 +157,90 @@
             return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
         }
 
-        // פונקציה ראשונית לטעינת ברירות המחדל של התאריכים
+        // פונקציית עזר לייצור תאריך בפורמט ddmmyyyy לשם הקובץ
+        function formatCompactDateForFilename(dateString) {
+            const d = new Date(dateString);
+            const day = String(d.getDate()).padStart(2, '0');
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const year = d.getFullYear();
+            return `${day}${month}${year}`;
+        }
+
         async function initDateFilters() {
-            // 1. הגדרת תאריך הסיום להיום בשעה 23:59:59
             const toDate = new Date();
             toDate.setHours(23, 59, 59, 999);
             document.getElementById('toDate').value = formatDateTimeLocal(toDate);
 
-            // 2. מציאת הרשומה הראשונה ביותר בטבלה כדי להגדיר תאריך התחלה
             try {
                 const { data, error } = await supabaseClient
                     .from('reports_log')
                     .select('created_at')
-                    .order('created_at', { ascending: true }) // משיכה מהישן ביותר לחדש
-                    .limit(1); // מספיק לנו להסתכל על הראשון
+                    .order('created_at', { ascending: true })
+                    .limit(1);
 
-                let fromDate = new Date(); // תאריך ברירת מחדל (היום) למקרה שהטבלה ריקה
-
+                let fromDate = new Date();
                 if (data && data.length > 0 && data[0].created_at) {
                     fromDate = new Date(data[0].created_at);
                 }
-                
-                // איפוס השעה של תאריך ההתחלה ל-00:00:00 בדיוק
                 fromDate.setHours(0, 0, 0, 0);
                 document.getElementById('fromDate').value = formatDateTimeLocal(fromDate);
-
-                // הפעלה אוטומטית של הדוח מיד לאחר טעינת התאריכים (אופציונלי, מספק חוויה מיידית)
-                generateAdminReport();
-
+                
             } catch (err) {
-                console.error("שגיאה בשליפת הרשומה הראשונה:", err);
+                console.error("שגיאה:", err);
             }
         }
 
-        // הפונקציה שמופעלת בלחיצה על "הפק דוח"
-        async function generateAdminReport() {
+        async function generateReport() {
             const fromValue = document.getElementById('fromDate').value;
             const toValue = document.getElementById('toDate').value;
 
             if (!fromValue || !toValue) {
-                alert("חובה להגדיר גם תאריך התחלה וגם תאריך סיום.");
+                alert("חובה להגדיר תאריך התחלה וסיום.");
                 return;
             }
 
-            // המרה לפורמט ISO כדי שמסד הנתונים יוכל להשוות במדויק
             const fromIso = new Date(fromValue).toISOString();
             const toIso = new Date(toValue).toISOString();
 
             document.getElementById('loadingMsg').style.display = 'block';
-            document.getElementById('tableBody').innerHTML = ''; // ניקוי הטבלה הקיימת
+            document.getElementById('tableBody').innerHTML = '';
+            document.getElementById('exportBtn').style.display = 'none'; // הסתרת הכפתור עד להצלחה
 
             try {
-                // שימוש בפונקציה שהקמנו במסד הנתונים עם סינון חכם של גדול/שווה וקטן/שווה
                 const { data, error } = await supabaseClient
                     .rpc('get_full_log')
-                    .gte('created_at', fromIso) // >= תאריך התחלה
-                    .lte('created_at', toIso);  // <= תאריך סיום
+                    .gte('created_at', fromIso)
+                    .lte('created_at', toIso);
 
                 if (error) throw error;
-
-                // ציור הנתונים שהתקבלו
+                
+                // שמירת הנתונים במשתנה הגלובלי לייצוא
+                currentReportData = data;
+                
                 renderTable(data);
+
+                // הצגת כפתור הייצוא אם יש נתונים
+                if (data && data.length > 0) {
+                    document.getElementById('exportBtn').style.display = 'inline-block';
+                }
 
             } catch (err) {
                 console.error("שגיאה בהפקת הדוח:", err);
-                alert("אירעה שגיאה בטעינת הנתונים. אנא נסה שוב.");
             } finally {
                 document.getElementById('loadingMsg').style.display = 'none';
             }
         }
 
-        // פונקציה מודולרית לבניית שורות הטבלה מתוך מערך הנתונים
         function renderTable(dataArray) {
             const tbody = document.getElementById('tableBody');
-            
             if (!dataArray || dataArray.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">לא נמצאו רשומות בטווח התאריכים הנבחר.</td></tr>';
                 return;
             }
 
             let htmlContent = '';
-            
             dataArray.forEach(row => {
-                // עיצוב תאריך הרישום למראה קריא ויפה
                 const sysDate = new Date(row.created_at).toLocaleString('he-IL');
-                
-                // טיפול בערכים ריקים כדי שלא יופיעו כ-null במסך
                 const fullName = `${row.first_name || ''} ${row.last_name || ''}`.trim();
                 const phone = row.phone || '-';
                 const idNum = row.id_number || '-';
@@ -278,7 +249,7 @@
 
                 htmlContent += `
                     <tr>
-                        <td>${sysDate}</td>
+                        <td dir="ltr">${sysDate}</td>
                         <td>${row.action_type}</td>
                         <td dir="ltr">${row.ip_address}</td>
                         <td>${fullName}</td>
@@ -289,11 +260,54 @@
                     </tr>
                 `;
             });
-
             tbody.innerHTML = htmlContent;
         }
 
-        // אתחול המערכת מיד כשהדף נטען
+        // --- פונקציה לייצוא דינמי לקובץ CSV התואם ל-Sheets ---
+        function exportToCSV() {
+            if (!currentReportData || currentReportData.length === 0) {
+                alert("אין נתונים לייצוא.");
+                return;
+            }
+
+            // 1. קריאת כל מפתחות (העמודות) שיש ברשומה הראשונה - הופך את זה לדינמי לחלוטין
+            const headers = Object.keys(currentReportData[0]);
+            
+            // 2. הוספת BOM כדי ש-Excel ו-Sheets יקראו עברית כראוי, והוספת שורת הכותרות
+            let csvContent = "\uFEFF" + headers.join(",") + "\n";
+
+            // 3. מעבר על כל שורה ובניית הנתונים שלה
+            currentReportData.forEach(row => {
+                let rowData = headers.map(header => {
+                    let cellValue = row[header] === null || row[header] === undefined ? "" : String(row[header]);
+                    // טיפול במירכאות פנימיות בטקסט כדי לא לשבור את ה-CSV
+                    cellValue = cellValue.replace(/"/g, '""');
+                    // עטיפת כל תא במירכאות מאפשרת פסיקים בתוך הטקסט (למשל בעיר "תל אביב, יפו")
+                    return `"${cellValue}"`;
+                });
+                csvContent += rowData.join(",") + "\n";
+            });
+
+            // 4. בניית שם הקובץ הרצוי
+            const fromValue = document.getElementById('fromDate').value;
+            const toValue = document.getElementById('toDate').value;
+            const fromStr = formatCompactDateForFilename(fromValue);
+            const toStr = formatCompactDateForFilename(toValue);
+            const filename = `rawdata-${fromStr}-${toStr}.csv`;
+
+            // 5. תהליך ההורדה בפועל
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute("href", url);
+            link.setAttribute("download", filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
         window.addEventListener('DOMContentLoaded', () => {
             initDateFilters();
         });
