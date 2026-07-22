@@ -290,30 +290,41 @@
             }
         }
 
-        // פונקציית רישום לוג אוטומטית לכל לחיצת כפתור (מתבצעת מיד לפני כל בדיקה או פעולה)
+        // --- מנגנון הרישום ללוג - נבנה בצורה עמידה בפני שגיאות DB (כמו 400 Bad Request) ---
         async function writeToExperimentLog(actionType) {
             try {
                 const now = new Date();
+                
+                // יצירת האובייקט עם ערכים בטוחים. שדות טקסט ריקים יישלחו כמחרוזת ריקה ולא null.
                 const logEntry = {
                     action_date: now.toISOString().split('T')[0],
                     action_time: now.toTimeString().split(' ')[0],
                     ip_address: await fetchUserIP(),
                     browser_info: navigator.userAgent,
-                    first_name: document.getElementById('firstName').value.trim() || null,
-                    middle_name: document.getElementById('middleName').value.trim() || null,
-                    last_name: document.getElementById('lastName').value.trim() || null,
-                    extra_last_name: document.getElementById('extraLastName').value.trim() || null,
-                    phone: document.getElementById('phone').value.trim() || null,
-                    id_number: document.getElementById('idNumber').value.trim() || null,
-                    birth_date: document.getElementById('birthDate').value || null,
-                    birth_time: document.getElementById('birthTime').value || null,
-                    city: document.getElementById('city').value.trim() || null,
-                    action_type: actionType
+                    action_type: actionType,
+                    first_name: document.getElementById('firstName').value.trim() || "",
+                    middle_name: document.getElementById('middleName').value.trim() || "",
+                    last_name: document.getElementById('lastName').value.trim() || "",
+                    extra_last_name: document.getElementById('extraLastName').value.trim() || "",
+                    phone: document.getElementById('phone').value.trim() || "",
+                    id_number: document.getElementById('idNumber').value.trim() || "",
+                    city: document.getElementById('city').value.trim() || ""
                 };
+
+                // עבור שדות תאריך/שעה, אם הם ריקים (למשל נלחץ כפתור לפני מילוי), לא נוסיף אותם כלל
+                // כדי להימנע משגיאת 400 במסד הנתונים שמנסה לפרש מחרוזת ריקה כתאריך.
+                const bDate = document.getElementById('birthDate').value;
+                if (bDate) logEntry.birth_date = bDate;
+                
+                const bTime = document.getElementById('birthTime').value;
+                if (bTime) logEntry.birth_time = bTime;
 
                 if (navigator.onLine && typeof supabaseClient !== 'undefined') {
                     const { error } = await supabaseClient.from('reports_log').insert([logEntry]);
-                    if (error) saveLogOffline(logEntry);
+                    if (error) {
+                        console.error("שגיאת רישום מול שרת:", error);
+                        saveLogOffline(logEntry);
+                    }
                 } else {
                     saveLogOffline(logEntry);
                 }
@@ -405,7 +416,7 @@
         }
 
         async function handleUserAction(actionType) {
-            // שלב ראשון והחלטי: רישום ללוג לכל לחיצת כפתור עוד בטרם בדיקת תקינות או הודעות
+            // הרישום ללוג מתבצע כאן כפקודה הראשונה - עוד לפני כל בדיקה, עצירה, או התראה!
             await writeToExperimentLog(actionType);
 
             if (actionType === 'deep_report') {
