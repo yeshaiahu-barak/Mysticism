@@ -3,6 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- פקודות למניעת שמירה בזיכרון המטמון (Cache) כדי שהגרסה העדכנית תמיד תוצג -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
     <title>מסך ניהול מאובטח - דוחות מיסטיקה</title>
     
     <!-- טעינת ספריות קונפיגורציה -->
@@ -60,7 +66,7 @@
             margin: 0;
         }
 
-        /* אזור הכפתורים עודכן כדי להפריד כלפי מטה */
+        /* אזור הכפתורים - ממוקם עכשיו עליונה ומוגדר נכון */
         .actions {
             display: flex;
             justify-content: center;
@@ -151,12 +157,13 @@
             <button class="logout-btn" onclick="signOut()">יציאה מהמערכת</button>
         </div>
 
-        <!-- הכפתורים הועברו לכאן: למעלה, מיד מתחת לכותרת -->
+        <!-- אזור הכפתורים נמצא כאן בקוד, מיד מתחת לכותרת ומעל לסטטיסטיקה -->
         <div class="actions">
             <button class="refresh-btn" onclick="loadStatistics()">רענן נתונים</button>
             <button class="report-btn" onclick="openRawDataReport()">מעבר להפקת דוח מסונן (Raw Data)</button>
         </div>
 
+        <!-- קופסת הסטטיסטיקות נמצאת מתחת לכפתורים -->
         <div class="stats-box">
             <div class="stats-total">
                 סה"כ פעולות במערכת: <span id="totalRecordsCounter">טוען...</span>
@@ -188,7 +195,7 @@
             routeUser(session);
         }
 
-        // האזנה אקטיבית לשינויים בהתחברות (למשל כשחוזרים ממסך גוגל)
+        // האזנה אקטיבית לשינויים בהתחברות
         supabaseClient.auth.onAuthStateChange((event, session) => {
             routeUser(session);
         });
@@ -228,7 +235,6 @@
 
         async function signOut() {
             await supabaseClient.auth.signOut();
-            // הניתוק יפעיל את onAuthStateChange ויחזיר את המסך למסך ההתחברות
         }
 
         // 3. פונקציות הסטטיסטיקה של הניהול
@@ -263,7 +269,6 @@
                 } else {
                     for (const [actionKey, count] of Object.entries(actionCounts)) {
                         const li = document.createElement('li');
-                        // שימוש במילון התרגום. אם המפתח לא קיים במילון, נציג אותו כפי שהוא.
                         const translatedName = actionTranslations[actionKey] || actionKey;
                         li.innerHTML = `<span>${translatedName}</span> <strong>${count}</strong>`;
                         breakdownList.appendChild(li);
