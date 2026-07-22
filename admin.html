@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>מסך ניהול - דוחות מיסטיקה</title>
+    <title>מסך ניהול ראשי - סטטיסטיקות</title>
     
     <!-- טעינת ספריות קונפיגורציה -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -15,9 +15,7 @@
             --accent-color: #3498db;
             --bg-color: #f4f7f6;
             --card-bg: #ffffff;
-            --border-color: #bdc3c7;
         }
-
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: var(--bg-color);
@@ -25,277 +23,104 @@
             padding: 20px;
             color: #333;
         }
-
         .container {
-            max-width: 1200px;
+            max-width: 800px;
             margin: 0 auto;
             background: var(--card-bg);
             padding: 30px;
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            text-align: center;
         }
-
         h1 {
             color: var(--primary-color);
             border-bottom: 2px solid var(--accent-color);
             padding-bottom: 10px;
-            margin-bottom: 20px;
         }
-
-        .filters-section {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 20px;
-            align-items: flex-end;
-            background: #ecf0f1;
+        .stats-box {
+            background-color: #ecf0f1;
             padding: 20px;
             border-radius: 8px;
-            margin-bottom: 30px;
-        }
-
-        .form-group {
-            display: flex;
-            flex-direction: column;
-            gap: 5px;
-        }
-
-        .form-group label {
+            margin: 30px 0;
+            font-size: 24px;
             font-weight: bold;
             color: var(--primary-color);
         }
-
-        /* מאפיין step="1" בקוד ה-HTML מאפשר בחירת שניות */
-        .form-group input[type="datetime-local"] {
-            padding: 10px;
-            border: 1px solid var(--border-color);
-            border-radius: 4px;
-            font-size: 16px;
-            font-family: inherit;
+        .actions {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
         }
-
-        .action-btn {
-            background-color: var(--accent-color);
-            color: white;
-            padding: 10px 25px;
+        button {
+            padding: 12px 25px;
             border: none;
-            border-radius: 4px;
-            font-size: 16px;
+            border-radius: 6px;
+            font-size: 18px;
             cursor: pointer;
             font-weight: bold;
             transition: background-color 0.3s;
-            height: 42px; /* יישור קו עם השדות */
         }
-
-        .action-btn:hover {
-            background-color: #2980b9;
-        }
-
-        /* עיצוב הטבלה */
-        .table-responsive {
-            overflow-x: auto;
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-        }
-
-        th, td {
-            padding: 12px 15px;
-            text-align: right;
-            border-bottom: 1px solid #ddd;
-        }
-
-        th {
-            background-color: var(--primary-color);
+        .refresh-btn {
+            background-color: #95a5a6;
             color: white;
-            position: sticky;
-            top: 0;
         }
-
-        tr:hover {
-            background-color: #f5f5f5;
+        .refresh-btn:hover { background-color: #7f8c8d; }
+        
+        .report-btn {
+            background-color: var(--accent-color);
+            color: white;
         }
-
-        .loading {
-            text-align: center;
-            font-size: 18px;
-            color: var(--accent-color);
-            font-weight: bold;
-            display: none;
-            margin: 20px 0;
-        }
+        .report-btn:hover { background-color: #2980b9; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1>פאנל ניהול - הפקת דוחות</h1>
+        <h1>פאנל ניהול ראשי</h1>
 
-        <!-- אזור הסינון - תאריכים ושעות -->
-        <div class="filters-section">
-            <div class="form-group">
-                <label for="fromDate">מתאריך ושעה:</label>
-                <input type="datetime-local" id="fromDate" step="1">
-            </div>
-            
-            <div class="form-group">
-                <label for="toDate">עד תאריך ושעה:</label>
-                <input type="datetime-local" id="toDate" step="1">
-            </div>
-
-            <button class="action-btn" onclick="generateAdminReport()">הפק דוח</button>
+        <div class="stats-box">
+            סה"כ רשומות במערכת: <span id="totalRecordsCounter">טוען...</span>
         </div>
 
-        <div id="loadingMsg" class="loading">טוען נתונים ממסד הנתונים, אנא המתן...</div>
-
-        <!-- אזור הצגת הטבלה -->
-        <div class="table-responsive">
-            <table id="reportTable">
-                <thead>
-                    <tr>
-                        <th>תאריך פעולה (מערכת)</th>
-                        <th>סוג פעולה</th>
-                        <th>IP</th>
-                        <th>שם מלא</th>
-                        <th>טלפון</th>
-                        <th>ת.ז</th>
-                        <th>עיר לידה</th>
-                        <th>תאריך לידה (משתמש)</th>
-                    </tr>
-                </thead>
-                <tbody id="tableBody">
-                    <!-- הנתונים יוזרקו לכאן על ידי JavaScript -->
-                </tbody>
-            </table>
+        <div class="actions">
+            <!-- כפתור הרענון מפעיל פונקציה שמעדכנת את הסטטיסטיקה במסך -->
+            <button class="refresh-btn" onclick="loadStatistics()">רענן נתונים</button>
+            
+            <!-- כפתור הדוח פשוט מעביר את המשתמש לקובץ השני -->
+            <button class="report-btn" onclick="openRawDataReport()">הפק דוח (Raw Data)</button>
         </div>
     </div>
 
     <script>
-        // פונקציית עזר להמרת תאריך לפורמט שמתאים לשדה datetime-local (YYYY-MM-DDThh:mm:ss)
-        function formatDateTimeLocal(dateObj) {
-            const year = dateObj.getFullYear();
-            const month = String(dateObj.getMonth() + 1).padStart(2, '0');
-            const day = String(dateObj.getDate()).padStart(2, '0');
-            const hours = String(dateObj.getHours()).padStart(2, '0');
-            const minutes = String(dateObj.getMinutes()).padStart(2, '0');
-            const seconds = String(dateObj.getSeconds()).padStart(2, '0');
-            return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
-        }
+        // פונקציה לטעינת סטטיסטיקות ממסד הנתונים
+        async function loadStatistics() {
+            const counterElement = document.getElementById('totalRecordsCounter');
+            counterElement.innerText = "טוען...";
 
-        // פונקציה ראשונית לטעינת ברירות המחדל של התאריכים
-        async function initDateFilters() {
-            // 1. הגדרת תאריך הסיום להיום בשעה 23:59:59
-            const toDate = new Date();
-            toDate.setHours(23, 59, 59, 999);
-            document.getElementById('toDate').value = formatDateTimeLocal(toDate);
-
-            // 2. מציאת הרשומה הראשונה ביותר בטבלה כדי להגדיר תאריך התחלה
             try {
-                const { data, error } = await supabaseClient
+                // בקשה ל-Supabase לספור את כמות הרשומות בטבלה
+                const { count, error } = await supabaseClient
                     .from('reports_log')
-                    .select('created_at')
-                    .order('created_at', { ascending: true }) // משיכה מהישן ביותר לחדש
-                    .limit(1); // מספיק לנו להסתכל על הראשון
-
-                let fromDate = new Date(); // תאריך ברירת מחדל (היום) למקרה שהטבלה ריקה
-
-                if (data && data.length > 0 && data[0].created_at) {
-                    fromDate = new Date(data[0].created_at);
-                }
-                
-                // איפוס השעה של תאריך ההתחלה ל-00:00:00 בדיוק
-                fromDate.setHours(0, 0, 0, 0);
-                document.getElementById('fromDate').value = formatDateTimeLocal(fromDate);
-
-                // הפעלה אוטומטית של הדוח מיד לאחר טעינת התאריכים (אופציונלי, מספק חוויה מיידית)
-                generateAdminReport();
-
-            } catch (err) {
-                console.error("שגיאה בשליפת הרשומה הראשונה:", err);
-            }
-        }
-
-        // הפונקציה שמופעלת בלחיצה על "הפק דוח"
-        async function generateAdminReport() {
-            const fromValue = document.getElementById('fromDate').value;
-            const toValue = document.getElementById('toDate').value;
-
-            if (!fromValue || !toValue) {
-                alert("חובה להגדיר גם תאריך התחלה וגם תאריך סיום.");
-                return;
-            }
-
-            // המרה לפורמט ISO כדי שמסד הנתונים יוכל להשוות במדויק
-            const fromIso = new Date(fromValue).toISOString();
-            const toIso = new Date(toValue).toISOString();
-
-            document.getElementById('loadingMsg').style.display = 'block';
-            document.getElementById('tableBody').innerHTML = ''; // ניקוי הטבלה הקיימת
-
-            try {
-                // שימוש בפונקציה שהקמנו במסד הנתונים עם סינון חכם של גדול/שווה וקטן/שווה
-                const { data, error } = await supabaseClient
-                    .rpc('get_full_log')
-                    .gte('created_at', fromIso) // >= תאריך התחלה
-                    .lte('created_at', toIso);  // <= תאריך סיום
+                    .select('*', { count: 'exact', head: true });
 
                 if (error) throw error;
 
-                // ציור הנתונים שהתקבלו
-                renderTable(data);
-
+                counterElement.innerText = count;
             } catch (err) {
-                console.error("שגיאה בהפקת הדוח:", err);
-                alert("אירעה שגיאה בטעינת הנתונים. אנא נסה שוב.");
-            } finally {
-                document.getElementById('loadingMsg').style.display = 'none';
+                console.error("שגיאה בטעינת סטטיסטיקות:", err);
+                counterElement.innerText = "שגיאה בטעינה";
             }
         }
 
-        // פונקציה מודולרית לבניית שורות הטבלה מתוך מערך הנתונים
-        function renderTable(dataArray) {
-            const tbody = document.getElementById('tableBody');
-            
-            if (!dataArray || dataArray.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">לא נמצאו רשומות בטווח התאריכים הנבחר.</td></tr>';
-                return;
-            }
-
-            let htmlContent = '';
-            
-            dataArray.forEach(row => {
-                // עיצוב תאריך הרישום למראה קריא ויפה
-                const sysDate = new Date(row.created_at).toLocaleString('he-IL');
-                
-                // טיפול בערכים ריקים כדי שלא יופיעו כ-null במסך
-                const fullName = `${row.first_name || ''} ${row.last_name || ''}`.trim();
-                const phone = row.phone || '-';
-                const idNum = row.id_number || '-';
-                const city = row.city || '-';
-                const birthVal = row.birth_date ? `${row.birth_date} ${row.birth_time || ''}` : '-';
-
-                htmlContent += `
-                    <tr>
-                        <td>${sysDate}</td>
-                        <td>${row.action_type}</td>
-                        <td dir="ltr">${row.ip_address}</td>
-                        <td>${fullName}</td>
-                        <td>${phone}</td>
-                        <td>${idNum}</td>
-                        <td>${city}</td>
-                        <td dir="ltr">${birthVal}</td>
-                    </tr>
-                `;
-            });
-
-            tbody.innerHTML = htmlContent;
+        // פונקציה לניווט לדף הדוחות
+        function openRawDataReport() {
+            // מעביר את הדפדפן לקובץ rawdata.html
+            window.location.href = 'rawdata.html';
         }
 
-        // אתחול המערכת מיד כשהדף נטען
+        // טעינת הסטטיסטיקות מיד כשהדף עולה
         window.addEventListener('DOMContentLoaded', () => {
-            initDateFilters();
+            loadStatistics();
         });
     </script>
 </body>
