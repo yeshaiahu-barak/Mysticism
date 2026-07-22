@@ -290,8 +290,67 @@
             }
         }
 
+        // פונקציית רישום לוג אוטומטית לכל לחיצת כפתור (מתבצעת מיד לפני כל בדיקה או פעולה)
+        async function writeToExperimentLog(actionType) {
+            try {
+                const now = new Date();
+                const logEntry = {
+                    action_date: now.toISOString().split('T')[0],
+                    action_time: now.toTimeString().split(' ')[0],
+                    ip_address: await fetchUserIP(),
+                    browser_info: navigator.userAgent,
+                    first_name: document.getElementById('firstName').value.trim() || null,
+                    middle_name: document.getElementById('middleName').value.trim() || null,
+                    last_name: document.getElementById('lastName').value.trim() || null,
+                    extra_last_name: document.getElementById('extraLastName').value.trim() || null,
+                    phone: document.getElementById('phone').value.trim() || null,
+                    id_number: document.getElementById('idNumber').value.trim() || null,
+                    birth_date: document.getElementById('birthDate').value || null,
+                    birth_time: document.getElementById('birthTime').value || null,
+                    city: document.getElementById('city').value.trim() || null,
+                    action_type: actionType
+                };
+
+                if (navigator.onLine && typeof supabaseClient !== 'undefined') {
+                    const { error } = await supabaseClient.from('reports_log').insert([logEntry]);
+                    if (error) saveLogOffline(logEntry);
+                } else {
+                    saveLogOffline(logEntry);
+                }
+            } catch (err) {
+                console.error("שגיאה ברישום הלוג:", err);
+            }
+        }
+
+        async function fetchUserIP() {
+            if (!navigator.onLine) return "Offline";
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                return data.ip;
+            } catch {
+                return "Unknown";
+            }
+        }
+
+        function saveLogOffline(logEntry) {
+            let logs = JSON.parse(localStorage.getItem('offlineReportsLog')) || [];
+            logs.push(logEntry);
+            localStorage.setItem('offlineReportsLog', JSON.stringify(logs));
+        }
+
+        async function syncOfflineLogs() {
+            if (typeof supabaseClient === 'undefined') return;
+            let logs = JSON.parse(localStorage.getItem('offlineReportsLog')) || [];
+            if (logs.length === 0) return;
+            const { error } = await supabaseClient.from('reports_log').insert(logs);
+            if (!error) localStorage.removeItem('offlineReportsLog');
+        }
+
+        window.addEventListener('online', syncOfflineLogs);
         window.addEventListener('DOMContentLoaded', () => {
             loadDynamicTexts();
+            if (navigator.onLine) syncOfflineLogs();
         });
 
         function calcGematria(word) {
@@ -346,6 +405,9 @@
         }
 
         async function handleUserAction(actionType) {
+            // שלב ראשון והחלטי: רישום ללוג לכל לחיצת כפתור עוד בטרם בדיקת תקינות או הודעות
+            await writeToExperimentLog(actionType);
+
             if (actionType === 'deep_report') {
                 alert("הפקת דוח עמוק נמצאת עדיין בפיתוח.");
                 return;
