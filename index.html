@@ -295,7 +295,7 @@
             try {
                 const now = new Date();
                 
-                // שלב ראשון: הגדרת נתוני החובה (תאריך, שעה, דפדפן, סוג פעולה)
+                // 1. הגדרת נתוני מערכת שקיימים תמיד (השדות החובה במסד הנתונים)
                 const logEntry = {
                     action_date: now.toISOString().split('T')[0],
                     action_time: now.toTimeString().split(' ')[0],
@@ -304,33 +304,31 @@
                     action_type: actionType
                 };
 
-                // שלב שני: מערך עזר לקריאת השדות מהמסך בצורה בטוחה
-                const formFields = [
-                    { id: 'firstName', key: 'first_name' },
-                    { id: 'middleName', key: 'middle_name' },
-                    { id: 'lastName', key: 'last_name' },
-                    { id: 'extraLastName', key: 'extra_last_name' },
-                    { id: 'phone', key: 'phone' },
-                    { id: 'idNumber', key: 'id_number' },
-                    { id: 'birthDate', key: 'birth_date' },
-                    { id: 'birthTime', key: 'birth_time' },
-                    { id: 'city', key: 'city' }
-                ];
+                // פונקציית עזר לשליפת נתונים מהטופס בצורה בטוחה
+                const getFieldValue = (elementId) => {
+                    const el = document.getElementById(elementId);
+                    return (el && el.value.trim() !== '') ? el.value.trim() : null;
+                };
 
-                // שלב שלישי: הוספת שדות אך ורק אם המשתמש הקליד בהם משהו
-                // זה מונע שליחת מחרוזות ריקות לשדות כמו Date ומונע שגיאות 400 במסד הנתונים
-                formFields.forEach(field => {
-                    const element = document.getElementById(field.id);
-                    if (element && element.value.trim() !== '') {
-                        logEntry[field.key] = element.value.trim();
-                    }
-                });
+                // 2. הוספת הנתונים מהמסך כאופציונליים. נשלח null במקרה של שדה ריק כדי למנוע שגיאות
+                logEntry.first_name = getFieldValue('firstName');
+                logEntry.middle_name = getFieldValue('middleName');
+                logEntry.last_name = getFieldValue('lastName');
+                logEntry.extra_last_name = getFieldValue('extraLastName');
+                logEntry.phone = getFieldValue('phone');
+                logEntry.id_number = getFieldValue('idNumber');
+                logEntry.birth_date = getFieldValue('birthDate');
+                logEntry.birth_time = getFieldValue('birthTime');
+                logEntry.city = getFieldValue('city');
 
+                // 3. שליחה למסד הנתונים או שמירה באופליין
                 if (navigator.onLine && typeof supabaseClient !== 'undefined') {
                     const { error } = await supabaseClient.from('reports_log').insert([logEntry]);
                     if (error) {
                         console.error("שגיאת רישום מול שרת Supabase:", error);
                         saveLogOffline(logEntry);
+                    } else {
+                        console.log("פעולה נרשמה בהצלחה במסד הנתונים!");
                     }
                 } else {
                     saveLogOffline(logEntry);
@@ -507,11 +505,9 @@
                 let birthDt = new Date(`${dateVal}T${timeVal}:00`);
                 if (isAfterSunset) birthDt.setDate(birthDt.getDate() + 1);
 
-                // המרת תאריך לידה עברי
                 let hebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${birthDt.getFullYear()}&gm=${birthDt.getMonth()+1}&gd=${birthDt.getDate()}&g2h=1`);
                 let hebData = await hebRes.json();
 
-                // חישוב מדויק של יום הולדת עברי עתידי קרוב
                 let today = new Date();
                 let todayHebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${today.getFullYear()}&gm=${today.getMonth()+1}&gd=${today.getDate()}&g2h=1`);
                 let todayHebData = await todayHebRes.json();
