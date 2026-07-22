@@ -290,46 +290,53 @@
             }
         }
 
-        // --- מנגנון הרישום ללוג - נבנה בצורה עמידה בפני שגיאות DB (כמו 400 Bad Request) ---
+        // --- מנגנון הרישום ללוג - יציב ומאובטח בפני שגיאות ---
         async function writeToExperimentLog(actionType) {
             try {
                 const now = new Date();
                 
-                // יצירת האובייקט עם ערכים בטוחים. שדות טקסט ריקים יישלחו כמחרוזת ריקה ולא null.
+                // שלב ראשון: הגדרת נתוני החובה (תאריך, שעה, דפדפן, סוג פעולה)
                 const logEntry = {
                     action_date: now.toISOString().split('T')[0],
                     action_time: now.toTimeString().split(' ')[0],
                     ip_address: await fetchUserIP(),
                     browser_info: navigator.userAgent,
-                    action_type: actionType,
-                    first_name: document.getElementById('firstName').value.trim() || "",
-                    middle_name: document.getElementById('middleName').value.trim() || "",
-                    last_name: document.getElementById('lastName').value.trim() || "",
-                    extra_last_name: document.getElementById('extraLastName').value.trim() || "",
-                    phone: document.getElementById('phone').value.trim() || "",
-                    id_number: document.getElementById('idNumber').value.trim() || "",
-                    city: document.getElementById('city').value.trim() || ""
+                    action_type: actionType
                 };
 
-                // עבור שדות תאריך/שעה, אם הם ריקים (למשל נלחץ כפתור לפני מילוי), לא נוסיף אותם כלל
-                // כדי להימנע משגיאת 400 במסד הנתונים שמנסה לפרש מחרוזת ריקה כתאריך.
-                const bDate = document.getElementById('birthDate').value;
-                if (bDate) logEntry.birth_date = bDate;
-                
-                const bTime = document.getElementById('birthTime').value;
-                if (bTime) logEntry.birth_time = bTime;
+                // שלב שני: מערך עזר לקריאת השדות מהמסך בצורה בטוחה
+                const formFields = [
+                    { id: 'firstName', key: 'first_name' },
+                    { id: 'middleName', key: 'middle_name' },
+                    { id: 'lastName', key: 'last_name' },
+                    { id: 'extraLastName', key: 'extra_last_name' },
+                    { id: 'phone', key: 'phone' },
+                    { id: 'idNumber', key: 'id_number' },
+                    { id: 'birthDate', key: 'birth_date' },
+                    { id: 'birthTime', key: 'birth_time' },
+                    { id: 'city', key: 'city' }
+                ];
+
+                // שלב שלישי: הוספת שדות אך ורק אם המשתמש הקליד בהם משהו
+                // זה מונע שליחת מחרוזות ריקות לשדות כמו Date ומונע שגיאות 400 במסד הנתונים
+                formFields.forEach(field => {
+                    const element = document.getElementById(field.id);
+                    if (element && element.value.trim() !== '') {
+                        logEntry[field.key] = element.value.trim();
+                    }
+                });
 
                 if (navigator.onLine && typeof supabaseClient !== 'undefined') {
                     const { error } = await supabaseClient.from('reports_log').insert([logEntry]);
                     if (error) {
-                        console.error("שגיאת רישום מול שרת:", error);
+                        console.error("שגיאת רישום מול שרת Supabase:", error);
                         saveLogOffline(logEntry);
                     }
                 } else {
                     saveLogOffline(logEntry);
                 }
             } catch (err) {
-                console.error("שגיאה ברישום הלוג:", err);
+                console.error("שגיאה במנגנון יצירת הלוג:", err);
             }
         }
 
@@ -416,7 +423,7 @@
         }
 
         async function handleUserAction(actionType) {
-            // הרישום ללוג מתבצע כאן כפקודה הראשונה - עוד לפני כל בדיקה, עצירה, או התראה!
+            // הרישום ללוג ממוקם כאן: הפעולה הראשונה לחלוטין ללא שום תלות בתקינות הטופס.
             await writeToExperimentLog(actionType);
 
             if (actionType === 'deep_report') {
@@ -504,7 +511,7 @@
                 let hebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${birthDt.getFullYear()}&gm=${birthDt.getMonth()+1}&gd=${birthDt.getDate()}&g2h=1`);
                 let hebData = await hebRes.json();
 
-                // חישוב מדויק של יום הולדת עברי עתידי קרוב (עם קפיצה אוטומטית לשנה הבאה אם התאריך כבר עבר השנה)
+                // חישוב מדויק של יום הולדת עברי עתידי קרוב
                 let today = new Date();
                 let todayHebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${today.getFullYear()}&gm=${today.getMonth()+1}&gd=${today.getDate()}&g2h=1`);
                 let todayHebData = await todayHebRes.json();
