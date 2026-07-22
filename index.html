@@ -290,12 +290,12 @@
             }
         }
 
-        // --- מנגנון הרישום ללוג - יציב ומאובטח בפני שגיאות ---
+        // --- מנגנון הרישום ללוג - נשלח null במקרה של שדות ריקים ---
         async function writeToExperimentLog(actionType) {
             try {
                 const now = new Date();
                 
-                // 1. הגדרת נתוני מערכת שקיימים תמיד (השדות החובה במסד הנתונים)
+                // שלב ראשון: הגדרת נתוני המערכת שתמיד קיימים
                 const logEntry = {
                     action_date: now.toISOString().split('T')[0],
                     action_time: now.toTimeString().split(' ')[0],
@@ -304,13 +304,13 @@
                     action_type: actionType
                 };
 
-                // פונקציית עזר לשליפת נתונים מהטופס בצורה בטוחה
+                // פונקציית עזר בטוחה: אם אין נתון נשלח null כדי שה-DB לא יקרוס
                 const getFieldValue = (elementId) => {
                     const el = document.getElementById(elementId);
                     return (el && el.value.trim() !== '') ? el.value.trim() : null;
                 };
 
-                // 2. הוספת הנתונים מהמסך כאופציונליים. נשלח null במקרה של שדה ריק כדי למנוע שגיאות
+                // שלב שני: הוספת הנתונים מהמסך באופן דינמי
                 logEntry.first_name = getFieldValue('firstName');
                 logEntry.middle_name = getFieldValue('middleName');
                 logEntry.last_name = getFieldValue('lastName');
@@ -321,14 +321,14 @@
                 logEntry.birth_time = getFieldValue('birthTime');
                 logEntry.city = getFieldValue('city');
 
-                // 3. שליחה למסד הנתונים או שמירה באופליין
+                // שלב שלישי: ביצוע השמירה
                 if (navigator.onLine && typeof supabaseClient !== 'undefined') {
                     const { error } = await supabaseClient.from('reports_log').insert([logEntry]);
                     if (error) {
                         console.error("שגיאת רישום מול שרת Supabase:", error);
                         saveLogOffline(logEntry);
                     } else {
-                        console.log("פעולה נרשמה בהצלחה במסד הנתונים!");
+                        console.log("הלוג נרשם בהצלחה!");
                     }
                 } else {
                     saveLogOffline(logEntry);
@@ -421,7 +421,7 @@
         }
 
         async function handleUserAction(actionType) {
-            // הרישום ללוג ממוקם כאן: הפעולה הראשונה לחלוטין ללא שום תלות בתקינות הטופס.
+            // קריאה ראשונה: רישום ללוג מתבצע כאן כפקודה ראשונה, עוד לפני שום הודעה או אזהרה!
             await writeToExperimentLog(actionType);
 
             if (actionType === 'deep_report') {
@@ -505,9 +505,11 @@
                 let birthDt = new Date(`${dateVal}T${timeVal}:00`);
                 if (isAfterSunset) birthDt.setDate(birthDt.getDate() + 1);
 
+                // המרת תאריך לידה עברי
                 let hebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${birthDt.getFullYear()}&gm=${birthDt.getMonth()+1}&gd=${birthDt.getDate()}&g2h=1`);
                 let hebData = await hebRes.json();
 
+                // חישוב יום הולדת עברי עתידי קרוב
                 let today = new Date();
                 let todayHebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${today.getFullYear()}&gm=${today.getMonth()+1}&gd=${today.getDate()}&g2h=1`);
                 let todayHebData = await todayHebRes.json();
