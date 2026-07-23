@@ -117,7 +117,6 @@
         .google-btn { background-color: var(--google-color); margin-top: 20px; font-size: 18px; padding: 12px 25px; }
         .google-btn:hover { background-color: #357abd; }
         
-        /* כפתור הרענון המעודכן - עכשיו בולט יותר ויושב למעלה */
         .refresh-btn { background-color: #f39c12; font-size: 14px; }
         .refresh-btn:hover { background-color: #d68910; }
         
@@ -213,11 +212,12 @@
             'pdf_download': 'הורדות PDF'
         };
 
+        // התאמת התרגומים לבקשתך
         const columnTranslations = {
             'id': 'מזהה רשומה',
             'created_at': 'זמן רישום במערכת',
-            'action_date': 'תאריך הפעולה',
-            'action_time': 'שעת הפעולה',
+            'action_date': 'תאריך הזנה', // הותאם
+            'action_time': 'שעת הזנה',   // הותאם
             'ip_address': 'כתובת IP',
             'browser_info': 'פרטי דפדפן',
             'action_type': 'סוג פעולה',
@@ -225,7 +225,7 @@
             'middle_name': 'שם אמצעי',
             'last_name': 'שם משפחה',
             'extra_last_name': 'שם משפחה נוסף',
-            'phone': 'טלפון',
+            'phone': 'מספר טלפון',
             'id_number': 'תעודת זהות',
             'birth_date': 'תאריך לידה',
             'birth_time': 'שעת לידה',
@@ -353,14 +353,16 @@
             const tbody = document.getElementById('tableBody');
             
             if (!dataArray || dataArray.length === 0) {
-                tbody.innerHTML = '<tr><td style="text-align: center;">לא נמצאו רשומות בטווח התאריכים המבוקש.</td></tr>';
+                // עודכן colspan ל-6 כדי שיתאים למספר העמודות החדש
+                tbody.innerHTML = '<tr><td style="text-align: center;" colspan="6">לא נמצאו רשומות בטווח התאריכים המבוקש.</td></tr>';
                 return;
             }
 
-            const keys = Object.keys(dataArray[0]);
+            // הגדרת השדות שיוצגו רק על המסך (סינון לפי הבקשה)
+            const screenKeys = ['action_date', 'action_time', 'first_name', 'last_name', 'phone', 'birth_date'];
 
             let headRow = '<tr>';
-            keys.forEach(key => {
+            screenKeys.forEach(key => {
                 const translatedHeader = columnTranslations[key] || key;
                 headRow += `<th>${translatedHeader}</th>`;
             });
@@ -370,11 +372,13 @@
             let bodyContent = '';
             dataArray.forEach(row => {
                 bodyContent += '<tr>';
-                keys.forEach(key => {
+                screenKeys.forEach(key => {
                     let cellValue = row[key];
                     if (cellValue === null || cellValue === undefined) cellValue = '-';
                     if (key === 'created_at') cellValue = new Date(cellValue).toLocaleString('he-IL');
-                    let isLtr = ['ip_address', 'created_at', 'birth_date', 'action_date'].includes(key);
+                    
+                    // יישור משמאל לימין עבור נתונים מספריים/תאריכים
+                    let isLtr = ['action_date', 'action_time', 'phone', 'birth_date'].includes(key);
                     bodyContent += `<td ${isLtr ? 'dir="ltr"' : ''}>${cellValue}</td>`;
                 });
                 bodyContent += '</tr>';
@@ -401,6 +405,7 @@
                 return;
             }
 
+            // בייצוא, אנו לוקחים את כל המפתחות (השדות) מתוך מסד הנתונים
             const keys = Object.keys(currentReportData[0]);
             
             const translatedHeaders = keys.map(key => columnTranslations[key] || key);
