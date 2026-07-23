@@ -35,9 +35,7 @@
         input { width: 100%; height: 38px; padding: 6px 12px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 6px; font-size: 15px; background: #ffffff; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04); text-align: right; transition: all 0.3s; }
         input:focus { border-color: var(--primary-color); box-shadow: inset 0 2px 4px rgba(0,0,0,0.04), 0 0 8px rgba(52, 152, 219, 0.3); outline: none; }
 
-        .suggestions-box {
-            position: absolute; top: 100%; right: 0; left: 0; background: #ffffff; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 6px 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); z-index: 1000; max-height: 150px; overflow-y: auto; display: none;
-        }
+        .suggestions-box { position: absolute; top: 100%; right: 0; left: 0; background: #ffffff; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 6px 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); z-index: 1000; max-height: 150px; overflow-y: auto; display: none; }
         .suggestion-item { padding: 8px 12px; cursor: pointer; font-size: 14px; text-align: right; border-bottom: 1px solid #f0f0f0; }
         .suggestion-item:hover { background-color: #ebf5fb; color: var(--primary-dark); }
         
@@ -240,7 +238,7 @@
                     city: getFieldValue('city')
                 };
 
-                // ניקוי ערכים ריקים למניעת שגיאת 400
+                // ניקוי ערכים ריקים למניעת שגיאת 400 מול מסד הנתונים
                 Object.keys(logEntry).forEach(key => {
                     if (logEntry[key] === null) {
                         delete logEntry[key];
@@ -475,7 +473,6 @@
                     namesHtml += `<div class="result-item"><h4>מספר טלפון נייד: ${phone}</h4><p><strong>מספר נומרולוגי:</strong> ${pNum}</p><p class="light-text">${numerologyTexts[pNum]}</p></div>`;
                 }
 
-                // תוספת נומרולוגיה לתעודת זהות
                 if (idNumber) {
                     let idSum = calcNumFromDigits(idNumber);
                     let idNumValue = calcNumerology(idSum);
