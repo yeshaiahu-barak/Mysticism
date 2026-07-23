@@ -253,22 +253,35 @@
         }
 
         async function generateReport() {
-            const fromIso = new Date(document.getElementById('fromDate').value).toISOString();
-            const toIso = new Date(document.getElementById('toDate').value).toISOString();
+            const fromVal = document.getElementById('fromDate').value;
+            const toVal = document.getElementById('toDate').value;
+            
+            if (!fromVal || !toVal) return;
+
+            const fromIso = new Date(fromVal).toISOString();
+            const toIso = new Date(toVal).toISOString();
             
             document.getElementById('loadingMsg').style.display = 'block';
             document.getElementById('tableHead').innerHTML = '';
             document.getElementById('tableBody').innerHTML = '';
 
             try {
-                const { data, error } = await supabaseClient.rpc('get_full_log').gte('created_at', fromIso).lte('created_at', toIso);
+                // שימוש בשאילתה סטנדרטית ומוגנת במקום RPC למניעת שגיאות הרשאה
+                const { data, error } = await supabaseClient
+                    .from('reports_log')
+                    .select('*')
+                    .gte('created_at', fromIso)
+                    .lte('created_at', toIso)
+                    .order('created_at', { ascending: false });
+                    
                 if (error) throw error;
                 
-                currentReportData = data;
-                renderDynamicTable(data);
+                currentReportData = data || [];
+                renderDynamicTable(currentReportData);
                 
             } catch (err) { 
-                alert("שגיאה במשיכת הנתונים. ייתכן ואין לך הרשאה מספקת מול מסד הנתונים."); 
+                console.error("Fetch error:", err);
+                alert("שגיאה במשיכת הנתונים מהשרת:\n" + err.message); 
             } finally { 
                 document.getElementById('loadingMsg').style.display = 'none'; 
             }
@@ -296,12 +309,18 @@
             document.getElementById('tBody').innerHTML = dataArray.map(row => 
                 `<tr>${screenKeys.map(key => {
                     let cellValue = row[key];
-                    if (cellValue === null || cellValue === undefined) cellValue = '-';
                     
-                    if ((key === 'action_date' || key === 'birth_date') && cellValue !== '-') {
+                    // טיפול מקדים מוגן בערכים ריקים
+                    if (cellValue === null || cellValue === undefined || cellValue === '') {
+                        cellValue = '-';
+                    }
+                    
+                    // הפיכת פורמט רק אם זה בוודאות מחרוזת טקסט שמכילה מקף
+                    if ((key === 'action_date' || key === 'birth_date') && typeof cellValue === 'string' && cellValue.includes('-') && cellValue !== '-') {
                         cellValue = cellValue.split('-').reverse().join('-');
                     }
                     
+                    // תרגום סוג הפעולה
                     if (key === 'action_type' && actionTranslations[cellValue]) {
                         cellValue = actionTranslations[cellValue];
                     }
