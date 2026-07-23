@@ -190,7 +190,6 @@
         async function fetchDynamicTexts() {
             if (!navigator.onLine || typeof supabaseClient === 'undefined') return;
             
-            // עדכון שמות העמודות בהתאם לסכמה החדשה שהגדרת ב-SQL
             const COL_CATEGORY = 'category';     
             const COL_KEY_NAME = 'item_key';     
             const COL_TEXT_CONTENT = 'content'; 
@@ -499,7 +498,7 @@
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date">
                         <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
-                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong> (<span style="font-weight: bold;">${hebrewYearOnly}</span>)</p>
+                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong> (<span style="font-weight: bold; font-size: 1.5em;">${hebrewYearOnly}</span>)</p>
                         <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">(הלידה התרחשה בשעה ${timeVal} ${isAfterSunset ? 'לאחר השקיעה' : 'לפני השקיעה'} בעיר ${city})</p>
                     </div>
                     <div class="result-item result-zodiac">
@@ -514,18 +513,6 @@
 
                 let namesHtml = "";
                 
-                // הוספת בלוק מיוחד: מספר מזל (נומרולוגיה של תאריך הלידה)
-                let dateParts = dateVal.split('-');
-                let displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
-                let dateNumValue = calcNumerology(calcNumFromDigits(dateVal));
-                namesHtml += `
-                    <div class="result-item">
-                        <h4>מספר מזל: ${displayDate}</h4>
-                        <p><strong>מספר נומרולוגי: ${dateNumValue}</strong></p>
-                        <p class="light-text">${numerologyTexts[dateNumValue]}</p>
-                    </div>
-                `;
-
                 const namesList = [
                     { label: "שם פרטי", val: fName },
                     { label: "שם פרטי נוסף", val: mName },
@@ -546,13 +533,23 @@
                 let totNum = calcNumerology(totGematria);
                 namesHtml += `<div class="result-item"><h4>כל השמות יחד (${totGematria})</h4><p><strong>מספר נומרולוגי: ${totNum}</strong></p><p class="light-text">${numerologyTexts[totNum]}</p></div>`;
 
-                // שינוי כותרת הטלפון למספר תקשורת
+                // העברת בלוק מספר המזל (תאריך הלידה) לאחר כל השמות יחד, כפי שהתבקשתי
+                let dateParts = dateVal.split('-');
+                let displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                let dateNumValue = calcNumerology(calcNumFromDigits(dateVal));
+                namesHtml += `
+                    <div class="result-item">
+                        <h4>מספר מזל: ${displayDate}</h4>
+                        <p><strong>מספר נומרולוגי: ${dateNumValue}</strong></p>
+                        <p class="light-text">${numerologyTexts[dateNumValue]}</p>
+                    </div>
+                `;
+
                 if (phone) {
                     let pNum = calcNumerology(calcNumFromDigits(phone));
                     namesHtml += `<div class="result-item"><h4>מספר תקשורת: ${phone}</h4><p><strong>מספר נומרולוגי: ${pNum}</strong></p><p class="light-text">${numerologyTexts[pNum]}</p></div>`;
                 }
 
-                // שינוי כותרת הת.ז למספר זהות
                 if (idNumber) {
                     let idSum = calcNumFromDigits(idNumber);
                     let idNumValue = calcNumerology(idSum);
