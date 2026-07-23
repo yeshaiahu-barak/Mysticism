@@ -1,23 +1,19 @@
-Create a complete, responsive, and beautiful Hebrew (RTL) Progressive Web App (PWA) called "הדוח המיסטי שלי" (My Mystical Report) that generates a personal mystical, numerological, and astrological report.
+Act as a Senior Full-Stack Security Engineer. Your task is to generate a highly secure, modular, and performant web application for a Mystic & Numerology Report system. The system uses HTML5, vanilla JS (ES6+), and the Supabase v2 SDK. It consists of two files:
 
-### UI & Design Requirements:
-1. Clean, modern container layout centered on the screen with a soft background (#f0f4f8) and white card.
-2. Input Form:
-   - Fields: First Name (required), Middle Name (optional), Last Name (required), Extra Last Name (optional), Mobile Phone (required), ID Number (optional), Birth Date (required), Birth Time (default "12:00", 24-hour format), Birth City (default "Jerusalem", supports Hebrew/English).
-   - Input styling: Unified, sleek 3D inner-shadow inputs (height 36px, border-radius 6px, right-aligned text). Form labels must be shifted slightly to the left (-2ch) above the inputs.
-   - Inputs must start empty and leverage native browser autocomplete/history.
-3. Action Buttons: Two top buttons side-by-side: "הפק דוח בסיסי" (Primary blue) and "הפק דוח עמוק" (Premium orange, triggers a popup alert about upcoming paid features).
-4. Results & Typography:
-   - Full text justification (text-align: justify) across all description paragraphs both on screen and in print mode.
-   - Color hierarchy for output cards: Dark blue background for computed Hebrew/Halachic dates, mid-blue background for zodiac signs and ascendant details, and very light blue for general numerology and Gematria cards.
-   - Bottom action buttons: "שלח דוח לוואטסאפ" (WhatsApp green) and "הורד דוח כ-PDF" (Red, triggers window.print() styled cleanly via CSS media print).
+1. `index.html` (Public App):
+- UI: RTL Hebrew layout. Clean inputs for First Name, Last Name, Phone, ID, Birth Date, Time, and City. Add debounce logic to the City input to fetch coordinates via the OpenStreetMap (Nominatim) API.
+- Security: Implement robust XSS sanitization functions (`escapeHTML`, strict RegEx for numbers/Hebrew letters). All inputs MUST be sanitized before hitting the DOM or DB.
+- Calculators: Create pure functions to calculate Gematria (Hebrew numerology), reduce numbers to single digits (1-9), calculate standard Zodiac signs, and calculate Ascendant signs based on local sunset times (fetch via sunrise-sunset.org) and birth time. Convert Gregorian to Hebrew dates using the Hebcal API.
+- Data & State: Fetch dynamic description texts from a Supabase table `dynamic_texts` (columns: category, item_key, content) with a fallback to a hardcoded local dictionary. 
+- Offline Support: Implement network listeners. If offline, cache form submissions in `localStorage` and sync them to the Supabase `reports_log` table upon reconnection.
+- Features: Generate a nicely formatted on-screen HTML report, a WhatsApp share button, and a PDF download button that dynamically changes `document.title` to `FirstName-LastName-DD-MM-YYYY` before invoking `window.print()`.
 
-### Functional & Logic Requirements:
-1. Hebrew Gematria calculations using a standard Hebrew letter-to-number dictionary (Aleph=1 to Tav=400).
-2. Numerological reduction to single digits (1-9) with rich interpretive texts for each number.
-3. External API integrations:
-   - Use Nominatim API to get latitude/longitude for the entered birth city.
-   - Use Sunrise-Sunset API to determine sunset time on the birth date to accurately calculate the Hebrew Halachic date (shifting to the next day if birth is after sunset).
-   - Use Hebcal API for Gregorian-to-Hebrew date conversion and tracking the next Hebrew birthday.
-   - Calculate zodiac signs and ascendant signs based on birth date and birth time.
-4. Fully responsive, mobile-friendly layout with print styles that hide inputs and buttons, showing only the continuous report content cleanly without awkward page breaks inside cards.
+2. `admin.html` (Secure Admin Panel):
+- Security: Implement strict Google OAuth using Supabase Auth. Only grant access to the DOM if `session.user.email` exactly matches a specific authorized email constant. Show an "Access Denied" view otherwise.
+- UI/UX: Display a statistics dashboard (action counts) and a data table.
+- Data Handling: Fetch records from the `reports_log` table based on a datetime-local range filter. 
+- Decoupled View: Render a compact HTML table showing only 6 specific columns (ID, Action Date, Time, Name, Phone, Birth Date) for readability.
+- Export: Provide a CSV export function that processes the cached array and exports ALL columns from the database.
+
+Code Requirements:
+Ensure extreme modularity (separate configs, APIs, security, and UI functions). Include deep inline comments detailing QA testing points, XSS mitigation rationale, and maintainability instructions. Do not use external libraries other than the Supabase SDK.
