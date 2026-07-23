@@ -105,7 +105,7 @@
             <div class="form-group"><label>תאריך לידה (חובה):</label><input type="date" id="birthDate" autocomplete="bday"></div>
             <div class="form-group"><label>שעת לידה (24 שעות):</label><input type="time" id="birthTime" value="12:00"></div>
             <div class="form-group">
-                <label>עיר לידה (עברית/אנגלית):</label>
+                <label>עיר לידה (לא חובה):</label>
                 <input type="text" id="city" value="ירושלים" autocomplete="off" oninput="fetchCitySuggestions(this.value)">
                 <div id="citySuggestionsBox" class="suggestions-box"></div>
             </div>
@@ -259,6 +259,10 @@
                 const now = new Date();
                 const getFieldValue = (id) => { const el = document.getElementById(id); return el && el.value.trim() !== '' ? el.value.trim() : null; };
 
+                // הוספנו ברירת מחדל גם לרישום במידה והשדה ריק
+                let cityValue = getFieldValue('city');
+                if (!cityValue) cityValue = "ירושלים";
+
                 let logEntry = {
                     action_date: now.toISOString().split('T')[0],
                     action_time: now.toTimeString().split(' ')[0],
@@ -273,7 +277,7 @@
                     id_number: getFieldValue('idNumber'),
                     birth_date: getFieldValue('birthDate'),
                     birth_time: getFieldValue('birthTime'),
-                    city: getFieldValue('city')
+                    city: cityValue
                 };
 
                 Object.keys(logEntry).forEach(key => {
@@ -400,11 +404,17 @@
             const phone = document.getElementById('phone').value.trim();
             const idNumber = document.getElementById('idNumber').value.trim();
             const dateVal = document.getElementById('birthDate').value;
-            const city = document.getElementById('city').value.trim();
+            let city = document.getElementById('city').value.trim();
+
+            // הוספת ברירת מחדל אם העיר ריקה
+            if (!city) {
+                city = "ירושלים";
+            }
 
             if (actionType === 'basic_report') {
-                if (!fName || !lName || !phone || !dateVal || !city) {
-                    alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון, תאריך לידה ועיר לידה.");
+                // הסרנו את התנאי המחייב הזנת עיר, מכיוון שיש לנו עכשיו ברירת מחדל
+                if (!fName || !lName || !phone || !dateVal) {
+                    alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון ותאריך לידה.");
                     return;
                 }
 
@@ -416,7 +426,8 @@
                 }
 
                 const cityRegex = /^[\u0590-\u05FFa-zA-Z\s'-]+$/;
-                if (!cityRegex.test(city)) {
+                // בודקים תקינות רק אם הוזנה עיר (למרות שתמיד תהיה לנו אחת בשלב זה)
+                if (city && !cityRegex.test(city)) {
                     alert("שדה עיר הלידה חייב להכיל אותיות בלבד (ללא מספרים או תווים מיוחדים).");
                     return;
                 }
@@ -436,9 +447,15 @@
             const eName = document.getElementById('extraLastName').value.trim();
             const dateVal = document.getElementById('birthDate').value;
             const timeVal = document.getElementById('birthTime').value;
-            const city = document.getElementById('city').value.trim();
+            let city = document.getElementById('city').value.trim();
             const phone = document.getElementById('phone').value.trim();
             const idNumber = document.getElementById('idNumber').value.trim();
+
+            // יישום ברירת המחדל לחישוב
+            if (!city) {
+                city = "ירושלים";
+                document.getElementById('city').value = "ירושלים"; // מעדכן גם חזותית במסך
+            }
 
             document.getElementById('calcBtn').disabled = true;
             document.getElementById('loadingMsg').style.display = 'block';
@@ -533,7 +550,6 @@
                 let totNum = calcNumerology(totGematria);
                 namesHtml += `<div class="result-item"><h4>כל השמות יחד (${totGematria})</h4><p><strong>מספר נומרולוגי: ${totNum}</strong></p><p class="light-text">${numerologyTexts[totNum]}</p></div>`;
 
-                // העברת בלוק מספר המזל (תאריך הלידה) לאחר כל השמות יחד, כפי שהתבקשתי
                 let dateParts = dateVal.split('-');
                 let displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
                 let dateNumValue = calcNumerology(calcNumFromDigits(dateVal));
