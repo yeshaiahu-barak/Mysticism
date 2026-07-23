@@ -219,6 +219,21 @@
             "דגים": "עדינות, רגישות ורוחניות. כישרון לאמנות וטיפול."
         };
 
+        let chineseZodiacTexts = {
+            "קוף": "אינטליגנציה, סקרנות ושובבות. יכולת אלתור ופתרון בעיות יצירתי.",
+            "תרנגול": "ביטחון עצמי, חריצות וסדר. נטייה לארגון, דייקנות ותשומת לב לפרטים.",
+            "כלב": "נאמנות, צדק והגנה. חברות אמתית, כנות ורצון לעזור לזולת.",
+            "חזיר": "טוב לב, כנות ושפע. אופי נדיב, סבלני ואוהב שלום והרמוניה.",
+            "חולדה": "פיקחות, כושר הסתגלות וקסם אישי. מחשבה מהירה ויכולת הישרדות גבוהה.",
+            "שור": "כוח, התמדה ואמינות. יציבות עמוקה, סבלנות ומוסר עבודה גבוה.",
+            "נמר": "אומץ, תחרותיות ומנהיגות. אנרגיה דינמית, נועזות ורצון לפרוץ דרך.",
+            "ארנב": "עדינות, אלגנטיות ורגישות. גישה דיפלומטית, נימוס וחיפוש אחר שלווה.",
+            "דרקון": "כריזמה, כוח ומזל. שאפתנות גבוהה, נוכחות בולטת ויכולת הובלה.",
+            "נחש": "חוכמה, אינטואיציה ומסתוריות. עומק מחשבתי, רגישות לסביבה ותכנון מוקפד.",
+            "סוס": "מרץ, עצמאות ואהבת חופש. פעילות מתמדת, הרפתקנות ורוח חופשייה.",
+            "עז": "יצירתיות, רוגע ואמפתיה. נשמה אמנותית, סבלנות והבנה רגשית עמוקה."
+        };
+
         async function fetchDynamicTexts() {
             if (!navigator.onLine || typeof supabaseClient === 'undefined') return;
             const COL_CATEGORY = 'category';     
@@ -242,6 +257,8 @@
                             if (zIndex !== -1) zodiacSigns[zIndex].desc = content;
                         } else if (category === 'ascendant' || category === 'אופק') {
                             if (ascendantTexts[key]) ascendantTexts[key] = content;
+                        } else if (category === 'chinese_zodiac' || category === 'מזל_סיני') {
+                            if (chineseZodiacTexts[key]) chineseZodiacTexts[key] = content;
                         }
                     });
                 }
@@ -362,6 +379,11 @@
             return zodiacSigns[(sunSignIndex + offset) % 12].name;
         }
 
+        function getChineseZodiac(year) {
+            const animals = ["קוף", "תרנגול", "כלב", "חזיר", "חולדה", "שור", "נמר", "ארנב", "דרקון", "נחש", "סוס", "עז"];
+            return animals[year % 12];
+        }
+
         let cityTimeout = null;
         async function fetchCitySuggestions(query) {
             const box = document.getElementById('citySuggestionsBox');
@@ -414,11 +436,17 @@
 
                 const originalTitle = document.title;
                 document.title = `${pFirstName}-${pLastName}${formattedDate}`;
+                
+                // פתיחת חלון ההדפסה ושמירת ה-PDF
                 window.print();
-                document.title = originalTitle;
+                
+                // התיקון: השהיה של שנייה אחת (1000 אלפיות השנייה) לפני החזרת השם המקורי
+                setTimeout(() => {
+                    document.title = originalTitle;
+                }, 1000);
+                
                 return;
             }
-
             const fName = document.getElementById('firstName').value.trim();
             const mName = document.getElementById('middleName').value.trim();
             const lName = document.getElementById('lastName').value.trim();
@@ -501,7 +529,12 @@
                 let zIndex = getZodiacIndex(dateObj.getDate(), dateObj.getMonth() + 1);
                 let sunSign = zodiacSigns[zIndex];
                 let ascendant = calculateAscendant(zIndex, timeVal);
+                
+                // חישוב המזל הסיני
+                let birthYear = dateObj.getFullYear();
+                let chineseAnimal = getChineseZodiac(birthYear);
 
+                // הוספת הבלוק לתצוגה
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date">
                         <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
@@ -513,6 +546,9 @@
                     </div>
                     <div class="result-item result-zodiac">
                         <h4>מזל אופק: ${ascendant}</h4><p class="light-text">${ascendantTexts[ascendant]}</p>
+                    </div>
+                    <div class="result-item result-zodiac">
+                        <h4>מזל סיני: ${chineseAnimal}</h4><p class="light-text">${chineseZodiacTexts[chineseAnimal]}</p>
                     </div>
                 `;
 
