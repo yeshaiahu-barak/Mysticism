@@ -266,7 +266,6 @@
             document.getElementById('tableBody').innerHTML = '';
 
             try {
-                // שימוש בשאילתה סטנדרטית ומוגנת במקום RPC למניעת שגיאות הרשאה
                 const { data, error } = await supabaseClient
                     .from('reports_log')
                     .select('*')
@@ -306,21 +305,19 @@
             headRow += '</tr>';
             thead.innerHTML = headRow;
 
-            document.getElementById('tBody').innerHTML = dataArray.map(row => 
+            // כאן תוקנה טעות ההקלדה - שימוש במשתנה tbody שכבר מצביע ל-tableBody
+            tbody.innerHTML = dataArray.map(row => 
                 `<tr>${screenKeys.map(key => {
                     let cellValue = row[key];
                     
-                    // טיפול מקדים מוגן בערכים ריקים
                     if (cellValue === null || cellValue === undefined || cellValue === '') {
                         cellValue = '-';
                     }
                     
-                    // הפיכת פורמט רק אם זה בוודאות מחרוזת טקסט שמכילה מקף
                     if ((key === 'action_date' || key === 'birth_date') && typeof cellValue === 'string' && cellValue.includes('-') && cellValue !== '-') {
                         cellValue = cellValue.split('-').reverse().join('-');
                     }
                     
-                    // תרגום סוג הפעולה
                     if (key === 'action_type' && actionTranslations[cellValue]) {
                         cellValue = actionTranslations[cellValue];
                     }
