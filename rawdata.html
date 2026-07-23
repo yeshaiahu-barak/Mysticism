@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>דוח נתונים גולמיים (Raw Data)</title>
+    
+    <!-- פקודות למניעת שמירה בזיכרון המטמון (Cache) -->
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <title>דוח נתונים גולמיים (Raw Data) - מאובטח</title>
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
@@ -16,6 +22,7 @@
             --card-bg: #ffffff;
             --border-color: #bdc3c7;
             --excel-color: #27ae60;
+            --danger-color: #e74c3c;
         }
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -32,6 +39,22 @@
             border-radius: 8px;
             box-shadow: 0 4px 10px rgba(0,0,0,0.1);
         }
+        
+        /* הסתרת אזורי התצוגה כברירת מחדל עד לסיום בדיקת האבטחה */
+        #unauthView, #secureDataView {
+            display: none;
+        }
+        
+        /* עיצוב למסך שגיאת התחברות */
+        .unauth-container {
+            max-width: 600px;
+            text-align: center;
+        }
+        .unauth-container h1 {
+            color: var(--danger-color);
+            border-bottom: 2px solid var(--danger-color);
+        }
+
         h1 {
             color: var(--primary-color);
             border-bottom: 2px solid var(--accent-color);
@@ -83,12 +106,14 @@
             cursor: pointer;
             font-weight: bold;
             height: 42px;
+            text-decoration: none;
+            display: inline-block;
         }
         .action-btn:hover { background-color: #2980b9; }
         
         .export-btn {
             background-color: var(--excel-color);
-            display: none; /* יוסתר עד שיהיו נתונים */
+            display: none;
         }
         .export-btn:hover { background-color: #2ecc71; }
 
@@ -102,7 +127,17 @@
 </head>
 <body>
 
-    <div class="container">
+    <!-- מצב 1: משתמש לא מחובר או לא מורשה -->
+    <div id="unauthView" class="container unauth-container">
+        <h1>גישה נדחתה</h1>
+        <p>אינך מחובר למערכת או שאין לך הרשאות לצפות בנתונים הגולמיים.</p>
+        <p>יש להתחבר דרך מסך הניהול הראשי עם חשבון מורשה.</p>
+        <br>
+        <a href="admin.html" class="action-btn">מעבר למסך ההתחברות (ניהול ראשי)</a>
+    </div>
+
+    <!-- מצב 2: תצוגת הנתונים למשתמש מורשה -->
+    <div id="secureDataView" class="container">
         <a href="admin.html" class="nav-back">← חזרה למסך הניהול הראשי</a>
         
         <h1>דוח נתונים גולמיים (Raw Data)</h1>
@@ -118,7 +153,6 @@
             </div>
             <button class="action-btn" onclick="generateReport()">הפק דוח למסך</button>
             
-            <!-- כפתור הייצוא החדש -->
             <button id="exportBtn" class="action-btn export-btn" onclick="exportToCSV()">ייצא ל-Sheets (CSV)</button>
         </div>
 
@@ -144,9 +178,36 @@
     </div>
 
     <script>
-        // משתנה גלובלי לשמירת הנתונים הגולמיים לצורך הייצוא
+        // 1. הגדרות אבטחה
+        const AUTHORIZED_EMAIL = '4990920@gmail.com';
+        
         let currentReportData = [];
 
+        // פונקציית אימות האבטחה
+        async function checkAuthStatus() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            
+            if (!session || session.user.email !== AUTHORIZED_EMAIL) {
+                // המשתמש לא מחובר או שהאימייל אינו תואם למורשה - הצג שגיאה
+                document.getElementById('unauthView').style.display = 'block';
+                document.getElementById('secureDataView').style.display = 'none';
+            } else {
+                // המשתמש מורשה - חשיפת התוכן והפעלת המערכת
+                document.getElementById('unauthView').style.display = 'none';
+                document.getElementById('secureDataView').style.display = 'block';
+                initDateFilters(); // קריאה לאתחול הטופס רק לאחר שווידאנו הרשאות
+            }
+        }
+
+        // האזנה לשינויים בחיבור
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (!session || session.user.email !== AUTHORIZED_EMAIL) {
+                document.getElementById('unauthView').style.display = 'block';
+                document.getElementById('secureDataView').style.display = 'none';
+            }
+        });
+
+        // 2. פונקציות הליבה של הדוח והייצוא
         function formatDateTimeLocal(dateObj) {
             const year = dateObj.getFullYear();
             const month = String(dateObj.getMonth() + 1).padStart(2, '0');
@@ -157,7 +218,6 @@
             return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
         }
 
-        // פונקציית עזר לייצור תאריך בפורמט ddmmyyyy לשם הקובץ
         function formatCompactDateForFilename(dateString) {
             const d = new Date(dateString);
             const day = String(d.getDate()).padStart(2, '0');
@@ -204,7 +264,7 @@
 
             document.getElementById('loadingMsg').style.display = 'block';
             document.getElementById('tableBody').innerHTML = '';
-            document.getElementById('exportBtn').style.display = 'none'; // הסתרת הכפתור עד להצלחה
+            document.getElementById('exportBtn').style.display = 'none';
 
             try {
                 const { data, error } = await supabaseClient
@@ -214,12 +274,9 @@
 
                 if (error) throw error;
                 
-                // שמירת הנתונים במשתנה הגלובלי לייצוא
                 currentReportData = data;
-                
                 renderTable(data);
 
-                // הצגת כפתור הייצוא אם יש נתונים
                 if (data && data.length > 0) {
                     document.getElementById('exportBtn').style.display = 'inline-block';
                 }
@@ -263,39 +320,30 @@
             tbody.innerHTML = htmlContent;
         }
 
-        // --- פונקציה לייצוא דינמי לקובץ CSV התואם ל-Sheets ---
         function exportToCSV() {
             if (!currentReportData || currentReportData.length === 0) {
                 alert("אין נתונים לייצוא.");
                 return;
             }
 
-            // 1. קריאת כל מפתחות (העמודות) שיש ברשומה הראשונה - הופך את זה לדינמי לחלוטין
             const headers = Object.keys(currentReportData[0]);
-            
-            // 2. הוספת BOM כדי ש-Excel ו-Sheets יקראו עברית כראוי, והוספת שורת הכותרות
             let csvContent = "\uFEFF" + headers.join(",") + "\n";
 
-            // 3. מעבר על כל שורה ובניית הנתונים שלה
             currentReportData.forEach(row => {
                 let rowData = headers.map(header => {
                     let cellValue = row[header] === null || row[header] === undefined ? "" : String(row[header]);
-                    // טיפול במירכאות פנימיות בטקסט כדי לא לשבור את ה-CSV
                     cellValue = cellValue.replace(/"/g, '""');
-                    // עטיפת כל תא במירכאות מאפשרת פסיקים בתוך הטקסט (למשל בעיר "תל אביב, יפו")
                     return `"${cellValue}"`;
                 });
                 csvContent += rowData.join(",") + "\n";
             });
 
-            // 4. בניית שם הקובץ הרצוי
             const fromValue = document.getElementById('fromDate').value;
             const toValue = document.getElementById('toDate').value;
             const fromStr = formatCompactDateForFilename(fromValue);
             const toStr = formatCompactDateForFilename(toValue);
             const filename = `rawdata-${fromStr}-${toStr}.csv`;
 
-            // 5. תהליך ההורדה בפועל
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             const url = URL.createObjectURL(blob);
@@ -308,8 +356,9 @@
             document.body.removeChild(link);
         }
 
+        // הפעלת בדיקת האבטחה (ורק אחריה אתחול הנתונים) בעת טעינת הדף
         window.addEventListener('DOMContentLoaded', () => {
-            initDateFilters();
+            checkAuthStatus();
         });
     </script>
 </body>
