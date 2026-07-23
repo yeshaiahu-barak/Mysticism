@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>הדוח המיסטי שלי</title>
     
-    <!-- חיבור לקובץ ההגדרות (Manifest) כדי לאפשר התקנת PWA -->
+    <!-- חיבור לקובץ ההגדרות (Manifest) -->
     <link rel="manifest" href="manifest.json">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -21,13 +21,14 @@
             --card-bg: #ffffff;
             --text-color: #2c3e50;
             --border-color: #ccd1d9;
+            --ios-color: #007aff;
         }
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); padding: 20px; line-height: 1.6; color: var(--text-color); }
         .container { max-width: 850px; margin: auto; background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         h1, h2, h3 { text-align: center; color: var(--text-color); }
         
-        /* עיצוב באנר ההתקנה */
+        /* עיצוב באנר ההתקנה לאנדרואיד ומחשבים */
         #installBanner {
             display: none;
             background-color: var(--accent-color);
@@ -42,6 +43,19 @@
             transition: background 0.3s;
         }
         #installBanner:hover { background-color: var(--accent-dark); }
+
+        /* עיצוב באנר הדרכה לאייפון (iOS) */
+        #iosInstallBanner {
+            display: none;
+            background-color: var(--ios-color);
+            color: white;
+            text-align: center;
+            padding: 12px;
+            font-weight: bold;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
 
         .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
         .form-group { flex: 1; margin-bottom: 0; min-width: 0; position: relative; } 
@@ -91,7 +105,7 @@
         @media print {
             body { background-color: white; padding: 0; }
             .container { box-shadow: none; padding: 0; }
-            .form-row, h1, .action-buttons-top, .actions, #loadingMsg, #networkStatus, #installBanner { display: none !important; }
+            .form-row, h1, .action-buttons-top, .actions, #loadingMsg, #networkStatus, #installBanner, #iosInstallBanner { display: none !important; }
             #results { display: block !important; border: none; margin: 0; padding: 0; }
             #contentToPrint { border: none; padding: 0; }
             .result-item { page-break-inside: avoid; border-right: 4px solid black; text-align: justify; }
@@ -103,8 +117,11 @@
     <div class="container">
         <div id="networkStatus">מצב אופליין: אין חיבור לאינטרנט. הפעולות נשמרות מקומית.</div>
         
-        <!-- באנר התקנה דינמי (יופיע רק אם הדפדפן מאפשר) -->
+        <!-- באנר התקנה דינמי לאנדרואיד ולמחשב -->
         <div id="installBanner" onclick="installApp()">📲 התקן את האפליקציה על המכשיר שלך לחוויה מהירה ומושלמת</div>
+        
+        <!-- באנר הדרכה מיוחד למשתמשי אייפון (iOS) -->
+        <div id="iosInstallBanner">🍏 להתקנת האפליקציה באייפון: לחץ על כפתור השיתוף (למטה) ובחר "הוסף למסך הבית"</div>
         
         <h1>הדוח המיסטי שלי</h1>
         
@@ -540,15 +557,21 @@
         }
 
         // ==========================================
-        // MODULE: PWA & Installation
+        // PWA - רישום האפליקציה והתקנה
         // ==========================================
+        
+        // 1. רישום ה-Service Worker
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Error:', err)); });
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Error:', err));
+            });
         }
 
+        // 2. טיפול באנדרואיד ומחשבים (לכידת אירוע התקנה)
         let deferredPrompt;
         window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault(); deferredPrompt = e;
+            e.preventDefault(); 
+            deferredPrompt = e;
             document.getElementById('installBanner').style.display = 'block';
         });
 
@@ -557,8 +580,23 @@
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
                 if (outcome === 'accepted') console.log('App installed');
-                deferredPrompt = null; document.getElementById('installBanner').style.display = 'none';
+                deferredPrompt = null; 
+                document.getElementById('installBanner').style.display = 'none';
             }
+        }
+
+        // 3. טיפול באייפון (iOS)
+        const isIos = () => {
+            const userAgent = window.navigator.userAgent.toLowerCase();
+            return /iphone|ipad|ipod/.test(userAgent);
+        };
+        
+        // בדיקה אם המשתמש כבר פתח את האפליקציה ממסך הבית (Standalone mode)
+        const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
+
+        // אם זה אייפון וזה עדיין לא הותקן, נציג את באנר ההדרכה
+        if (isIos() && !isInStandaloneMode()) {
+            document.getElementById('iosInstallBanner').style.display = 'block';
         }
 
         window.addEventListener('DOMContentLoaded', () => { updateNetworkStatus(); fetchDynamicTexts(); syncOfflineLogs(); });
