@@ -436,11 +436,17 @@
 
                 const originalTitle = document.title;
                 document.title = `${pFirstName}-${pLastName}${formattedDate}`;
+                
+                // פתיחת חלון ההדפסה ושמירת ה-PDF
                 window.print();
-                document.title = originalTitle;
+                
+                // התיקון: השהיה של שנייה אחת (1000 אלפיות השנייה) לפני החזרת השם המקורי
+                setTimeout(() => {
+                    document.title = originalTitle;
+                }, 1000);
+                
                 return;
             }
-
             const fName = document.getElementById('firstName').value.trim();
             const mName = document.getElementById('middleName').value.trim();
             const lName = document.getElementById('lastName').value.trim();
