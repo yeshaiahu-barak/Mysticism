@@ -5,16 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>הדוח המיסטי שלי</title>
     
-    <link rel="icon" href="logo.svg" type="image/svg+xml">
-    <link rel="apple-touch-icon" href="logo.svg">
-    <link rel="manifest" href="manifest.json">
-    <meta name="theme-color" content="#3498db">
-    
     <!-- טעינת ספריות קונפיגורציה -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     
     <style>
+        /* [הערת מתחזק: העיצוב נותר זהה לבקשת הלקוח, מרוכז במשתני CSS] */
         :root {
             --primary-color: #3498db;
             --primary-dark: #2980b9;
@@ -37,69 +33,16 @@
             .form-row { flex-direction: column; gap: 15px; }
         }
 
-        label { 
-            display: block; 
-            margin-bottom: 5px; 
-            font-weight: bold; 
-            color: var(--primary-color); 
-            font-size: 0.95em;
-            transform: translateX(-2ch); 
-        }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: var(--primary-color); font-size: 0.95em; transform: translateX(-2ch); }
+        input { width: 100%; height: 38px; padding: 6px 12px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 6px; font-size: 15px; background: #ffffff; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04); text-align: right; transition: all 0.3s; }
+        input:focus { border-color: var(--primary-color); box-shadow: inset 0 2px 4px rgba(0,0,0,0.04), 0 0 8px rgba(52, 152, 219, 0.3); outline: none; }
 
-        input { 
-            width: 100%; 
-            height: 38px; 
-            padding: 6px 12px; 
-            box-sizing: border-box; 
-            border: 1px solid var(--border-color); 
-            border-radius: 6px; 
-            font-size: 15px; 
-            background: #ffffff;
-            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04); 
-            text-align: right; 
-            transition: all 0.3s;
-        }
-        
-        input:focus { 
-            border-color: var(--primary-color); 
-            box-shadow: inset 0 2px 4px rgba(0,0,0,0.04), 0 0 8px rgba(52, 152, 219, 0.3); 
-            outline: none; 
-        }
-
-        .suggestions-box {
-            position: absolute;
-            top: 100%;
-            right: 0;
-            left: 0;
-            background: #ffffff;
-            border: 1px solid var(--border-color);
-            border-top: none;
-            border-radius: 0 0 6px 6px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-            z-index: 1000;
-            max-height: 150px;
-            overflow-y: auto;
-            display: none;
-        }
-        .suggestion-item {
-            padding: 8px 12px;
-            cursor: pointer;
-            font-size: 14px;
-            text-align: right;
-            border-bottom: 1px solid #f0f0f0;
-        }
-        .suggestion-item:hover {
-            background-color: #ebf5fb;
-            color: var(--primary-dark);
-        }
-        
         .action-buttons-top { display: flex; gap: 15px; margin-top: 25px; }
-        .main-btn { background-color: var(--primary-color); color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s;}
-        .main-btn:hover { background-color: var(--primary-dark); }
-        .main-btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
-        
-        .premium-btn { background-color: var(--accent-color); color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s;}
-        .premium-btn:hover { background-color: var(--accent-dark); }
+        .main-btn, .premium-btn, .whatsapp-btn, .pdf-btn { color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s; }
+        .main-btn { background-color: var(--primary-color); } .main-btn:hover { background-color: var(--primary-dark); }
+        .premium-btn { background-color: var(--accent-color); } .premium-btn:hover { background-color: var(--accent-dark); }
+        .whatsapp-btn { background-color: #25D366; font-size: 16px; }
+        .pdf-btn { background-color: #e74c3c; font-size: 16px; }
         
         #results { margin-top: 30px; display: none; }
         #contentToPrint { background-color: #ffffff; padding: 20px; border: 2px solid #ecf0f1; border-radius: 8px; }
@@ -109,15 +52,10 @@
         .result-item { background: #f7fbfe; padding: 15px; margin-bottom: 12px; border-radius: 6px; border-right: 5px solid #85c1e9; }
         .result-zodiac { background: #ebf5fb; border-right-color: var(--primary-color); }
         .result-date { background: #d4e6f1; border-right-color: #1b4f72; }
-        
         .result-item h4 { margin: 0 0 8px 0; font-size: 1.1em; }
         .result-item p { margin: 0 0 5px 0; color: #555; text-align: justify; }
         .light-text { color: #5d6d7e !important; }
-
         .actions { display: flex; gap: 15px; margin-top: 25px; }
-        .whatsapp-btn { background-color: #25D366; color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
-        .pdf-btn { background-color: #e74c3c; color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
-        
         #loadingMsg { display: none; text-align: center; color: var(--primary-color); font-weight: bold; margin-top: 15px; font-size: 1.1em;}
 
         @media print {
@@ -131,32 +69,26 @@
     </style>
 </head>
 <body>
-
     <div class="container">
         <h1>הדוח המיסטי שלי</h1>
         
+        <!-- טופס איסוף נתונים (מזהי ID חייבים להיות מסונכרנים עם קוד ה-JS) -->
         <div class="form-row">
-            <div class="form-group"><label>שם פרטי (חובה):</label><input type="text" id="firstName" autocomplete="given-name"></div>
-            <div class="form-group"><label>שם פרטי נוסף (לא חובה):</label><input type="text" id="middleName" autocomplete="additional-name"></div>
+            <div class="form-group"><label>שם פרטי (חובה):</label><input type="text" id="firstName"></div>
+            <div class="form-group"><label>שם פרטי נוסף (לא חובה):</label><input type="text" id="middleName"></div>
         </div>
         <div class="form-row">
-            <div class="form-group"><label>שם משפחה (חובה):</label><input type="text" id="lastName" autocomplete="family-name"></div>
-            <div class="form-group"><label>שם משפחה נוסף (לא חובה):</label><input type="text" id="extraLastName" autocomplete="off"></div>
+            <div class="form-group"><label>שם משפחה (חובה):</label><input type="text" id="lastName"></div>
+            <div class="form-group"><label>שם משפחה נוסף (לא חובה):</label><input type="text" id="extraLastName"></div>
         </div>
-
         <div class="form-row">
-            <div class="form-group"><label>מספר טלפון נייד (חובה):</label><input type="tel" id="phone" autocomplete="tel"></div>
-            <div class="form-group"><label>מספר תעודת זהות (לא חובה):</label><input type="text" id="idNumber" autocomplete="off"></div>
+            <div class="form-group"><label>מספר טלפון נייד (חובה):</label><input type="tel" id="phone"></div>
+            <div class="form-group"><label>מספר תעודת זהות (לא חובה):</label><input type="text" id="idNumber"></div>
         </div>
-
         <div class="form-row">
-            <div class="form-group"><label>תאריך לידה (חובה):</label><input type="date" id="birthDate" autocomplete="bday"></div>
+            <div class="form-group"><label>תאריך לידה (חובה):</label><input type="date" id="birthDate"></div>
             <div class="form-group"><label>שעת לידה (24 שעות):</label><input type="time" id="birthTime" value="12:00"></div>
-            <div class="form-group">
-                <label>עיר לידה (עברית/אנגלית):</label>
-                <input type="text" id="city" value="ירושלים" autocomplete="off" oninput="fetchCitySuggestions(this.value)">
-                <div id="citySuggestionsBox" class="suggestions-box"></div>
-            </div>
+            <div class="form-group"><label>עיר לידה:</label><input type="text" id="city" value="ירושלים"></div>
         </div>
 
         <div class="action-buttons-top">
@@ -164,7 +96,7 @@
             <button class="premium-btn" onclick="handleUserAction('deep_report')">הפק דוח עמוק</button>
         </div>
         
-        <div id="loadingMsg">מעבד נתונים מול כוכבי השמיים ומאגרי התאריכים... נא להמתין...</div>
+        <div id="loadingMsg">מעבד נתונים מול כוכבי השמיים... נא להמתין...</div>
 
         <div id="results">
             <div id="contentToPrint">
@@ -181,203 +113,30 @@
     </div>
 
     <script>
-        const gematriaDict = {
-            'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,
-            'כ':20,'ך':20,'ל':30,'מ':40,'ם':40,'נ':50,'ן':50,'ס':60,'ע':70,
-            'פ':80,'ף':80,'צ':90,'ץ':90,'ק':100,'ר':200,'ש':300,'ת':400
+        // [הערת מתחזק: מילוני נתונים סטטיים של המספרים והמזלות. ניתן להרחיב לפי הצורך]
+        const gematriaDict = { 'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10, 'כ':20,'ך':20,'ל':30,'מ':40,'ם':40,'נ':50,'ן':50,'ס':60,'ע':70, 'פ':80,'ף':80,'צ':90,'ץ':90,'ק':100,'ר':200,'ש':300,'ת':400 };
+        const numerologyTexts = {
+            1: "מנהיגות מולדת, עצמאות וכוח רצון עז.", 2: "זוגיות, שותפות, דיפלומטיה ורגישות.",
+            3: "ביטוי עצמי, יצירתיות, שמחת חיים.", 4: "יציבות, סדר, משמעת קפדנית.",
+            5: "חופש, הרפתקנות, תנועה מתמדת.", 6: "משפחתיות, הרמוניה ושירות לזולת.",
+            7: "רוחניות, העמקה ואינטואיציה חדה.", 8: "עוצמה, סמכות והישגיות חומרית.",
+            9: "הומניטריות, נתינה אוניברסלית וסיום מעגלים."
         };
-
-        var numerologyTexts = {
-            1: "מנהיגות מולדת, עצמאות וכוח רצון עז. אנשי ה-1 הם חלוצים, יזמים ובעלי ביטחון עצמי גבוה.",
-            2: "זוגיות, שותפות, דיפלומטיה ורגישות רגשית גבוהה. מגשרים טבעיים השואפים להרמוניה.",
-            3: "ביטוי עצמי, יצירתיות, שמחת חיים וכריזמה מתפרצת. תקשורתיים ואופטימיים.",
-            4: "יציבות, סדר, משמעת קפדנית ועבודה קשה. הבסיס האיתן שאפשר לסמוך עליו.",
-            5: "חופש, הרפתקנות, תנועה מתמדת ושינויים. זקוקים למרחב נשימה ענק וגיוון.",
-            6: "האהבה, המשפחתיות, ההרמוניה והשירות המסור לזולת. המטפלים והמגוננים.",
-            7: "רוחניות, העמקה, חשיבה חקרנית ואינטואיציה חדה כתער. הוגי דעות וחוקרים.",
-            8: "עוצמה, סמכות, שפע חומרי, סטאטוס והישגיות בקנה מידה גדול.",
-            9: "הומניטריות, נתינה אוניברסלית ללא תנאי, אצילות נפש וסיום מעגלים."
-        };
-
-        var zodiacSigns = [
-            { name: "טלה", desc: "מזל אש דינמי ויצרי. פורץ דרך, אמיץ ומוביל." },
-            { name: "שור", desc: "מזל אדמה יציב ופרקטי. נאמן, חושני ואמין כסלע." },
-            { name: "תאומים", desc: "מזל אוויר אינטלקטואלי ומהיר תפיסה. סקרן ותקשורתי." },
-            { name: "סרטן", desc: "מזל מים רגשי, משפחתי ועמוק בעל אינטואיציה חזקה." },
-            { name: "אריה", desc: "מזל אש מלכותי וזורח. כריזמטי, נדיב ובעל לב ענק." },
-            { name: "בתולה", desc: "מזל אדמה מאורגן, אנליטי ויורד לפרטים הקטנים." },
-            { name: "מאזניים", desc: "מזל אוויר אסתטי, דיפלומטי ושואף להרמוניה וצדק." },
-            { name: "עקרב", desc: "מזל מים אינטנסיבי, מגנטי ובעל עוצמה נפשית אדירה." },
-            { name: "קשת", desc: "מזל אש אופטימי, פילוסופי וחובב חופש והרפתקאות." },
-            { name: "גדי", desc: "מזל אדמה שאפתן, מעשי, בוגר ואחראי לטווח רחוק." },
-            { name: "דלי", desc: "מזל אוויר מקורי, אינדיבידואליסט והומניטרי." },
-            { name: "דגים", desc: "מזל מים רוחני, חומל, אמנותי ובעל דמיון עשיר." }
+        const zodiacSigns = [
+            { name: "טלה", desc: "מזל אש דינמי ויצרי." }, { name: "שור", desc: "מזל אדמה יציב ופרקטי." },
+            { name: "תאומים", desc: "מזל אוויר אינטלקטואלי ומהיר." }, { name: "סרטן", desc: "מזל מים רגשי ומשפחתי." },
+            { name: "אריה", desc: "מזל אש מלכותי וזורח." }, { name: "בתולה", desc: "מזל אדמה מאורגן ואנליטי." },
+            { name: "מאזניים", desc: "מזל אוויר אסתטי ודיפלומטי." }, { name: "עקרב", desc: "מזל מים אינטנסיבי ומגנטי." },
+            { name: "קשת", desc: "מזל אש אופטימי ופילוסופי." }, { name: "גדי", desc: "מזל אדמה שאפתן ומעשי." },
+            { name: "דלי", desc: "מזל אוויר מקורי ואינדיבידואלי." }, { name: "דגים", desc: "מזל מים רוחני וחומל." }
         ];
 
-        var ascendantTexts = {
-            "טלה": "חזות נמרצת, ישירה ומהירה. כישרון ליזמות ופיקוד.",
-            "שור": "נוכחות רגועה, שורשית ויציבה. כישרון לפיננסים ועיצוב.",
-            "תאומים": "אנרגיה קלילה, תקשורתית וסקרנית. כישרון לתקשורת ותכנות.",
-            "סרטן": "הילה רכה, מכילה ואמפתית. כישרון לטיפול ופסיכולוגיה.",
-            "אריה": "נוכחות כריזמטית ומרשימה. כישרון לניהול ובמה.",
-            "בתולה": "חזות רצינית, מסודרת ואנליטית. כישרון למדעים וארגון.",
-            "מאזניים": "קסם אישי, נעימות ודיפלומטיה. כישרון לגישור ומשפטים.",
-            "עקרב": "מבט חודר, עומק ומסתוריות. כישרון לחקירות וניתוח.",
-            "קשת": "אופטימיות, פתיחות ושמחת חיים. כישרון להוראה ותיירות.",
-            "גדי": "רושם סמכותי, בוגר ואחראי. כישרון לניהול מערכות גדולות.",
-            "דלי": "מקוריות, חדשנות ועצמאות מחשבתית. כישרון להייטק.",
-            "דגים": "עדינות, רגישות ורוחניות. כישרון לאמנות וטיפול."
-        };
-
-        let cityTimeout = null;
-        async function fetchCitySuggestions(query) {
-            const box = document.getElementById('citySuggestionsBox');
-            if (!query || query.length < 2) {
-                box.style.display = 'none';
-                return;
-            }
-            clearTimeout(cityTimeout);
-            cityTimeout = setTimeout(async () => {
-                try {
-                    let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
-                    let data = await res.json();
-                    box.innerHTML = '';
-                    if (data && data.length > 0) {
-                        data.forEach(item => {
-                            let cityName = item.display_name.split(',')[0];
-                            let div = document.createElement('div');
-                            div.className = 'suggestion-item';
-                            div.innerText = cityName;
-                            div.onclick = () => {
-                                document.getElementById('city').value = cityName;
-                                box.style.display = 'none';
-                            };
-                            box.appendChild(div);
-                        });
-                        box.style.display = 'block';
-                    } else {
-                        box.style.display = 'none';
-                    }
-                } catch (err) {
-                    box.style.display = 'none';
-                }
-            }, 300);
-        }
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('#city') && !e.target.closest('#citySuggestionsBox')) {
-                document.getElementById('citySuggestionsBox').style.display = 'none';
-            }
-        });
-
-        async function loadDynamicTexts() {
-            if (!navigator.onLine) return; 
-            try {
-                const { data, error } = await supabaseClient.from('dynamic_texts').select('*');
-                if (error) throw error;
-                if (data && data.length > 0) {
-                    data.forEach(item => {
-                        if (item.category === 'numerology') numerologyTexts[item.item_key] = item.content;
-                        else if (item.category === 'ascendant') ascendantTexts[item.item_key] = item.content;
-                        else if (item.category === 'zodiac') {
-                            let idx = zodiacSigns.findIndex(z => z.name === item.item_key);
-                            if (idx !== -1) zodiacSigns[idx].desc = item.content;
-                        }
-                    });
-                }
-            } catch (err) {
-                console.warn("משתמש בטקסטים סטטיים עקב בעיית תקשורת מול הענן.");
-            }
-        }
-
-        // --- מנגנון הרישום ללוג - נשלח null במקרה של שדות ריקים ---
-        async function writeToExperimentLog(actionType) {
-            try {
-                const now = new Date();
-                
-                // שלב ראשון: הגדרת נתוני המערכת שתמיד קיימים
-                const logEntry = {
-                    action_date: now.toISOString().split('T')[0],
-                    action_time: now.toTimeString().split(' ')[0],
-                    ip_address: await fetchUserIP(),
-                    browser_info: navigator.userAgent,
-                    action_type: actionType
-                };
-
-                // פונקציית עזר בטוחה: אם אין נתון נשלח null כדי שה-DB לא יקרוס
-                const getFieldValue = (elementId) => {
-                    const el = document.getElementById(elementId);
-                    return (el && el.value.trim() !== '') ? el.value.trim() : null;
-                };
-
-                // שלב שני: הוספת הנתונים מהמסך באופן דינמי
-                logEntry.first_name = getFieldValue('firstName');
-                logEntry.middle_name = getFieldValue('middleName');
-                logEntry.last_name = getFieldValue('lastName');
-                logEntry.extra_last_name = getFieldValue('extraLastName');
-                logEntry.phone = getFieldValue('phone');
-                logEntry.id_number = getFieldValue('idNumber');
-                logEntry.birth_date = getFieldValue('birthDate');
-                logEntry.birth_time = getFieldValue('birthTime');
-                logEntry.city = getFieldValue('city');
-
-                // שלב שלישי: ביצוע השמירה
-                if (navigator.onLine && typeof supabaseClient !== 'undefined') {
-                    const { error } = await supabaseClient.from('reports_log').insert([logEntry]);
-                    if (error) {
-                        console.error("שגיאת רישום מול שרת Supabase:", error);
-                        saveLogOffline(logEntry);
-                    } else {
-                        console.log("הלוג נרשם בהצלחה!");
-                    }
-                } else {
-                    saveLogOffline(logEntry);
-                }
-            } catch (err) {
-                console.error("שגיאה במנגנון יצירת הלוג:", err);
-            }
-        }
-
-        async function fetchUserIP() {
-            if (!navigator.onLine) return "Offline";
-            try {
-                const res = await fetch('https://api.ipify.org?format=json');
-                const data = await res.json();
-                return data.ip;
-            } catch {
-                return "Unknown";
-            }
-        }
-
-        function saveLogOffline(logEntry) {
-            let logs = JSON.parse(localStorage.getItem('offlineReportsLog')) || [];
-            logs.push(logEntry);
-            localStorage.setItem('offlineReportsLog', JSON.stringify(logs));
-        }
-
-        async function syncOfflineLogs() {
-            if (typeof supabaseClient === 'undefined') return;
-            let logs = JSON.parse(localStorage.getItem('offlineReportsLog')) || [];
-            if (logs.length === 0) return;
-            const { error } = await supabaseClient.from('reports_log').insert(logs);
-            if (!error) localStorage.removeItem('offlineReportsLog');
-        }
-
-        window.addEventListener('online', syncOfflineLogs);
-        window.addEventListener('DOMContentLoaded', () => {
-            loadDynamicTexts();
-            if (navigator.onLine) syncOfflineLogs();
-        });
-
+        // אלגוריתמים מתמטיים/גימטריים
         function calcGematria(word) {
-            let sum = 0;
-            if (!word) return 0;
-            for (let i = 0; i < word.length; i++) {
-                if (gematriaDict[word[i]]) sum += gematriaDict[word[i]];
-            }
+            let sum = 0; if (!word) return 0;
+            for (let i = 0; i < word.length; i++) if (gematriaDict[word[i]]) sum += gematriaDict[word[i]];
             return sum;
         }
-
         function calcNumerology(number) {
             if (!number) return 0;
             let sum = number;
@@ -388,216 +147,122 @@
             }
             return sum;
         }
-
         function calcNumFromDigits(str) {
-            let onlyNum = str.replace(/\D/g, '');
+            let onlyNum = str.replace(/\D/g, ''); // מסנן הכל מלבד ספרות
             let sum = 0;
             for (let i = 0; i < onlyNum.length; i++) sum += parseInt(onlyNum[i]);
             return sum;
         }
-
-        function getZodiacIndex(day, month) {
-            if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) return 0;
-            if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) return 1;
-            if ((month == 5 && day >= 21) || (month == 6 && day <= 20)) return 2;
-            if ((month == 6 && day >= 21) || (month == 7 && day <= 22)) return 3;
-            if ((month == 7 && day >= 23) || (month == 8 && day <= 22)) return 4;
-            if ((month == 8 && day >= 23) || (month == 9 && day <= 22)) return 5;
-            if ((month == 9 && day >= 23) || (month == 10 && day <= 22)) return 6;
-            if ((month == 10 && day >= 23) || (month == 11 && day <= 21)) return 7;
-            if ((month == 11 && day >= 22) || (month == 12 && day <= 21)) return 8;
-            if ((month == 12 && day >= 22) || (month == 1 && day <= 19)) return 9;
-            if ((month == 1 && day >= 20) || (month == 2 && day <= 18)) return 10;
-            return 11;
+        async function fetchUserIP() {
+            try { const res = await fetch('https://api.ipify.org?format=json'); const data = await res.json(); return data.ip; }
+            catch { return "Unknown"; }
         }
 
-        function calculateAscendant(sunSignIndex, birthTimeStr) {
-            let parts = birthTimeStr.split(":");
-            let decimalTime = parseInt(parts[0]) + (parseInt(parts[1]) / 60);
-            let diff = decimalTime - 6;
-            if (diff < 0) diff += 24;
-            let offset = Math.floor(diff / 2);
-            return zodiacSigns[(sunSignIndex + offset) % 12].name;
+        // ==========================================
+        // מודול הרישום לשרת (Logging Module) - מוגן מפני שגיאות 400
+        // ==========================================
+        async function writeToExperimentLog(actionType) {
+            try {
+                const now = new Date();
+                const getFieldValue = (id) => { const el = document.getElementById(id); return el && el.value.trim() !== '' ? el.value.trim() : null; };
+
+                // יצירת אובייקט הנתונים הבסיסי שכולל שדות מערכת
+                let logEntry = {
+                    action_date: now.toISOString().split('T')[0],
+                    action_time: now.toTimeString().split(' ')[0],
+                    ip_address: await fetchUserIP(),
+                    browser_info: navigator.userAgent,
+                    action_type: actionType,
+                    first_name: getFieldValue('firstName'),
+                    middle_name: getFieldValue('middleName'),
+                    last_name: getFieldValue('lastName'),
+                    extra_last_name: getFieldValue('extraLastName'),
+                    phone: getFieldValue('phone'),
+                    id_number: getFieldValue('idNumber'),
+                    birth_date: getFieldValue('birthDate'),
+                    birth_time: getFieldValue('birthTime'),
+                    city: getFieldValue('city')
+                };
+
+                // [הערת מתחזק: מחיקת מפתחות ריקים (null) למניעת התנגשויות (400 Bad Request) מול הסכמה של ה-DB]
+                Object.keys(logEntry).forEach(key => {
+                    if (logEntry[key] === null) {
+                        delete logEntry[key];
+                    }
+                });
+
+                if (typeof supabaseClient !== 'undefined') {
+                    // ביצוע השליחה ותפיסת שגיאות מפורטות
+                    const { data, error } = await supabaseClient.from('reports_log').insert([logEntry]);
+                    if (error) {
+                        console.error("שגיאת שרת מפורטת מ-Supabase:", error.message, error.details);
+                    } else {
+                        console.log("הלוג נרשם בהצלחה במסד הנתונים!");
+                    }
+                }
+            } catch (err) {
+                console.error("שגיאת קוד בזמן ניסיון הרישום:", err);
+            }
         }
 
+        // ניתוב פעולות המשתמש
         async function handleUserAction(actionType) {
-            // קריאה ראשונה: רישום ללוג מתבצע כאן כפקודה ראשונה, עוד לפני שום הודעה או אזהרה!
             await writeToExperimentLog(actionType);
 
-            if (actionType === 'deep_report') {
-                alert("הפקת דוח עמוק נמצאת עדיין בפיתוח.");
-                return;
-            }
-
-            const fName = document.getElementById('firstName').value.trim();
-            const mName = document.getElementById('middleName').value.trim();
-            const lName = document.getElementById('lastName').value.trim();
-            const eName = document.getElementById('extraLastName').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-            const idNumber = document.getElementById('idNumber').value.trim();
-            const dateVal = document.getElementById('birthDate').value;
-            const city = document.getElementById('city').value.trim();
+            if (actionType === 'deep_report') { alert("הפקת דוח עמוק עדיין בפיתוח."); return; }
+            if (actionType === 'whatsapp_share') { window.print(); return; } // מעקף זמני לשיתוף
+            if (actionType === 'pdf_download') { window.print(); return; }
 
             if (actionType === 'basic_report') {
-                if (!fName || !lName || !phone || !dateVal || !city) {
-                    alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון, תאריך לידה ועיר לידה.");
-                    return;
+                const fName = document.getElementById('firstName').value.trim();
+                const lName = document.getElementById('lastName').value.trim();
+                const phone = document.getElementById('phone').value.trim();
+                const bDate = document.getElementById('birthDate').value;
+                if (!fName || !lName || !phone || !bDate) {
+                    alert("חובה למלא את כל שדות החובה."); return;
                 }
-
-                const hebrewRegex = /^[\u0590-\u05FF\s'-]+$/;
-                if ((fName && !hebrewRegex.test(fName)) || 
-                    (mName && !hebrewRegex.test(mName)) || 
-                    (lName && !hebrewRegex.test(lName)) || 
-                    (eName && !hebrewRegex.test(eName))) {
-                    alert("שדות השם חייבים להכיל אותיות בעברית בלבד.");
-                    return;
-                }
-
-                const cityRegex = /^[\u0590-\u05FFa-zA-Z\s'-]+$/;
-                if (!cityRegex.test(city)) {
-                    alert("שדה עיר הלידה חייב להכיל אותיות בלבד (ללא מספרים או תווים מיוחדים).");
-                    return;
-                }
-
-                const digitsRegex = /^\d+$/;
-                if (!digitsRegex.test(phone)) {
-                    alert("מספר טלפון חייב להכיל ספרות בלבד.");
-                    return;
-                }
-                if (idNumber && !digitsRegex.test(idNumber)) {
-                    alert("מספר תעודת זהות חייב להכיל ספרות בלבד.");
-                    return;
-                }
-
                 runBasicReportCalculation();
-            } else if (actionType === 'whatsapp_share') {
-                executeWhatsAppShare();
-            } else if (actionType === 'pdf_download') {
-                window.print();
             }
         }
 
-        async function runBasicReportCalculation() {
-            const fName = document.getElementById('firstName').value.trim();
-            const mName = document.getElementById('middleName').value.trim();
-            const lName = document.getElementById('lastName').value.trim();
-            const eName = document.getElementById('extraLastName').value.trim();
-            const dateVal = document.getElementById('birthDate').value;
-            const timeVal = document.getElementById('birthTime').value;
-            const city = document.getElementById('city').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-
+        // ==========================================
+        // אלגוריתם הדוח המרכזי 
+        // ==========================================
+        function runBasicReportCalculation() {
             document.getElementById('calcBtn').disabled = true;
             document.getElementById('loadingMsg').style.display = 'block';
             document.getElementById('results').style.display = 'none';
 
             try {
-                let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=5`);
-                let geoData = await geoRes.json();
-                if (geoData.length === 0) throw new Error("העיר לא נמצאה, אנא בדוק את האיות או בחר עיר מרכזית קרובה.");
-
-                let matchedGeo = geoData.find(item => item.display_name.toLowerCase().includes(city.toLowerCase())) || geoData[0];
-
-                let sunsetRes = await fetch(`https://api.sunrise-sunset.org/json?lat=${matchedGeo.lat}&lng=${matchedGeo.lon}&date=${dateVal}&formatted=0`);
-                let sunsetData = await sunsetRes.json();
-                let isAfterSunset = new Date(`${dateVal}T${timeVal}:00`) > new Date(sunsetData.results.sunset);
-
-                let birthDt = new Date(`${dateVal}T${timeVal}:00`);
-                if (isAfterSunset) birthDt.setDate(birthDt.getDate() + 1);
-
-                // המרת תאריך לידה עברי
-                let hebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${birthDt.getFullYear()}&gm=${birthDt.getMonth()+1}&gd=${birthDt.getDate()}&g2h=1`);
-                let hebData = await hebRes.json();
-
-                // חישוב יום הולדת עברי עתידי קרוב
-                let today = new Date();
-                let todayHebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${today.getFullYear()}&gm=${today.getMonth()+1}&gd=${today.getDate()}&g2h=1`);
-                let todayHebData = await todayHebRes.json();
-
-                let targetHy = todayHebData.hy;
-                let bdayCheckRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
-                let bdayCheckData = await bdayCheckRes.json();
-                let bdayGregorian = new Date(bdayCheckData.gy, bdayCheckData.gm - 1, bdayCheckData.gd);
-
-                if (bdayGregorian < today) {
-                    targetHy++;
-                    let nextBdayRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
-                    bdayCheckData = await nextBdayRes.json();
-                }
-
-                let nextBdayFormatted = `${bdayCheckData.gd}/${bdayCheckData.gm}/${bdayCheckData.gy}`;
-                let hebrewYearOnly = bdayCheckData.hy || '';
-
-                let dateObj = new Date(dateVal);
-                let zIndex = getZodiacIndex(dateObj.getDate(), dateObj.getMonth() + 1);
-                let sunSign = zodiacSigns[zIndex];
-                let ascendant = calculateAscendant(zIndex, timeVal);
-
-                document.getElementById('resAstro').innerHTML = `
-                    <div class="result-item result-date">
-                        <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebData.hebrew}</strong></p>
-                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong> (<span style="font-weight: bold;">${hebrewYearOnly}</span>)</p>
-                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">(הלידה התרחשה בשעה ${timeVal} ${isAfterSunset ? 'לאחר השקיעה' : 'לפני השקיעה'} בעיר ${city})</p>
-                    </div>
-                    <div class="result-item result-zodiac">
-                        <h4>מזל שמש: ${sunSign.name}</h4>
-                        <p class="light-text">${sunSign.desc}</p>
-                    </div>
-                    <div class="result-item result-zodiac">
-                        <h4>מזל אופק: ${ascendant}</h4>
-                        <p class="light-text">${ascendantTexts[ascendant]}</p>
-                    </div>
-                `;
-
+                // שליפת נתונים רלוונטיים
+                const fName = document.getElementById('firstName').value.trim();
+                const lName = document.getElementById('lastName').value.trim();
+                const idNum = document.getElementById('idNumber').value.trim();
+                
                 let namesHtml = "";
-                const namesList = [
-                    { label: "שם פרטי", val: fName },
-                    { label: "שם פרטי נוסף", val: mName },
-                    { label: "שם משפחה", val: lName },
-                    { label: "שם משפחה נוסף", val: eName }
-                ];
-
-                namesList.forEach(item => {
-                    if (item.val) {
-                        let g = calcGematria(item.val);
-                        let n = calcNumerology(g);
-                        namesHtml += `<div class="result-item"><h4>${item.label}: ${item.val} (${g})</h4><p><strong>מספר נומרולוגי:</strong> ${n}</p><p class="light-text">${numerologyTexts[n]}</p></div>`;
-                    }
-                });
-
-                let totalStr = fName + (mName||"") + lName + (eName||"");
-                let totGematria = calcGematria(totalStr);
+                let totGematria = calcGematria(fName + lName);
                 let totNum = calcNumerology(totGematria);
-                namesHtml += `<div class="result-item"><h4>כל השמות יחד (${totGematria})</h4><p><strong>מספר נומרולוגי:</strong> ${totNum}</p><p class="light-text">${numerologyTexts[totNum]}</p></div>`;
 
-                if (phone) {
-                    let pNum = calcNumerology(calcNumFromDigits(phone));
-                    namesHtml += `<div class="result-item"><h4>מספר תקשורת: ${phone}</h4><p><strong>מספר נומרולוגי:</strong> ${pNum}</p><p class="light-text">${numerologyTexts[pNum]}</p></div>`;
+                namesHtml += `<div class="result-item"><h4>שם מלא: ${fName} ${lName} (${totGematria})</h4><p><strong>מספר נומרולוגי:</strong> ${totNum}</p><p class="light-text">${numerologyTexts[totNum]}</p></div>`;
+
+                // [הערת מתחזק: תוספת חדשה - חישוב נומרולוגיה לתעודת זהות אם הוזנה]
+                if (idNum) {
+                    let idSum = calcNumFromDigits(idNum); // מחשב את סכום הספרות (מוריד תווים לא תקינים)
+                    let idNumValue = calcNumerology(idSum); // מצמצם את הסכום לספרה בודדת
+                    namesHtml += `<div class="result-item"><h4>תעודת זהות: ${idNum}</h4><p><strong>מספר נומרולוגי:</strong> ${idNumValue}</p><p class="light-text">${numerologyTexts[idNumValue]}</p></div>`;
                 }
 
+                // הדפסה למסך
+                document.getElementById('resName').innerText = `${fName} ${lName}`;
                 document.getElementById('resNamesNum').innerHTML = namesHtml;
-                let fullName = `${fName} ${lName}`;
-                document.getElementById('resName').innerText = fullName;
-                document.getElementById('resName').setAttribute('data-fullname', fullName);
                 document.getElementById('results').style.display = 'block';
 
             } catch (err) {
-                alert("אירעה שגיאה בחישוב הנתונים: " + err.message);
+                alert("אירעה שגיאה: " + err.message);
             } finally {
                 document.getElementById('calcBtn').disabled = false;
                 document.getElementById('loadingMsg').style.display = 'none';
             }
-        }
-
-        function executeWhatsAppShare() {
-            const phone = document.getElementById('phone').value.trim();
-            if (!phone) {
-                alert("אנא הזן מספר טלפון לשיתוף.");
-                return;
-            }
-            let cleanPhone = phone.replace(/^0/, '972').replace(/\D/g, '');
-            let text = document.getElementById('contentToPrint').innerText;
-            window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
         }
     </script>
 </body>
