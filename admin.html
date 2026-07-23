@@ -364,8 +364,8 @@
             const toValue = document.getElementById('toDate').value;
             const fromStr = formatCompactDateForFilename(fromValue);
             const toStr = formatCompactDateForFilename(toValue);
-            const filename = `reports_data_${fromStr}_to_${toStr}.csv`;
-
+            const filename = `Report-from-${fromStr}-to-${toStr}.csv`;
+            
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
