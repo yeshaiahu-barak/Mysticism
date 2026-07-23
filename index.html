@@ -56,9 +56,9 @@
         .result-zodiac { background: #ebf5fb; border-right-color: var(--primary-color); }
         .result-date { background: #d4e6f1; border-right-color: #1b4f72; }
         
-        .result-item h4 { margin: 0 0 8px 0; font-size: 1.1em; }
-        .result-item p { margin: 0 0 5px 0; color: #555; text-align: justify; }
-        .light-text { color: #5d6d7e !important; }
+        .result-item h4 { margin: 0 0 8px 0; font-size: 1.1em; color: var(--text-color); }
+        .result-item p { margin: 0 0 5px 0; color: #333; text-align: justify; }
+        .light-text { color: #555 !important; }
 
         .actions { display: flex; gap: 15px; margin-top: 25px; }
         .whatsapp-btn { background-color: #25D366; color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
@@ -134,7 +134,7 @@
 
     <script>
         // ==========================================
-        // מילוני נתונים (גיבוי מקומי במקרה של אופליין)
+        // מילוני נתונים (משמשים כגיבוי למצב אופליין)
         // ==========================================
         const gematriaDict = {
             'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,
@@ -185,37 +185,44 @@
         };
 
         // ==========================================
-        // משיכת טקסטים מהשרת במידה ויש חיבור
+        // משיכת טקסטים דינמיים מהשרת
         // ==========================================
         async function fetchDynamicTexts() {
             if (!navigator.onLine || typeof supabaseClient === 'undefined') return;
+            
+            // עדכון שמות העמודות בהתאם לסכמה החדשה שהגדרת ב-SQL
+            const COL_CATEGORY = 'category';     
+            const COL_KEY_NAME = 'item_key';     
+            const COL_TEXT_CONTENT = 'content'; 
+
             try {
-                // קריאה לטבלת הטקסטים שלך לפי השם שסיפקת
                 const { data, error } = await supabaseClient.from('dynamic_texts').select('*');
                 
-                if (!error && data && data.length > 0) {
-                    console.log("טקסטים דינמיים נמשכו בהצלחה מ-Supabase!");
+                if (error) {
+                    console.error("שגיאה במשיכת הטקסטים מהשרת:", error);
+                    return;
+                }
+                
+                if (data && data.length > 0) {
+                    console.log("✅ הנתונים שנמשכו מ-dynamic_texts:", data);
                     
                     data.forEach(item => {
-                        // [הערת מתחזק: כאן מוגדרים שמות העמודות שמגיעים מ-Supabase]
-                        // אם במסד הנתונים שלך העמודות נקראות אחרת, פשוט שנה את המילים:
-                        // 'category', 'key_name', ו-'text_content' לשמות האמיתיים שלך.
-                        const category = item.category; 
-                        const key = item.key_name;      
-                        const content = item.text_content; 
+                        const category = item[COL_CATEGORY]; 
+                        const key = item[COL_KEY_NAME];      
+                        const content = item[COL_TEXT_CONTENT]; 
 
-                        if (category === 'numerology' && numerologyTexts[key]) {
-                            numerologyTexts[key] = content;
-                        } else if (category === 'zodiac') {
+                        if (category === 'numerology' || category === 'נומרולוגיה') {
+                            if (numerologyTexts[key]) numerologyTexts[key] = content;
+                        } else if (category === 'zodiac' || category === 'מזלות') {
                             let zIndex = zodiacSigns.findIndex(z => z.name === key);
                             if (zIndex !== -1) zodiacSigns[zIndex].desc = content;
-                        } else if (category === 'ascendant' && ascendantTexts[key]) {
-                            ascendantTexts[key] = content;
+                        } else if (category === 'ascendant' || category === 'אופק') {
+                            if (ascendantTexts[key]) ascendantTexts[key] = content;
                         }
                     });
                 }
             } catch (err) {
-                console.warn("לא ניתן למשוך טקסטים מהשרת, נשתמש בטקסטים המקומיים כגיבוי.", err);
+                console.warn("שגיאת תקשורת במשיכת הנתונים. המערכת תשתמש בטקסטים המקומיים המובנים.", err);
             }
         }
 
@@ -226,8 +233,8 @@
             const statusEl = document.getElementById('networkStatus');
             if (navigator.onLine) {
                 statusEl.classList.remove('status-offline');
-                syncOfflineLogs(); // כשחוזר אינטרנט - משדר לוגים מהזיכרון
-                fetchDynamicTexts(); // וגם מנסה למשוך טקסטים מעודכנים
+                syncOfflineLogs(); 
+                fetchDynamicTexts(); 
             } else {
                 statusEl.classList.add('status-offline');
             }
@@ -241,12 +248,10 @@
                 try {
                     const { error } = await supabaseClient.from('reports_log').insert(offlineLogs);
                     if (!error) {
-                        console.log("לוגים שנשמרו באופליין שודרו בהצלחה למסד הנתונים!");
+                        console.log("לוגים מהאופליין שודרו בהצלחה!");
                         localStorage.removeItem('mysticOfflineLogs');
                     }
-                } catch (err) {
-                    console.error("שגיאה בסנכרון לוגים מהאופליין:", err);
-                }
+                } catch (err) { console.error("שגיאה בסנכרון מהאופליין:", err); }
             }
         }
 
@@ -272,24 +277,18 @@
                     city: getFieldValue('city')
                 };
 
-                // ניקוי ערכים ריקים למניעת שגיאת 400 מול סכמת הטבלה
                 Object.keys(logEntry).forEach(key => {
                     if (logEntry[key] === null) delete logEntry[key];
                 });
 
                 if (navigator.onLine && typeof supabaseClient !== 'undefined') {
-                    const { error } = await supabaseClient.from('reports_log').insert([logEntry]);
-                    if (error) throw error;
+                    await supabaseClient.from('reports_log').insert([logEntry]);
                 } else {
-                    // שמירה באופליין
                     let offlineLogs = JSON.parse(localStorage.getItem('mysticOfflineLogs') || '[]');
                     offlineLogs.push(logEntry);
                     localStorage.setItem('mysticOfflineLogs', JSON.stringify(offlineLogs));
-                    console.log("אין חיבור רשת כרגע. הפעולה נשמרה מקומית ותשודר בהמשך.");
                 }
-            } catch (err) {
-                console.error("שגיאה במנגנון הלוג:", err);
-            }
+            } catch (err) { console.error("שגיאת מערכת ברישום הלוג:", err); }
         }
 
         async function fetchUserIP() {
@@ -302,7 +301,7 @@
         }
 
         // ==========================================
-        // אלגוריתמים ונומרולוגיה
+        // אלגוריתמים ואסטרונומיה
         // ==========================================
         function calcGematria(word) {
             let sum = 0; if (!word) return 0;
@@ -386,7 +385,7 @@
         });
 
         // ==========================================
-        // פעולות משתמש והפקת הדוח
+        // הפקת הדוח הראשי
         // ==========================================
         async function handleUserAction(actionType) {
             await writeToExperimentLog(actionType);
@@ -447,7 +446,7 @@
             document.getElementById('results').style.display = 'none';
 
             try {
-                if (!navigator.onLine) throw new Error("אין חיבור אינטרנט פעיל. לא ניתן להמיר תאריכים עבריים ולמשוך נתונים כרגע. נסה שוב כשהרשת תחזור.");
+                if (!navigator.onLine) throw new Error("אין חיבור אינטרנט פעיל. לא ניתן להמיר תאריכים עבריים וגיאוגרפיה. נסה שוב כשהרשת תחזור.");
 
                 let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=5`);
                 let geoData = await geoRes.json();
@@ -479,8 +478,18 @@
                     bdayCheckData = await nextBdayRes.json();
                 }
 
+                let hebrewYearOnly = "";
+                if (bdayCheckData.hebrew) {
+                    let bdayHebrewWords = bdayCheckData.hebrew.split(' ');
+                    let lastWordYear = bdayHebrewWords[bdayHebrewWords.length - 1]; 
+                    lastWordYear = lastWordYear.replace(/״/g, '"').replace(/׳/g, "'"); 
+                    hebrewYearOnly = "ה'" + lastWordYear;
+                } else {
+                    hebrewYearOnly = bdayCheckData.hy; 
+                }
+
                 let nextBdayFormatted = `${bdayCheckData.gd}/${bdayCheckData.gm}/${bdayCheckData.gy}`;
-                let hebrewYearOnly = bdayCheckData.hy || '';
+                let hebrewBdayFull = hebData.hebrew ? hebData.hebrew.replace(/״/g, '"').replace(/׳/g, "'") : hebData.hebrew;
 
                 let dateObj = new Date(dateVal);
                 let zIndex = getZodiacIndex(dateObj.getDate(), dateObj.getMonth() + 1);
@@ -489,7 +498,7 @@
 
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date">
-                        <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebData.hebrew}</strong></p>
+                        <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
                         <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong> (<span style="font-weight: bold;">${hebrewYearOnly}</span>)</p>
                         <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">(הלידה התרחשה בשעה ${timeVal} ${isAfterSunset ? 'לאחר השקיעה' : 'לפני השקיעה'} בעיר ${city})</p>
                     </div>
@@ -504,6 +513,19 @@
                 `;
 
                 let namesHtml = "";
+                
+                // הוספת בלוק מיוחד: מספר מזל (נומרולוגיה של תאריך הלידה)
+                let dateParts = dateVal.split('-');
+                let displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                let dateNumValue = calcNumerology(calcNumFromDigits(dateVal));
+                namesHtml += `
+                    <div class="result-item">
+                        <h4>מספר מזל: ${displayDate}</h4>
+                        <p><strong>מספר נומרולוגי: ${dateNumValue}</strong></p>
+                        <p class="light-text">${numerologyTexts[dateNumValue]}</p>
+                    </div>
+                `;
+
                 const namesList = [
                     { label: "שם פרטי", val: fName },
                     { label: "שם פרטי נוסף", val: mName },
@@ -515,24 +537,26 @@
                     if (item.val) {
                         let g = calcGematria(item.val);
                         let n = calcNumerology(g);
-                        namesHtml += `<div class="result-item"><h4>${item.label}: ${item.val} (${g})</h4><p><strong>מספר נומרולוגי:</strong> ${n}</p><p class="light-text">${numerologyTexts[n]}</p></div>`;
+                        namesHtml += `<div class="result-item"><h4>${item.label}: ${item.val} (${g})</h4><p><strong>מספר נומרולוגי: ${n}</strong></p><p class="light-text">${numerologyTexts[n]}</p></div>`;
                     }
                 });
 
                 let totalStr = fName + (mName||"") + lName + (eName||"");
                 let totGematria = calcGematria(totalStr);
                 let totNum = calcNumerology(totGematria);
-                namesHtml += `<div class="result-item"><h4>כל השמות יחד (${totGematria})</h4><p><strong>מספר נומרולוגי:</strong> ${totNum}</p><p class="light-text">${numerologyTexts[totNum]}</p></div>`;
+                namesHtml += `<div class="result-item"><h4>כל השמות יחד (${totGematria})</h4><p><strong>מספר נומרולוגי: ${totNum}</strong></p><p class="light-text">${numerologyTexts[totNum]}</p></div>`;
 
+                // שינוי כותרת הטלפון למספר תקשורת
                 if (phone) {
                     let pNum = calcNumerology(calcNumFromDigits(phone));
-                    namesHtml += `<div class="result-item"><h4>מספר טלפון נייד: ${phone}</h4><p><strong>מספר נומרולוגי:</strong> ${pNum}</p><p class="light-text">${numerologyTexts[pNum]}</p></div>`;
+                    namesHtml += `<div class="result-item"><h4>מספר תקשורת: ${phone}</h4><p><strong>מספר נומרולוגי: ${pNum}</strong></p><p class="light-text">${numerologyTexts[pNum]}</p></div>`;
                 }
 
+                // שינוי כותרת הת.ז למספר זהות
                 if (idNumber) {
                     let idSum = calcNumFromDigits(idNumber);
                     let idNumValue = calcNumerology(idSum);
-                    namesHtml += `<div class="result-item"><h4>תעודת זהות: ${idNumber}</h4><p><strong>מספר נומרולוגי:</strong> ${idNumValue}</p><p class="light-text">${numerologyTexts[idNumValue]}</p></div>`;
+                    namesHtml += `<div class="result-item"><h4>מספר זהות: ${idNumber}</h4><p><strong>מספר נומרולוגי: ${idNumValue}</strong></p><p class="light-text">${numerologyTexts[idNumValue]}</p></div>`;
                 }
 
                 document.getElementById('resNamesNum').innerHTML = namesHtml;
@@ -556,7 +580,6 @@
             window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
         }
 
-        // טעינה ראשונית
         window.addEventListener('DOMContentLoaded', () => {
             updateNetworkStatus();
             fetchDynamicTexts();
