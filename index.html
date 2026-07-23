@@ -190,15 +190,32 @@
         async function fetchDynamicTexts() {
             if (!navigator.onLine || typeof supabaseClient === 'undefined') return;
             try {
-                // ** אנא עדכן את השם 'mystic_texts' לשם הטבלה האמיתית שלך ב-DB **
-                const { data, error } = await supabaseClient.from('mystic_texts').select('*');
+                // קריאה לטבלת הטקסטים שלך לפי השם שסיפקת
+                const { data, error } = await supabaseClient.from('dynamic_texts').select('*');
+                
                 if (!error && data && data.length > 0) {
-                    console.log("טקסטים נמשכו מהשרת בהצלחה.");
-                    // כאן נוכל להוסיף את ההמרה של הטקסטים מהשרת למשתנים שלנו, 
-                    // בהתאם לשמות העמודות האמיתיות שלך.
+                    console.log("טקסטים דינמיים נמשכו בהצלחה מ-Supabase!");
+                    
+                    data.forEach(item => {
+                        // [הערת מתחזק: כאן מוגדרים שמות העמודות שמגיעים מ-Supabase]
+                        // אם במסד הנתונים שלך העמודות נקראות אחרת, פשוט שנה את המילים:
+                        // 'category', 'key_name', ו-'text_content' לשמות האמיתיים שלך.
+                        const category = item.category; 
+                        const key = item.key_name;      
+                        const content = item.text_content; 
+
+                        if (category === 'numerology' && numerologyTexts[key]) {
+                            numerologyTexts[key] = content;
+                        } else if (category === 'zodiac') {
+                            let zIndex = zodiacSigns.findIndex(z => z.name === key);
+                            if (zIndex !== -1) zodiacSigns[zIndex].desc = content;
+                        } else if (category === 'ascendant' && ascendantTexts[key]) {
+                            ascendantTexts[key] = content;
+                        }
+                    });
                 }
             } catch (err) {
-                console.warn("לא ניתן למשוך טקסטים מהשרת, משתמש בגיבוי המקומי.");
+                console.warn("לא ניתן למשוך טקסטים מהשרת, נשתמש בטקסטים המקומיים כגיבוי.", err);
             }
         }
 
@@ -209,7 +226,8 @@
             const statusEl = document.getElementById('networkStatus');
             if (navigator.onLine) {
                 statusEl.classList.remove('status-offline');
-                syncOfflineLogs(); // ברגע שהאינטרנט חוזר, משדרים את הלוגים
+                syncOfflineLogs(); // כשחוזר אינטרנט - משדר לוגים מהזיכרון
+                fetchDynamicTexts(); // וגם מנסה למשוך טקסטים מעודכנים
             } else {
                 statusEl.classList.add('status-offline');
             }
@@ -223,7 +241,7 @@
                 try {
                     const { error } = await supabaseClient.from('reports_log').insert(offlineLogs);
                     if (!error) {
-                        console.log("לוגים שנשמרו באופליין שודרו בהצלחה!");
+                        console.log("לוגים שנשמרו באופליין שודרו בהצלחה למסד הנתונים!");
                         localStorage.removeItem('mysticOfflineLogs');
                     }
                 } catch (err) {
@@ -254,7 +272,7 @@
                     city: getFieldValue('city')
                 };
 
-                // ניקוי ערכים ריקים למניעת שגיאת 400
+                // ניקוי ערכים ריקים למניעת שגיאת 400 מול סכמת הטבלה
                 Object.keys(logEntry).forEach(key => {
                     if (logEntry[key] === null) delete logEntry[key];
                 });
@@ -267,7 +285,7 @@
                     let offlineLogs = JSON.parse(localStorage.getItem('mysticOfflineLogs') || '[]');
                     offlineLogs.push(logEntry);
                     localStorage.setItem('mysticOfflineLogs', JSON.stringify(offlineLogs));
-                    console.log("אין חיבור. הלוג נשמר מקומית וישודר בהמשך.");
+                    console.log("אין חיבור רשת כרגע. הפעולה נשמרה מקומית ותשודר בהמשך.");
                 }
             } catch (err) {
                 console.error("שגיאה במנגנון הלוג:", err);
@@ -338,7 +356,7 @@
         async function fetchCitySuggestions(query) {
             const box = document.getElementById('citySuggestionsBox');
             if (!query || query.length < 2) { box.style.display = 'none'; return; }
-            if (!navigator.onLine) return; // לא ניתן להביא השלמות ללא אינטרנט
+            if (!navigator.onLine) return; 
             
             clearTimeout(cityTimeout);
             cityTimeout = setTimeout(async () => {
@@ -429,8 +447,7 @@
             document.getElementById('results').style.display = 'none';
 
             try {
-                // חישובי תאריכים מול APIs (אם אין אינטרנט, המערכת תיפול ל-catch)
-                if (!navigator.onLine) throw new Error("אין חיבור אינטרנט פעיל. לא ניתן להמיר תאריכים עבריים כרגע.");
+                if (!navigator.onLine) throw new Error("אין חיבור אינטרנט פעיל. לא ניתן להמיר תאריכים עבריים ולמשוך נתונים כרגע. נסה שוב כשהרשת תחזור.");
 
                 let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=5`);
                 let geoData = await geoRes.json();
@@ -539,7 +556,7 @@
             window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
         }
 
-        // טעינה ראשונית של מצב הרשת ושליפת טקסטים מהשרת
+        // טעינה ראשונית
         window.addEventListener('DOMContentLoaded', () => {
             updateNetworkStatus();
             fetchDynamicTexts();
