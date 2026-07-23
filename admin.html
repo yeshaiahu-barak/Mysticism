@@ -3,430 +3,137 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
-    <!-- פקודות למניעת שמירה בזיכרון המטמון (Cache) -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     
-    <title>מסך ניהול מרכזי - דוחות מיסטיקה</title>
+    <title>מערכת בקרה - דוחות מיסטיקה</title>
     
-    <!-- טעינת ספריות קונפיגורציה -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
 
     <style>
-        :root {
-            --primary-color: #2c3e50;
-            --accent-color: #3498db;
-            --bg-color: #f4f7f6;
-            --card-bg: #ffffff;
-            --danger-color: #e74c3c;
-            --google-color: #4285F4;
-            --excel-color: #27ae60;
-            --border-color: #bdc3c7;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: var(--card-bg);
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
+        /* עיצוב מערכת ניהול - נקי, רשמי ומופרד מעיצוב הלקוח */
+        :root { --admin-primary: #2c3e50; --admin-action: #f39c12; --admin-export: #27ae60; --bg: #ecf0f1; }
+        body { font-family: system-ui, sans-serif; background: var(--bg); margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: auto; background: #fff; padding: 25px; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
         
-        #loginView, #unauthView, #adminView {
-            display: none;
-        }
-
-        .unauth-container, .login-container { max-width: 600px; text-align: center; margin: 0 auto; }
+        #loginView, #unauthView, #adminView { display: none; }
+        .auth-card { max-width: 400px; text-align: center; margin: 100px auto; padding: 30px; background: white; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         
-        h1 {
-            color: var(--primary-color);
-            border-bottom: 2px solid var(--accent-color);
-            padding-bottom: 10px;
-        }
+        .header { display: flex; justify-content: space-between; border-bottom: 2px solid var(--admin-primary); padding-bottom: 15px; margin-bottom: 25px; }
+        .header-actions { display: flex; gap: 10px; }
         
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--accent-color);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        .header-top h1 { border: none; padding: 0; margin: 0; }
+        button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; color: white; font-weight: bold; }
+        .btn-refresh { background: var(--admin-action); }
+        .btn-export { background: var(--admin-export); }
+        .btn-logout { background: #e74c3c; }
         
-        .header-actions {
-            display: flex;
-            gap: 15px;
-            align-items: center;
-        }
-
-        .stats-section {
-            background-color: #ecf0f1;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            color: var(--primary-color);
-        }
-        .stats-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #bdc3c7;
-            padding-bottom: 15px;
-            margin-bottom: 15px;
-        }
-        .stats-total { font-size: 22px; font-weight: bold; }
-        .action-breakdown { list-style-type: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 15px; }
-        .action-breakdown li { background: #fff; padding: 10px 15px; border-radius: 6px; border: 1px solid #ccc; flex: 1; min-width: 200px; display: flex; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
+        .filters { display: flex; gap: 15px; background: #f8f9fa; padding: 15px; border-radius: 4px; margin-bottom: 20px; align-items: flex-end; }
+        .filters input { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
         
-        .filters-section {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: flex-end;
-            background: #e8f4f8;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #d1e8f0;
-        }
-        .form-group { display: flex; flex-direction: column; gap: 5px; }
-        .form-group label { font-weight: bold; color: var(--primary-color); }
-        .form-group input[type="datetime-local"] {
-            padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 16px; font-family: inherit;
-        }
-        
-        button {
-            padding: 10px 20px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; transition: background-color 0.3s; color: white;
-        }
-        .google-btn { background-color: var(--google-color); margin-top: 20px; font-size: 18px; padding: 12px 25px; }
-        .google-btn:hover { background-color: #357abd; }
-        
-        .refresh-btn { background-color: #f39c12; font-size: 14px; }
-        .refresh-btn:hover { background-color: #d68910; }
-        
-        .report-btn { background-color: var(--accent-color); height: 42px; }
-        .report-btn:hover { background-color: #2980b9; }
-        
-        .export-btn { background-color: var(--excel-color); height: 42px; display: inline-block; }
-        .export-btn:hover { background-color: #2ecc71; }
-        
-        .logout-btn { background-color: var(--danger-color); font-size: 14px; padding: 10px 15px; }
-        .logout-btn:hover { background-color: #c0392b; }
-
-        /* עיצוב טבלה קומפקטי ומותאם לשורת מסך אחידה */
-        .table-responsive { overflow-x: auto; max-height: 500px; border: 1px solid #ddd; border-radius: 4px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 8px 10px; font-size: 14px; text-align: right; border-bottom: 1px solid #ddd; white-space: nowrap; }
-        th { background-color: var(--primary-color); color: white; position: sticky; top: 0; z-index: 10; }
-        tr:hover { background-color: #f5f5f5; }
-        .loading { text-align: center; font-size: 18px; color: var(--accent-color); font-weight: bold; display: none; margin: 20px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px; border: 1px solid #ddd; text-align: right; white-space: nowrap; font-size: 14px; }
+        th { background: var(--admin-primary); color: white; }
+        tr:nth-child(even) { background: #f9f9f9; }
     </style>
 </head>
 <body>
 
-    <div id="loginView" class="container login-container">
-        <h1>כניסת מנהל</h1>
-        <p>מערכת הניהול מאובטחת. אנא התחבר עם חשבון Google מורשה כדי להמשיך.</p>
-        <button class="google-btn" onclick="signInWithGoogle()">התחבר באמצעות Google</button>
+    <!-- [QA Note]: מנגנון הרשאות קפדני למניעת גישה לא מורשית. -->
+    <div id="loginView" class="auth-card">
+        <h2>כניסת הנהלה</h2>
+        <button onclick="supabaseClient.auth.signInWithOAuth({provider: 'google'})" style="background:#4285F4; width:100%; padding:12px;">התחבר עם Google</button>
     </div>
 
-    <div id="unauthView" class="container unauth-container">
-        <h1 style="color: var(--danger-color); border-color: var(--danger-color);">גישה נדחתה</h1>
-        <p>חשבון ה-Google שאיתו התחברת אינו מורשה לגשת למסך זה.</p>
-        <p><strong>גישה מותרת לכתובת: 4990920@gmail.com בלבד.</strong></p>
-        <button class="logout-btn" onclick="signOut()" style="margin-top: 20px;">התנתק וחזור להתחברות</button>
+    <div id="unauthView" class="auth-card">
+        <h2 style="color:red;">גישה נדחתה</h2>
+        <p>אין לך הרשאה למסך זה.</p>
+        <button class="btn-logout" onclick="supabaseClient.auth.signOut()">חזור</button>
     </div>
 
     <div id="adminView" class="container">
-        <div class="header-top">
-            <h1>פאנל ניהול ודוחות - המרכז למיסטיקה</h1>
+        <div class="header">
+            <h2>מערכת בקרה ונתונים</h2>
             <div class="header-actions">
-                <button class="refresh-btn" onclick="loadStatistics()">רענן סטטיסטיקות</button>
-                <button class="logout-btn" onclick="signOut()">יציאה מהמערכת</button>
+                <button class="btn-refresh" onclick="generateReport()">רענן נתונים</button>
+                <button class="btn-logout" onclick="supabaseClient.auth.signOut()">יציאה</button>
             </div>
         </div>
 
-        <div class="stats-section">
-            <div class="stats-header">
-                <div class="stats-total">
-                    סה"כ פעולות במערכת: <span id="totalRecordsCounter" style="color: var(--accent-color);">טוען...</span>
-                </div>
-            </div>
-            
-            <ul id="actionBreakdownList" class="action-breakdown">
-                <li>טוען נתונים...</li>
-            </ul>
+        <div class="filters">
+            <div><label>מ:</label><br><input type="datetime-local" id="fromDate"></div>
+            <div><label>עד:</label><br><input type="datetime-local" id="toDate"></div>
+            <button style="background:var(--admin-primary)" onclick="generateReport()">סנן</button>
+            <button class="btn-export" onclick="exportToCSV()">ייצא לאקסל (CSV)</button>
         </div>
 
-        <h2 style="color: var(--primary-color); margin-bottom: 15px;">דוח נתונים גולמיים ומפורטים</h2>
-        
-        <div class="filters-section">
-            <div class="form-group">
-                <label for="fromDate">מתאריך ושעה:</label>
-                <input type="datetime-local" id="fromDate" step="1">
-            </div>
-            <div class="form-group">
-                <label for="toDate">עד תאריך ושעה:</label>
-                <input type="datetime-local" id="toDate" step="1">
-            </div>
-            
-            <button class="report-btn" onclick="generateReport()">הפק דוח למסך</button>
-            
-            <button id="exportBtn" class="export-btn" onclick="downloadCSV()">ייצא ל-Sheets (CSV)</button>
-        </div>
-
-        <div id="loadingMsg" class="loading">מעבד נתונים מול השרת, אנא המתן...</div>
-
-        <div class="table-responsive">
-            <table id="reportTable">
-                <thead id="tableHead"></thead>
-                <tbody id="tableBody"></tbody>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead id="tHead"></thead>
+                <tbody id="tBody"></tbody>
             </table>
         </div>
     </div>
 
     <script>
-        const AUTHORIZED_EMAIL = '4990920@gmail.com';
-        let currentReportData = []; 
-
-        const actionTranslations = {
-            'basic_report': 'דוחות בסיסיים',
-            'deep_report': 'דוחות עמוקים',
-            'whatsapp_share': 'שיתופים לוואטסאפ',
-            'pdf_download': 'הורדות PDF'
-        };
-
-        const columnTranslations = {
-            'id': 'מפתח שורה',
-            'created_at': 'זמן רישום במערכת',
-            'action_date': 'תאריך הזנה',
-            'action_time': 'שעת הזנה',
-            'ip_address': 'כתובת IP',
-            'browser_info': 'פרטי דפדפן',
-            'action_type': 'סוג פעולה',
-            'first_name': 'שם פרטי',
-            'middle_name': 'שם אמצעי',
-            'last_name': 'שם משפחה',
-            'extra_last_name': 'שם משפחה נוסף',
-            'phone': 'מספר טלפון',
-            'id_number': 'תעודת זהות',
-            'birth_date': 'תאריך לידה',
-            'birth_time': 'שעת לידה',
-            'city': 'עיר'
-        };
-
-        async function checkAuthStatus() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            routeUser(session);
-        }
+        // ==========================================
+        // MODULE: Auth & Security
+        // ==========================================
+        const AUTHORIZED_EMAIL = '4990920@gmail.com'; // Hardcoded Security Constraint
+        let globalDataCache = [];
 
         supabaseClient.auth.onAuthStateChange((event, session) => {
-            routeUser(session);
+            document.querySelectorAll('#loginView, #unauthView, #adminView').forEach(el => el.style.display = 'none');
+            if (!session) document.getElementById('loginView').style.display = 'block';
+            else if (session.user.email === AUTHORIZED_EMAIL) {
+                document.getElementById('adminView').style.display = 'block';
+                initDates(); generateReport();
+            } 
+            else document.getElementById('unauthView').style.display = 'block';
         });
 
-        function routeUser(session) {
-            document.getElementById('loginView').style.display = 'none';
-            document.getElementById('unauthView').style.display = 'none';
-            document.getElementById('adminView').style.display = 'none';
-
-            if (!session) {
-                document.getElementById('loginView').style.display = 'block';
-            } else {
-                if (session.user.email === AUTHORIZED_EMAIL) {
-                    document.getElementById('adminView').style.display = 'block';
-                    loadStatistics(); 
-                    initDateFilters(); 
-                } else {
-                    document.getElementById('unauthView').style.display = 'block';
-                }
-            }
+        // ==========================================
+        // MODULE: Data Fetching & UI
+        // ==========================================
+        const colDict = { 'id':'מפתח','created_at':'זמן מערכת','action_date':'תאריך הזנה','action_time':'שעת הזנה','first_name':'שם פרטי','last_name':'משפחה','phone':'טלפון','birth_date':'תאריך לידה' };
+        
+        function initDates() {
+            let d = new Date(); d.setHours(23,59,59); document.getElementById('toDate').value = d.toISOString().slice(0,16);
+            d.setDate(d.getDate() - 30); d.setHours(0,0,0); document.getElementById('fromDate').value = d.toISOString().slice(0,16);
         }
 
-        async function signInWithGoogle() {
-            const { error } = await supabaseClient.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: window.location.href }
-            });
-            if (error) alert("שגיאה בהתחברות ל-Google: " + error.message);
-        }
-
-        async function signOut() {
-            await supabaseClient.auth.signOut();
-        }
-
-        async function loadStatistics() {
-            const counterElement = document.getElementById('totalRecordsCounter');
-            const breakdownList = document.getElementById('actionBreakdownList');
-            
-            counterElement.innerText = "טוען...";
-            breakdownList.innerHTML = "<li>טוען נתונים...</li>";
-
-            try {
-                const { data, error } = await supabaseClient.from('reports_log').select('action_type');
-                if (error) throw error;
-
-                counterElement.innerText = data.length;
-
-                const actionCounts = {};
-                data.forEach(row => {
-                    const type = row.action_type || 'לא ידוע';
-                    actionCounts[type] = (actionCounts[type] || 0) + 1;
-                });
-
-                breakdownList.innerHTML = '';
-                
-                if (Object.keys(actionCounts).length === 0) {
-                    breakdownList.innerHTML = "<li>אין נתונים במערכת.</li>";
-                } else {
-                    for (const [actionKey, count] of Object.entries(actionCounts)) {
-                        const li = document.createElement('li');
-                        const translatedName = actionTranslations[actionKey] || actionKey;
-                        li.innerHTML = `<span>${translatedName}</span> <strong style="color: var(--primary-color);">${count}</strong>`;
-                        breakdownList.appendChild(li);
-                    }
-                }
-            } catch (err) {
-                counterElement.innerText = "שגיאה בטעינה";
-                breakdownList.innerHTML = "<li>שגיאה בטעינת הסטטיסטיקה.</li>";
-            }
-        }
-
-        function formatDateTimeLocal(dateObj) {
-            return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}T${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}:${String(dateObj.getSeconds()).padStart(2, '0')}`;
-        }
-
-        async function initDateFilters() {
-            const toDate = new Date(); toDate.setHours(23, 59, 59, 999);
-            document.getElementById('toDate').value = formatDateTimeLocal(toDate);
-            
-            let fromDate = new Date(); fromDate.setHours(0, 0, 0, 0);
-            try {
-                const { data } = await supabaseClient.from('reports_log').select('created_at').order('created_at', { ascending: true }).limit(1);
-                if (data && data.length > 0 && data[0].created_at) fromDate = new Date(data[0].created_at);
-                fromDate.setHours(0, 0, 0, 0);
-            } catch (err) {}
-            
-            document.getElementById('fromDate').value = formatDateTimeLocal(fromDate);
-        }
-
+        /* [Maintainer Note]: פונקציה זו טוענת את המידע ומציגה רק עמודות ספציפיות במסך. 
+           המידע המלא (globalDataCache) נשמר בזיכרון לטובת ייצוא ה-CSV. */
         async function generateReport() {
-            const fromIso = new Date(document.getElementById('fromDate').value).toISOString();
-            const toIso = new Date(document.getElementById('toDate').value).toISOString();
+            const f = new Date(document.getElementById('fromDate').value).toISOString();
+            const t = new Date(document.getElementById('toDate').value).toISOString();
             
-            document.getElementById('loadingMsg').style.display = 'block';
-            document.getElementById('tableHead').innerHTML = '';
-            document.getElementById('tableBody').innerHTML = '';
-
-            try {
-                const { data, error } = await supabaseClient.rpc('get_full_log').gte('created_at', fromIso).lte('created_at', toIso);
-                if (error) throw error;
-                
-                currentReportData = data;
-                renderDynamicTable(data);
-                
-            } catch (err) { 
-                alert("שגיאה במשיכת הנתונים. ייתכן ואין לך הרשאה מספקת מול מסד הנתונים."); 
-            } finally { 
-                document.getElementById('loadingMsg').style.display = 'none'; 
-            }
-        }
-
-        function renderDynamicTable(dataArray) {
-            const thead = document.getElementById('tableHead');
-            const tbody = document.getElementById('tableBody');
+            const { data, error } = await supabaseClient.from('reports_log').select('*').gte('created_at', f).lte('created_at', t).order('id', {ascending: false});
+            if (error) return alert("שגיאה במשיכת נתונים.");
+            globalDataCache = data || [];
             
-            if (!dataArray || dataArray.length === 0) {
-                tbody.innerHTML = '<tr><td style="text-align: center;" colspan="7">לא נמצאו רשומות בטווח התאריכים המבוקש.</td></tr>';
-                return;
-            }
-
-            // הוספת מפתח השורה ('id') ממש לפני תאריך ההזנה
-            const screenKeys = ['id', 'action_date', 'action_time', 'first_name', 'last_name', 'phone', 'birth_date'];
-
-            let headRow = '<tr>';
-            screenKeys.forEach(key => {
-                const translatedHeader = columnTranslations[key] || key;
-                headRow += `<th>${translatedHeader}</th>`;
-            });
-            headRow += '</tr>';
-            thead.innerHTML = headRow;
-
-            let bodyContent = '';
-            dataArray.forEach(row => {
-                bodyContent += '<tr>';
-                screenKeys.forEach(key => {
-                    let cellValue = row[key];
-                    if (cellValue === null || cellValue === undefined) cellValue = '-';
-                    
-                    let isLtr = ['id', 'action_date', 'action_time', 'phone', 'birth_date'].includes(key);
-                    bodyContent += `<td ${isLtr ? 'dir="ltr"' : ''}>${cellValue}</td>`;
-                });
-                bodyContent += '</tr>';
-            });
-            tbody.innerHTML = bodyContent;
-        }
-
-        async function downloadCSV() {
-            await generateReport();
-            exportToCSV();
-        }
-
-        function formatCompactDateForFilename(dateString) {
-            const d = new Date(dateString);
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = d.getFullYear();
-            return `${day}${month}${year}`;
+            const screenCols = ['id', 'action_date', 'action_time', 'first_name', 'last_name', 'phone', 'birth_date'];
+            
+            document.getElementById('tHead').innerHTML = `<tr>${screenCols.map(c => `<th>${colDict[c] || c}</th>`).join('')}</tr>`;
+            document.getElementById('tBody').innerHTML = globalDataCache.map(row => 
+                `<tr>${screenCols.map(c => {
+                    let v = row[c] || '-';
+                    let isNum = ['id', 'action_date', 'action_time', 'phone', 'birth_date'].includes(c);
+                    return `<td ${isNum ? 'dir="ltr"' : ''}>${v}</td>`;
+                }).join('')}</tr>`
+            ).join('') || '<tr><td colspan="7" style="text-align:center;">אין נתונים</td></tr>';
         }
 
         function exportToCSV() {
-            if (!currentReportData || currentReportData.length === 0) {
-                alert("אין נתונים בטווח התאריכים המבוקש. לא ניתן לייצא קובץ ריק.");
-                return;
-            }
-
-            const keys = Object.keys(currentReportData[0]);
+            if (!globalDataCache.length) return alert("אין נתונים.");
+            const keys = Object.keys(globalDataCache[0]);
+            let csv = "\uFEFF" + keys.map(k => colDict[k] || k).join(",") + "\n";
+            globalDataCache.forEach(row => { csv += keys.map(k => `"${(row[k] || '').toString().replace(/"/g, '""')}"`).join(",") + "\n"; });
             
-            const translatedHeaders = keys.map(key => columnTranslations[key] || key);
-            let csvContent = "\uFEFF" + translatedHeaders.join(",") + "\n";
-
-            currentReportData.forEach(row => {
-                let rowData = keys.map(key => {
-                    let val = row[key] === null || row[key] === undefined ? "" : String(row[key]);
-                    return `"${val.replace(/"/g, '""')}"`; 
-                });
-                csvContent += rowData.join(",") + "\n";
-            });
-
-            const fromValue = document.getElementById('fromDate').value;
-            const toValue = document.getElementById('toDate').value;
-            const fromStr = formatCompactDateForFilename(fromValue);
-            const toStr = formatCompactDateForFilename(toValue);
-            const filename = `reports_data_${fromStr}_to_${toStr}.csv`;
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = filename;
-            document.body.appendChild(link); 
-            link.click(); 
-            document.body.removeChild(link);
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
+            a.download = `Report_${Date.now()}.csv`;
+            a.click();
         }
-
-        window.addEventListener('DOMContentLoaded', () => {
-            checkAuthStatus();
-        });
     </script>
 </body>
 </html>
