@@ -556,8 +556,8 @@
             window.location.href = `whatsapp://send?phone=${phone.replace(/^0/, '972').replace(/\D/g, '')}&text=${encodeURIComponent(document.getElementById('contentToPrint').innerText)}`;
         }
 
-        // ==========================================
-        // PWA - רישום האפליקציה והתקנה
+// ==========================================
+        // PWA - רישום האפליקציה והתקנה (עם הגנת כפילויות)
         // ==========================================
         
         // 1. רישום ה-Service Worker
@@ -567,35 +567,54 @@
             });
         }
 
-        // 2. טיפול באנדרואיד ומחשבים (לכידת אירוע התקנה)
         let deferredPrompt;
+        
+        // בדיקות הגנה: האם אנחנו כבר באפליקציה מותקנת, והאם יש לנו זיכרון שהתקנו בעבר?
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        const isInstalledLocally = localStorage.getItem('mysticAppInstalled') === 'true';
+
+        // 2. לכידת הבקשה מאנדרואיד להציג התקנה
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault(); 
             deferredPrompt = e;
-            document.getElementById('installBanner').style.display = 'block';
+            
+            // נציג את הבאנר הכתום רק אם אנחנו בדפדפן רגיל וגם מעולם לא התקנו
+            if (!isStandalone && !isInstalledLocally) {
+                document.getElementById('installBanner').style.display = 'block';
+            }
         });
 
+        // 3. הפונקציה שמופעלת בלחיצה על הבאנר הכתום
         async function installApp() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') console.log('App installed');
+                
+                if (outcome === 'accepted') {
+                    console.log('המשתמש אישר את ההתקנה');
+                    // שמירת "חותמת" בזיכרון המקומי שההתקנה אושרה
+                    localStorage.setItem('mysticAppInstalled', 'true');
+                }
+                
                 deferredPrompt = null; 
                 document.getElementById('installBanner').style.display = 'none';
             }
         }
 
-        // 3. טיפול באייפון (iOS)
+        // 4. מאזין חכם לאירוע התקנה מוצלחת מהמערכת (מונע כפילויות עתידיות)
+        window.addEventListener('appinstalled', (evt) => {
+            console.log('ההתקנה הושלמה בהצלחה ברמת מערכת ההפעלה');
+            localStorage.setItem('mysticAppInstalled', 'true');
+            document.getElementById('installBanner').style.display = 'none';
+        });
+
+        // 5. טיפול באייפון (iOS) - הצגת באנר הדרכה אם טרם הותקן
         const isIos = () => {
             const userAgent = window.navigator.userAgent.toLowerCase();
             return /iphone|ipad|ipod/.test(userAgent);
         };
         
-        // בדיקה אם המשתמש כבר פתח את האפליקציה ממסך הבית (Standalone mode)
-        const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
-
-        // אם זה אייפון וזה עדיין לא הותקן, נציג את באנר ההדרכה
-        if (isIos() && !isInStandaloneMode()) {
+        if (isIos() && !isStandalone && !isInstalledLocally) {
             document.getElementById('iosInstallBanner').style.display = 'block';
         }
 
