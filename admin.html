@@ -3,439 +3,617 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>הדוח המיסטי שלי</title>
     
-    <!-- פקודות למניעת שמירה בזיכרון המטמון (Cache) -->
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
-    
-    <title>מסך ניהול מרכזי - דוחות מיסטיקה</title>
-    
-    <!-- טעינת ספריות קונפיגורציה -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
-
+    
     <style>
         :root {
-            --primary-color: #2c3e50;
-            --accent-color: #3498db;
-            --bg-color: #f4f7f6;
+            --primary-color: #3498db;
+            --primary-dark: #2980b9;
+            --accent-color: #f39c12;
+            --accent-dark: #d68910;
+            --bg-color: #f0f4f8;
             --card-bg: #ffffff;
-            --danger-color: #e74c3c;
-            --google-color: #4285F4;
-            --excel-color: #27ae60;
-            --border-color: #bdc3c7;
-        }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            margin: 0;
-            padding: 20px;
-            color: #333;
-        }
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            background: var(--card-bg);
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        }
-        
-        /* הסתרת אזורים כברירת מחדל עד לבדיקת זיהוי */
-        #loginView, #unauthView, #adminView {
-            display: none;
+            --text-color: #2c3e50;
+            --border-color: #ccd1d9;
         }
 
-        .unauth-container, .login-container { max-width: 600px; text-align: center; margin: 0 auto; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); padding: 20px; line-height: 1.6; color: var(--text-color); }
+        .container { max-width: 850px; margin: auto; background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
+        h1, h2, h3 { text-align: center; color: var(--text-color); }
         
-        h1 {
-            color: var(--primary-color);
-            border-bottom: 2px solid var(--accent-color);
-            padding-bottom: 10px;
-        }
+        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
+        .form-group { flex: 1; margin-bottom: 0; min-width: 0; position: relative; } 
         
-        .header-top {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 2px solid var(--accent-color);
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-        }
-        .header-top h1 { border: none; padding: 0; margin: 0; }
-        
-        /* סידור הכפתורים בשורה העליונה */
-        .header-actions {
-            display: flex;
-            gap: 15px;
-            align-items: center;
+        @media (max-width: 600px) {
+            .form-row { flex-direction: column; gap: 15px; }
         }
 
-        /* אזור הסטטיסטיקות */
-        .stats-section {
-            background-color: #ecf0f1;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 30px;
-            color: var(--primary-color);
-        }
-        .stats-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-bottom: 1px solid #bdc3c7;
-            padding-bottom: 15px;
-            margin-bottom: 15px;
-        }
-        .stats-total { font-size: 22px; font-weight: bold; }
-        .action-breakdown { list-style-type: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 15px; }
-        .action-breakdown li { background: #fff; padding: 10px 15px; border-radius: 6px; border: 1px solid #ccc; flex: 1; min-width: 200px; display: flex; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
-        
-        /* אזור הסינון והדוח המפורט */
-        .filters-section {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 15px;
-            align-items: flex-end;
-            background: #e8f4f8;
-            padding: 20px;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            border: 1px solid #d1e8f0;
-        }
-        .form-group { display: flex; flex-direction: column; gap: 5px; }
-        .form-group label { font-weight: bold; color: var(--primary-color); }
-        .form-group input[type="datetime-local"] {
-            padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 16px; font-family: inherit;
-        }
-        
-        /* כפתורים כלליים */
-        button {
-            padding: 10px 20px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; transition: background-color 0.3s; color: white;
-        }
-        .google-btn { background-color: var(--google-color); margin-top: 20px; font-size: 18px; padding: 12px 25px; }
-        .google-btn:hover { background-color: #357abd; }
-        
-        .refresh-btn { background-color: #f39c12; font-size: 14px; }
-        .refresh-btn:hover { background-color: #d68910; }
-        
-        .report-btn { background-color: var(--accent-color); height: 42px; }
-        .report-btn:hover { background-color: #2980b9; }
-        
-        .export-btn { background-color: var(--excel-color); height: 42px; display: inline-block; }
-        .export-btn:hover { background-color: #2ecc71; }
-        
-        .logout-btn { background-color: var(--danger-color); font-size: 14px; padding: 10px 15px; }
-        .logout-btn:hover { background-color: #c0392b; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; color: var(--primary-color); font-size: 0.95em; transform: translateX(-2ch); }
+        input { width: 100%; height: 38px; padding: 6px 12px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 6px; font-size: 15px; background: #ffffff; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04); text-align: right; transition: all 0.3s; }
+        input:focus { border-color: var(--primary-color); box-shadow: inset 0 2px 4px rgba(0,0,0,0.04), 0 0 8px rgba(52, 152, 219, 0.3); outline: none; }
 
-        /* עיצוב הטבלה */
-        .table-responsive { overflow-x: auto; max-height: 500px; border: 1px solid #ddd; border-radius: 4px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 12px 15px; text-align: right; border-bottom: 1px solid #ddd; white-space: nowrap; }
-        th { background-color: var(--primary-color); color: white; position: sticky; top: 0; z-index: 10; }
-        tr:hover { background-color: #f5f5f5; }
-        .loading { text-align: center; font-size: 18px; color: var(--accent-color); font-weight: bold; display: none; margin: 20px 0; }
+        .suggestions-box { position: absolute; top: 100%; right: 0; left: 0; background: #ffffff; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 6px 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); z-index: 1000; max-height: 150px; overflow-y: auto; display: none; }
+        .suggestion-item { padding: 8px 12px; cursor: pointer; font-size: 14px; text-align: right; border-bottom: 1px solid #f0f0f0; }
+        .suggestion-item:hover { background-color: #ebf5fb; color: var(--primary-dark); }
+        
+        .action-buttons-top { display: flex; gap: 15px; margin-top: 25px; }
+        .main-btn { background-color: var(--primary-color); color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s;}
+        .main-btn:hover { background-color: var(--primary-dark); }
+        .main-btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
+        
+        .premium-btn { background-color: var(--accent-color); color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s;}
+        .premium-btn:hover { background-color: var(--accent-dark); }
+        
+        #results { margin-top: 30px; display: none; }
+        #contentToPrint { background-color: #ffffff; padding: 20px; border: 2px solid #ecf0f1; border-radius: 8px; }
+        #contentToPrint h2 { text-decoration: underline; text-underline-offset: 8px; margin-bottom: 25px;}
+        
+        .result-section { margin-bottom: 15px; }
+        .result-item { background: #f7fbfe; padding: 15px; margin-bottom: 12px; border-radius: 6px; border-right: 5px solid #85c1e9; }
+        .result-zodiac { background: #ebf5fb; border-right-color: var(--primary-color); }
+        .result-date { background: #d4e6f1; border-right-color: #1b4f72; }
+        
+        .result-item h4 { margin: 0 0 8px 0; font-size: 1.1em; color: var(--text-color); }
+        .result-item p { margin: 0 0 5px 0; color: #333; text-align: justify; }
+        .light-text { color: #555 !important; }
+
+        .actions { display: flex; gap: 15px; margin-top: 25px; }
+        .whatsapp-btn { background-color: #25D366; color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
+        .pdf-btn { background-color: #e74c3c; color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
+        
+        #loadingMsg { display: none; text-align: center; color: var(--primary-color); font-weight: bold; margin-top: 15px; font-size: 1.1em;}
+
+        /* חיווי סטטוס רשת */
+        #networkStatus { text-align: center; font-size: 0.9em; padding: 5px; margin-bottom: 15px; border-radius: 4px; display: none; }
+        .status-offline { background-color: #f8d7da; color: #721c24; display: block !important; }
+
+        @media print {
+            body { background-color: white; padding: 0; }
+            .container { box-shadow: none; padding: 0; }
+            .form-row, h1, .action-buttons-top, .actions, #loadingMsg, #networkStatus { display: none !important; }
+            #results { display: block !important; border: none; margin: 0; padding: 0; }
+            #contentToPrint { border: none; padding: 0; }
+            .result-item { page-break-inside: avoid; border-right: 4px solid black; text-align: justify; }
+        }
     </style>
 </head>
 <body>
 
-    <div id="loginView" class="container login-container">
-        <h1>כניסת מנהל</h1>
-        <p>מערכת הניהול מאובטחת. אנא התחבר עם חשבון Google מורשה כדי להמשיך.</p>
-        <button class="google-btn" onclick="signInWithGoogle()">התחבר באמצעות Google</button>
-    </div>
-
-    <div id="unauthView" class="container unauth-container">
-        <h1 style="color: var(--danger-color); border-color: var(--danger-color);">גישה נדחתה</h1>
-        <p>חשבון ה-Google שאיתו התחברת אינו מורשה לגשת למסך זה.</p>
-        <p><strong>גישה מותרת לכתובת: 4990920@gmail.com בלבד.</strong></p>
-        <button class="logout-btn" onclick="signOut()" style="margin-top: 20px;">התנתק וחזור להתחברות</button>
-    </div>
-
-    <div id="adminView" class="container">
-        <div class="header-top">
-            <h1>פאנל ניהול ודוחות - המרכז למיסטיקה</h1>
-            <div class="header-actions">
-                <button class="refresh-btn" onclick="loadStatistics()">רענן סטטיסטיקות</button>
-                <button class="logout-btn" onclick="signOut()">יציאה מהמערכת</button>
-            </div>
-        </div>
-
-        <div class="stats-section">
-            <div class="stats-header">
-                <div class="stats-total">
-                    סה"כ פעולות במערכת: <span id="totalRecordsCounter" style="color: var(--accent-color);">טוען...</span>
-                </div>
-            </div>
-            
-            <ul id="actionBreakdownList" class="action-breakdown">
-                <li>טוען נתונים...</li>
-            </ul>
-        </div>
-
-        <h2 style="color: var(--primary-color); margin-bottom: 15px;">דוח נתונים גולמיים ומפורטים</h2>
+    <div class="container">
+        <div id="networkStatus">מצב אופליין: אין חיבור לאינטרנט. הפעולות נשמרות מקומית.</div>
         
-        <div class="filters-section">
-            <div class="form-group">
-                <label for="fromDate">מתאריך ושעה:</label>
-                <input type="datetime-local" id="fromDate" step="1">
-            </div>
-            <div class="form-group">
-                <label for="toDate">עד תאריך ושעה:</label>
-                <input type="datetime-local" id="toDate" step="1">
-            </div>
-            
-            <button class="report-btn" onclick="generateReport()">הפק דוח למסך</button>
-            
-            <button id="exportBtn" class="export-btn" onclick="downloadCSV()">ייצא ל-Sheets (CSV)</button>
+        <h1>הדוח המיסטי שלי</h1>
+        
+        <div class="form-row">
+            <div class="form-group"><label>שם פרטי (חובה):</label><input type="text" id="firstName" autocomplete="given-name"></div>
+            <div class="form-group"><label>שם פרטי נוסף (לא חובה):</label><input type="text" id="middleName" autocomplete="additional-name"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>שם משפחה (חובה):</label><input type="text" id="lastName" autocomplete="family-name"></div>
+            <div class="form-group"><label>שם משפחה נוסף (לא חובה):</label><input type="text" id="extraLastName" autocomplete="off"></div>
         </div>
 
-        <div id="loadingMsg" class="loading">מעבד נתונים מול השרת, אנא המתן...</div>
+        <div class="form-row">
+            <div class="form-group"><label>מספר טלפון נייד (חובה):</label><input type="tel" id="phone" autocomplete="tel"></div>
+            <div class="form-group"><label>מספר תעודת זהות (לא חובה):</label><input type="text" id="idNumber" autocomplete="off"></div>
+        </div>
 
-        <div class="table-responsive">
-            <table id="reportTable">
-                <thead id="tableHead"></thead>
-                <tbody id="tableBody"></tbody>
-            </table>
+        <div class="form-row">
+            <div class="form-group"><label>תאריך לידה (חובה):</label><input type="date" id="birthDate" autocomplete="bday"></div>
+            <div class="form-group"><label>שעת לידה (24 שעות):</label><input type="time" id="birthTime" value="12:00"></div>
+            <div class="form-group">
+                <label>עיר לידה (לא חובה):</label>
+                <input type="text" id="city" value="ירושלים" autocomplete="off" oninput="fetchCitySuggestions(this.value)">
+                <div id="citySuggestionsBox" class="suggestions-box"></div>
+            </div>
+        </div>
+
+        <div class="action-buttons-top">
+            <button id="calcBtn" class="main-btn" onclick="handleUserAction('basic_report')">הפק דוח בסיסי</button>
+            <button class="premium-btn" onclick="handleUserAction('deep_report')">הפק דוח עמוק</button>
+        </div>
+        
+        <div id="loadingMsg">מעבד נתונים מול כוכבי השמיים ומאגרי התאריכים... נא להמתין...</div>
+
+        <div id="results">
+            <div id="contentToPrint">
+                <h2><span id="resName"></span> - דוח מיסטי</h2>
+                <div class="result-section"><div id="resAstro"></div></div>
+                <div class="result-section"><div id="resNamesNum"></div></div>
+            </div>
+            
+            <div class="actions">
+                <button class="whatsapp-btn" onclick="handleUserAction('whatsapp_share')">שלח דוח לוואטסאפ</button>
+                <button class="pdf-btn" onclick="handleUserAction('pdf_download')">הורד דוח כ-PDF</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const AUTHORIZED_EMAIL = '4990920@gmail.com';
-        let currentReportData = []; 
-
-        const actionTranslations = {
-            'basic_report': 'דוחות בסיסיים',
-            'deep_report': 'דוחות עמוקים',
-            'whatsapp_share': 'שיתופים לוואטסאפ',
-            'pdf_download': 'הורדות PDF'
+        // ==========================================
+        // מילוני נתונים (משמשים כגיבוי למצב אופליין)
+        // ==========================================
+        const gematriaDict = {
+            'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,
+            'כ':20,'ך':20,'ל':30,'מ':40,'ם':40,'נ':50,'ן':50,'ס':60,'ע':70,
+            'פ':80,'ף':80,'צ':90,'ץ':90,'ק':100,'ר':200,'ש':300,'ת':400
         };
 
-        // התאמת התרגומים לבקשתך
-        const columnTranslations = {
-            'id': 'מזהה רשומה',
-            'created_at': 'זמן רישום במערכת',
-            'action_date': 'תאריך הזנה', // הותאם
-            'action_time': 'שעת הזנה',   // הותאם
-            'ip_address': 'כתובת IP',
-            'browser_info': 'פרטי דפדפן',
-            'action_type': 'סוג פעולה',
-            'first_name': 'שם פרטי',
-            'middle_name': 'שם אמצעי',
-            'last_name': 'שם משפחה',
-            'extra_last_name': 'שם משפחה נוסף',
-            'phone': 'מספר טלפון',
-            'id_number': 'תעודת זהות',
-            'birth_date': 'תאריך לידה',
-            'birth_time': 'שעת לידה',
-            'city': 'עיר'
+        let numerologyTexts = {
+            1: "מנהיגות מולדת, עצמאות וכוח רצון עז. אנשי ה-1 הם חלוצים, יזמים ובעלי ביטחון עצמי גבוה.",
+            2: "זוגיות, שותפות, דיפלומטיה ורגישות רגשית גבוהה. מגשרים טבעיים השואפים להרמוניה.",
+            3: "ביטוי עצמי, יצירתיות, שמחת חיים וכריזמה מתפרצת. תקשורתיים ואופטימיים.",
+            4: "יציבות, סדר, משמעת קפדנית ועבודה קשה. הבסיס האיתן שאפשר לסמוך עליו.",
+            5: "חופש, הרפתקנות, תנועה מתמדת ושינויים. זקוקים למרחב נשימה ענק וגיוון.",
+            6: "האהבה, המשפחתיות, ההרמוניה והשירות המסור לזולת. המטפלים והמגוננים.",
+            7: "רוחניות, העמקה, חשיבה חקרנית ואינטואיציה חדה כתער. הוגי דעות וחוקרים.",
+            8: "עוצמה, סמכות, שפע חומרי, סטאטוס והישגיות בקנה מידה גדול.",
+            9: "הומניטריות, נתינה אוניברסלית ללא תנאי, אצילות נפש וסיום מעגלים."
         };
 
-        async function checkAuthStatus() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            routeUser(session);
-        }
+        let zodiacSigns = [
+            { name: "טלה", desc: "מזל אש דינמי ויצרי. פורץ דרך, אמיץ ומוביל." },
+            { name: "שור", desc: "מזל אדמה יציב ופרקטי. נאמן, חושני ואמין כסלע." },
+            { name: "תאומים", desc: "מזל אוויר אינטלקטואלי ומהיר תפיסה. סקרן ותקשורתי." },
+            { name: "סרטן", desc: "מזל מים רגשי, משפחתי ועמוק בעל אינטואיציה חזקה." },
+            { name: "אריה", desc: "מזל אש מלכותי וזורח. כריזמטי, נדיב ובעל לב ענק." },
+            { name: "בתולה", desc: "מזל אדמה מאורגן, אנליטי ויורד לפרטים הקטנים." },
+            { name: "מאזניים", desc: "מזל אוויר אסתטי, דיפלומטי ושואף להרמוניה וצדק." },
+            { name: "עקרב", desc: "מזל מים אינטנסיבי, מגנטי ובעל עוצמה נפשית אדירה." },
+            { name: "קשת", desc: "מזל אש אופטימי, פילוסופי וחובב חופש והרפתקאות." },
+            { name: "גדי", desc: "מזל אדמה שאפתן, מעשי, בוגר ואחראי לטווח רחוק." },
+            { name: "דלי", desc: "מזל אוויר מקורי, אינדיבידואליסט והומניטרי." },
+            { name: "דגים", desc: "מזל מים רוחני, חומל, אמנותי ובעל דמיון עשיר." }
+        ];
 
-        supabaseClient.auth.onAuthStateChange((event, session) => {
-            routeUser(session);
-        });
+        let ascendantTexts = {
+            "טלה": "חזות נמרצת, ישירה ומהירה. כישרון ליזמות ופיקוד.",
+            "שור": "נוכחות רגועה, שורשית ויציבה. כישרון לפיננסים ועיצוב.",
+            "תאומים": "אנרגיה קלילה, תקשורתית וסקרנית. כישרון לתקשורת ותכנות.",
+            "סרטן": "הילה רכה, מכילה ואמפתית. כישרון לטיפול ופסיכולוגיה.",
+            "אריה": "נוכחות כריזמטית ומרשימה. כישרון לניהול ובמה.",
+            "בתולה": "חזות רצינית, מסודרת ואנליטית. כישרון למדעים וארגון.",
+            "מאזניים": "קסם אישי, נעימות ודיפלומטיה. כישרון לגישור ומשפטים.",
+            "עקרב": "מבט חודר, עומק ומסתוריות. כישרון לחקירות וניתוח.",
+            "קשת": "אופטימיות, פתיחות ושמחת חיים. כישרון להוראה ותיירות.",
+            "גדי": "רושם סמכותי, בוגר ואחראי. כישרון לניהול מערכות גדולות.",
+            "דלי": "מקוריות, חדשנות ועצמאות מחשבתית. כישרון להייטק.",
+            "דגים": "עדינות, רגישות ורוחניות. כישרון לאמנות וטיפול."
+        };
 
-        function routeUser(session) {
-            document.getElementById('loginView').style.display = 'none';
-            document.getElementById('unauthView').style.display = 'none';
-            document.getElementById('adminView').style.display = 'none';
-
-            if (!session) {
-                document.getElementById('loginView').style.display = 'block';
-            } else {
-                if (session.user.email === AUTHORIZED_EMAIL) {
-                    document.getElementById('adminView').style.display = 'block';
-                    loadStatistics(); 
-                    initDateFilters(); 
-                } else {
-                    document.getElementById('unauthView').style.display = 'block';
-                }
-            }
-        }
-
-        async function signInWithGoogle() {
-            const { error } = await supabaseClient.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: window.location.href }
-            });
-            if (error) alert("שגיאה בהתחברות ל-Google: " + error.message);
-        }
-
-        async function signOut() {
-            await supabaseClient.auth.signOut();
-        }
-
-        async function loadStatistics() {
-            const counterElement = document.getElementById('totalRecordsCounter');
-            const breakdownList = document.getElementById('actionBreakdownList');
+        // ==========================================
+        // משיכת טקסטים דינמיים מהשרת
+        // ==========================================
+        async function fetchDynamicTexts() {
+            if (!navigator.onLine || typeof supabaseClient === 'undefined') return;
             
-            counterElement.innerText = "טוען...";
-            breakdownList.innerHTML = "<li>טוען נתונים...</li>";
+            const COL_CATEGORY = 'category';     
+            const COL_KEY_NAME = 'item_key';     
+            const COL_TEXT_CONTENT = 'content'; 
 
             try {
-                const { data, error } = await supabaseClient.from('reports_log').select('action_type');
-                if (error) throw error;
-
-                counterElement.innerText = data.length;
-
-                const actionCounts = {};
-                data.forEach(row => {
-                    const type = row.action_type || 'לא ידוע';
-                    actionCounts[type] = (actionCounts[type] || 0) + 1;
-                });
-
-                breakdownList.innerHTML = '';
+                const { data, error } = await supabaseClient.from('dynamic_texts').select('*');
                 
-                if (Object.keys(actionCounts).length === 0) {
-                    breakdownList.innerHTML = "<li>אין נתונים במערכת.</li>";
-                } else {
-                    for (const [actionKey, count] of Object.entries(actionCounts)) {
-                        const li = document.createElement('li');
-                        const translatedName = actionTranslations[actionKey] || actionKey;
-                        li.innerHTML = `<span>${translatedName}</span> <strong style="color: var(--primary-color);">${count}</strong>`;
-                        breakdownList.appendChild(li);
-                    }
+                if (error) {
+                    console.error("שגיאה במשיכת הטקסטים מהשרת:", error);
+                    return;
+                }
+                
+                if (data && data.length > 0) {
+                    console.log("✅ הנתונים שנמשכו מ-dynamic_texts:", data);
+                    
+                    data.forEach(item => {
+                        const category = item[COL_CATEGORY]; 
+                        const key = item[COL_KEY_NAME];      
+                        const content = item[COL_TEXT_CONTENT]; 
+
+                        if (category === 'numerology' || category === 'נומרולוגיה') {
+                            if (numerologyTexts[key]) numerologyTexts[key] = content;
+                        } else if (category === 'zodiac' || category === 'מזלות') {
+                            let zIndex = zodiacSigns.findIndex(z => z.name === key);
+                            if (zIndex !== -1) zodiacSigns[zIndex].desc = content;
+                        } else if (category === 'ascendant' || category === 'אופק') {
+                            if (ascendantTexts[key]) ascendantTexts[key] = content;
+                        }
+                    });
                 }
             } catch (err) {
-                counterElement.innerText = "שגיאה בטעינה";
-                breakdownList.innerHTML = "<li>שגיאה בטעינת הסטטיסטיקה.</li>";
+                console.warn("שגיאת תקשורת במשיכת הנתונים. המערכת תשתמש בטקסטים המקומיים המובנים.", err);
             }
         }
 
-        function formatDateTimeLocal(dateObj) {
-            return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}T${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}:${String(dateObj.getSeconds()).padStart(2, '0')}`;
+        // ==========================================
+        // ניהול רשת ולוגים (אונליין / אופליין)
+        // ==========================================
+        function updateNetworkStatus() {
+            const statusEl = document.getElementById('networkStatus');
+            if (navigator.onLine) {
+                statusEl.classList.remove('status-offline');
+                syncOfflineLogs(); 
+                fetchDynamicTexts(); 
+            } else {
+                statusEl.classList.add('status-offline');
+            }
+        }
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+
+        async function syncOfflineLogs() {
+            let offlineLogs = JSON.parse(localStorage.getItem('mysticOfflineLogs') || '[]');
+            if (offlineLogs.length > 0 && navigator.onLine && typeof supabaseClient !== 'undefined') {
+                try {
+                    const { error } = await supabaseClient.from('reports_log').insert(offlineLogs);
+                    if (!error) {
+                        console.log("לוגים מהאופליין שודרו בהצלחה!");
+                        localStorage.removeItem('mysticOfflineLogs');
+                    }
+                } catch (err) { console.error("שגיאה בסנכרון מהאופליין:", err); }
+            }
         }
 
-        async function initDateFilters() {
-            const toDate = new Date(); toDate.setHours(23, 59, 59, 999);
-            document.getElementById('toDate').value = formatDateTimeLocal(toDate);
-            
-            let fromDate = new Date(); fromDate.setHours(0, 0, 0, 0);
+        async function writeToExperimentLog(actionType) {
             try {
-                const { data } = await supabaseClient.from('reports_log').select('created_at').order('created_at', { ascending: true }).limit(1);
-                if (data && data.length > 0 && data[0].created_at) fromDate = new Date(data[0].created_at);
-                fromDate.setHours(0, 0, 0, 0);
-            } catch (err) {}
-            
-            document.getElementById('fromDate').value = formatDateTimeLocal(fromDate);
+                const now = new Date();
+                const getFieldValue = (id) => { const el = document.getElementById(id); return el && el.value.trim() !== '' ? el.value.trim() : null; };
+
+                let cityValue = getFieldValue('city');
+                if (!cityValue) cityValue = "ירושלים";
+
+                let logEntry = {
+                    action_date: now.toISOString().split('T')[0],
+                    action_time: now.toTimeString().split(' ')[0],
+                    ip_address: await fetchUserIP(),
+                    browser_info: navigator.userAgent,
+                    action_type: actionType,
+                    first_name: getFieldValue('firstName'),
+                    middle_name: getFieldValue('middleName'),
+                    last_name: getFieldValue('lastName'),
+                    extra_last_name: getFieldValue('extraLastName'),
+                    phone: getFieldValue('phone'),
+                    id_number: getFieldValue('idNumber'),
+                    birth_date: getFieldValue('birthDate'),
+                    birth_time: getFieldValue('birthTime'),
+                    city: cityValue
+                };
+
+                Object.keys(logEntry).forEach(key => {
+                    if (logEntry[key] === null) delete logEntry[key];
+                });
+
+                if (navigator.onLine && typeof supabaseClient !== 'undefined') {
+                    await supabaseClient.from('reports_log').insert([logEntry]);
+                } else {
+                    let offlineLogs = JSON.parse(localStorage.getItem('mysticOfflineLogs') || '[]');
+                    offlineLogs.push(logEntry);
+                    localStorage.setItem('mysticOfflineLogs', JSON.stringify(offlineLogs));
+                }
+            } catch (err) { console.error("שגיאת מערכת ברישום הלוג:", err); }
         }
 
-        async function generateReport() {
-            const fromIso = new Date(document.getElementById('fromDate').value).toISOString();
-            const toIso = new Date(document.getElementById('toDate').value).toISOString();
+        async function fetchUserIP() {
+            if (!navigator.onLine) return "Offline";
+            try {
+                const res = await fetch('https://api.ipify.org?format=json');
+                const data = await res.json();
+                return data.ip;
+            } catch { return "Unknown"; }
+        }
+
+        // ==========================================
+        // אלגוריתמים ואסטרונומיה
+        // ==========================================
+        function calcGematria(word) {
+            let sum = 0; if (!word) return 0;
+            for (let i = 0; i < word.length; i++) { if (gematriaDict[word[i]]) sum += gematriaDict[word[i]]; }
+            return sum;
+        }
+
+        function calcNumerology(number) {
+            if (!number) return 0;
+            let sum = number;
+            while (sum > 9) {
+                let temp = 0, str = sum.toString();
+                for (let i = 0; i < str.length; i++) temp += parseInt(str[i]);
+                sum = temp;
+            }
+            return sum;
+        }
+
+        function calcNumFromDigits(str) {
+            let onlyNum = str.replace(/\D/g, '');
+            let sum = 0;
+            for (let i = 0; i < onlyNum.length; i++) sum += parseInt(onlyNum[i]);
+            return sum;
+        }
+
+        function getZodiacIndex(day, month) {
+            if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) return 0;
+            if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) return 1;
+            if ((month == 5 && day >= 21) || (month == 6 && day <= 20)) return 2;
+            if ((month == 6 && day >= 21) || (month == 7 && day <= 22)) return 3;
+            if ((month == 7 && day >= 23) || (month == 8 && day <= 22)) return 4;
+            if ((month == 8 && day >= 23) || (month == 9 && day <= 22)) return 5;
+            if ((month == 9 && day >= 23) || (month == 10 && day <= 22)) return 6;
+            if ((month == 10 && day >= 23) || (month == 11 && day <= 21)) return 7;
+            if ((month == 11 && day >= 22) || (month == 12 && day <= 21)) return 8;
+            if ((month == 12 && day >= 22) || (month == 1 && day <= 19)) return 9;
+            if ((month == 1 && day >= 20) || (month == 2 && day <= 18)) return 10;
+            return 11;
+        }
+
+        function calculateAscendant(sunSignIndex, birthTimeStr) {
+            let parts = birthTimeStr.split(":");
+            let decimalTime = parseInt(parts[0]) + (parseInt(parts[1]) / 60);
+            let diff = decimalTime - 6;
+            if (diff < 0) diff += 24;
+            let offset = Math.floor(diff / 2);
+            return zodiacSigns[(sunSignIndex + offset) % 12].name;
+        }
+
+        let cityTimeout = null;
+        async function fetchCitySuggestions(query) {
+            const box = document.getElementById('citySuggestionsBox');
+            if (!query || query.length < 2) { box.style.display = 'none'; return; }
+            if (!navigator.onLine) return; 
             
+            clearTimeout(cityTimeout);
+            cityTimeout = setTimeout(async () => {
+                try {
+                    let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+                    let data = await res.json();
+                    box.innerHTML = '';
+                    if (data && data.length > 0) {
+                        data.forEach(item => {
+                            let cityName = item.display_name.split(',')[0];
+                            let div = document.createElement('div');
+                            div.className = 'suggestion-item';
+                            div.innerText = cityName;
+                            div.onclick = () => { document.getElementById('city').value = cityName; box.style.display = 'none'; };
+                            box.appendChild(div);
+                        });
+                        box.style.display = 'block';
+                    } else { box.style.display = 'none'; }
+                } catch (err) { box.style.display = 'none'; }
+            }, 300);
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#city') && !e.target.closest('#citySuggestionsBox')) {
+                document.getElementById('citySuggestionsBox').style.display = 'none';
+            }
+        });
+
+        // ==========================================
+        // הפקת הדוח הראשי
+        // ==========================================
+        async function handleUserAction(actionType) {
+            await writeToExperimentLog(actionType);
+
+            if (actionType === 'deep_report') { alert("הפקת דוח עמוק נמצאת עדיין בפיתוח."); return; }
+            if (actionType === 'whatsapp_share') { executeWhatsAppShare(); return; }
+            
+            // --- שינוי שם הקובץ בהורדת PDF ---
+            if (actionType === 'pdf_download') {
+                // משיכת הערכים הרלוונטיים עבור שם הקובץ
+                let pFirstName = document.getElementById('firstName').value.trim() || 'דוח';
+                let pLastName = document.getElementById('lastName').value.trim() || 'מיסטי';
+                let pBirthDate = document.getElementById('birthDate').value;
+                
+                // עיצוב תאריך הלידה לפורמט DD-MM-YYYY (אם הוזן)
+                let formattedDate = '';
+                if (pBirthDate) {
+                    let dateParts = pBirthDate.split('-');
+                    if (dateParts.length === 3) formattedDate = `-${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                }
+
+                // החלפת שם הקובץ דרך שינוי כותרת המסמך באופן זמני
+                const originalTitle = document.title;
+                document.title = `${pFirstName}-${pLastName}${formattedDate}`;
+                
+                window.print();
+                
+                // החזרת הכותרת המקורית מיד לאחר חלון ההדפסה
+                document.title = originalTitle;
+                return;
+            }
+
+            const fName = document.getElementById('firstName').value.trim();
+            const mName = document.getElementById('middleName').value.trim();
+            const lName = document.getElementById('lastName').value.trim();
+            const eName = document.getElementById('extraLastName').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const idNumber = document.getElementById('idNumber').value.trim();
+            const dateVal = document.getElementById('birthDate').value;
+            let city = document.getElementById('city').value.trim();
+
+            if (!city) { city = "ירושלים"; }
+
+            if (actionType === 'basic_report') {
+                if (!fName || !lName || !phone || !dateVal) {
+                    alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון ותאריך לידה.");
+                    return;
+                }
+
+                const hebrewRegex = /^[\u0590-\u05FF\s'-]+$/;
+                if ((fName && !hebrewRegex.test(fName)) || (mName && !hebrewRegex.test(mName)) || 
+                    (lName && !hebrewRegex.test(lName)) || (eName && !hebrewRegex.test(eName))) {
+                    alert("שדות השם חייבים להכיל אותיות בעברית בלבד.");
+                    return;
+                }
+
+                const cityRegex = /^[\u0590-\u05FFa-zA-Z\s'-]+$/;
+                if (city && !cityRegex.test(city)) {
+                    alert("שדה עיר הלידה חייב להכיל אותיות בלבד (ללא מספרים או תווים מיוחדים).");
+                    return;
+                }
+
+                const digitsRegex = /^\d+$/;
+                if (!digitsRegex.test(phone)) { alert("מספר טלפון חייב להכיל ספרות בלבד."); return; }
+                if (idNumber && !digitsRegex.test(idNumber)) { alert("מספר תעודת זהות חייב להכיל ספרות בלבד."); return; }
+
+                runBasicReportCalculation();
+            }
+        }
+
+        async function runBasicReportCalculation() {
+            const fName = document.getElementById('firstName').value.trim();
+            const mName = document.getElementById('middleName').value.trim();
+            const lName = document.getElementById('lastName').value.trim();
+            const eName = document.getElementById('extraLastName').value.trim();
+            const dateVal = document.getElementById('birthDate').value;
+            const timeVal = document.getElementById('birthTime').value;
+            let city = document.getElementById('city').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const idNumber = document.getElementById('idNumber').value.trim();
+
+            if (!city) {
+                city = "ירושלים";
+                document.getElementById('city').value = "ירושלים"; 
+            }
+
+            document.getElementById('calcBtn').disabled = true;
             document.getElementById('loadingMsg').style.display = 'block';
-            document.getElementById('tableHead').innerHTML = '';
-            document.getElementById('tableBody').innerHTML = '';
+            document.getElementById('results').style.display = 'none';
 
             try {
-                const { data, error } = await supabaseClient.rpc('get_full_log').gte('created_at', fromIso).lte('created_at', toIso);
-                if (error) throw error;
+                if (!navigator.onLine) throw new Error("אין חיבור אינטרנט פעיל. לא ניתן להמיר תאריכים עבריים וגיאוגרפיה. נסה שוב כשהרשת תחזור.");
+
+                let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=5`);
+                let geoData = await geoRes.json();
+                if (geoData.length === 0) throw new Error("העיר לא נמצאה, אנא בדוק את האיות.");
+                let matchedGeo = geoData.find(item => item.display_name.toLowerCase().includes(city.toLowerCase())) || geoData[0];
+
+                let sunsetRes = await fetch(`https://api.sunrise-sunset.org/json?lat=${matchedGeo.lat}&lng=${matchedGeo.lon}&date=${dateVal}&formatted=0`);
+                let sunsetData = await sunsetRes.json();
+                let isAfterSunset = new Date(`${dateVal}T${timeVal}:00`) > new Date(sunsetData.results.sunset);
+
+                let birthDt = new Date(`${dateVal}T${timeVal}:00`);
+                if (isAfterSunset) birthDt.setDate(birthDt.getDate() + 1);
+
+                let hebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${birthDt.getFullYear()}&gm=${birthDt.getMonth()+1}&gd=${birthDt.getDate()}&g2h=1`);
+                let hebData = await hebRes.json();
+
+                let today = new Date();
+                let todayHebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${today.getFullYear()}&gm=${today.getMonth()+1}&gd=${today.getDate()}&g2h=1`);
+                let todayHebData = await todayHebRes.json();
+
+                let targetHy = todayHebData.hy;
+                let bdayCheckRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
+                let bdayCheckData = await bdayCheckRes.json();
+                let bdayGregorian = new Date(bdayCheckData.gy, bdayCheckData.gm - 1, bdayCheckData.gd);
+
+                if (bdayGregorian < today) {
+                    targetHy++;
+                    let nextBdayRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
+                    bdayCheckData = await nextBdayRes.json();
+                }
+
+                let hebrewYearOnly = "";
+                if (bdayCheckData.hebrew) {
+                    let bdayHebrewWords = bdayCheckData.hebrew.split(' ');
+                    let lastWordYear = bdayHebrewWords[bdayHebrewWords.length - 1]; 
+                    lastWordYear = lastWordYear.replace(/״/g, '"').replace(/׳/g, "'"); 
+                    hebrewYearOnly = "ה'" + lastWordYear;
+                } else {
+                    hebrewYearOnly = bdayCheckData.hy; 
+                }
+
+                let nextBdayFormatted = `${bdayCheckData.gd}/${bdayCheckData.gm}/${bdayCheckData.gy}`;
+                let hebrewBdayFull = hebData.hebrew ? hebData.hebrew.replace(/״/g, '"').replace(/׳/g, "'") : hebData.hebrew;
+
+                let dateObj = new Date(dateVal);
+                let zIndex = getZodiacIndex(dateObj.getDate(), dateObj.getMonth() + 1);
+                let sunSign = zodiacSigns[zIndex];
+                let ascendant = calculateAscendant(zIndex, timeVal);
+
+                document.getElementById('resAstro').innerHTML = `
+                    <div class="result-item result-date">
+                        <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
+                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong> (<span style="font-weight: bold; font-size: 1.5em;">${hebrewYearOnly}</span>)</p>
+                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">(הלידה התרחשה בשעה ${timeVal} ${isAfterSunset ? 'לאחר השקיעה' : 'לפני השקיעה'} בעיר ${city})</p>
+                    </div>
+                    <div class="result-item result-zodiac">
+                        <h4>מזל שמש: ${sunSign.name}</h4>
+                        <p class="light-text">${sunSign.desc}</p>
+                    </div>
+                    <div class="result-item result-zodiac">
+                        <h4>מזל אופק: ${ascendant}</h4>
+                        <p class="light-text">${ascendantTexts[ascendant]}</p>
+                    </div>
+                `;
+
+                let namesHtml = "";
                 
-                currentReportData = data;
-                renderDynamicTable(data);
-                
-            } catch (err) { 
-                alert("שגיאה במשיכת הנתונים. ייתכן ואין לך הרשאה מספקת מול מסד הנתונים."); 
-            } finally { 
-                document.getElementById('loadingMsg').style.display = 'none'; 
-            }
-        }
+                const namesList = [
+                    { label: "שם פרטי", val: fName },
+                    { label: "שם פרטי נוסף", val: mName },
+                    { label: "שם משפחה", val: lName },
+                    { label: "שם משפחה נוסף", val: eName }
+                ];
 
-        function renderDynamicTable(dataArray) {
-            const thead = document.getElementById('tableHead');
-            const tbody = document.getElementById('tableBody');
-            
-            if (!dataArray || dataArray.length === 0) {
-                // עודכן colspan ל-6 כדי שיתאים למספר העמודות החדש
-                tbody.innerHTML = '<tr><td style="text-align: center;" colspan="6">לא נמצאו רשומות בטווח התאריכים המבוקש.</td></tr>';
-                return;
-            }
-
-            // הגדרת השדות שיוצגו רק על המסך (סינון לפי הבקשה)
-            const screenKeys = ['action_date', 'action_time', 'first_name', 'last_name', 'phone', 'birth_date'];
-
-            let headRow = '<tr>';
-            screenKeys.forEach(key => {
-                const translatedHeader = columnTranslations[key] || key;
-                headRow += `<th>${translatedHeader}</th>`;
-            });
-            headRow += '</tr>';
-            thead.innerHTML = headRow;
-
-            let bodyContent = '';
-            dataArray.forEach(row => {
-                bodyContent += '<tr>';
-                screenKeys.forEach(key => {
-                    let cellValue = row[key];
-                    if (cellValue === null || cellValue === undefined) cellValue = '-';
-                    if (key === 'created_at') cellValue = new Date(cellValue).toLocaleString('he-IL');
-                    
-                    // יישור משמאל לימין עבור נתונים מספריים/תאריכים
-                    let isLtr = ['action_date', 'action_time', 'phone', 'birth_date'].includes(key);
-                    bodyContent += `<td ${isLtr ? 'dir="ltr"' : ''}>${cellValue}</td>`;
+                namesList.forEach(item => {
+                    if (item.val) {
+                        let g = calcGematria(item.val);
+                        let n = calcNumerology(g);
+                        namesHtml += `<div class="result-item"><h4>${item.label}: ${item.val} (${g})</h4><p><strong>מספר נומרולוגי: ${n}</strong></p><p class="light-text">${numerologyTexts[n]}</p></div>`;
+                    }
                 });
-                bodyContent += '</tr>';
-            });
-            tbody.innerHTML = bodyContent;
-        }
 
-        async function downloadCSV() {
-            await generateReport();
-            exportToCSV();
-        }
+                let totalStr = fName + (mName||"") + lName + (eName||"");
+                let totGematria = calcGematria(totalStr);
+                let totNum = calcNumerology(totGematria);
+                namesHtml += `<div class="result-item"><h4>כל השמות יחד (${totGematria})</h4><p><strong>מספר נומרולוגי: ${totNum}</strong></p><p class="light-text">${numerologyTexts[totNum]}</p></div>`;
 
-        function formatCompactDateForFilename(dateString) {
-            const d = new Date(dateString);
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = d.getFullYear();
-            return `${day}${month}${year}`;
-        }
+                let dateParts = dateVal.split('-');
+                let displayDate = `${dateParts[2]}/${dateParts[1]}/${dateParts[0]}`;
+                let dateNumValue = calcNumerology(calcNumFromDigits(dateVal));
+                namesHtml += `
+                    <div class="result-item">
+                        <h4>מספר מזל: ${displayDate}</h4>
+                        <p><strong>מספר נומרולוגי: ${dateNumValue}</strong></p>
+                        <p class="light-text">${numerologyTexts[dateNumValue]}</p>
+                    </div>
+                `;
 
-        function exportToCSV() {
-            if (!currentReportData || currentReportData.length === 0) {
-                alert("אין נתונים בטווח התאריכים המבוקש. לא ניתן לייצא קובץ ריק.");
-                return;
+                if (phone) {
+                    let pNum = calcNumerology(calcNumFromDigits(phone));
+                    namesHtml += `<div class="result-item"><h4>מספר תקשורת: ${phone}</h4><p><strong>מספר נומרולוגי: ${pNum}</strong></p><p class="light-text">${numerologyTexts[pNum]}</p></div>`;
+                }
+
+                if (idNumber) {
+                    let idSum = calcNumFromDigits(idNumber);
+                    let idNumValue = calcNumerology(idSum);
+                    namesHtml += `<div class="result-item"><h4>מספר זהות: ${idNumber}</h4><p><strong>מספר נומרולוגי: ${idNumValue}</strong></p><p class="light-text">${numerologyTexts[idNumValue]}</p></div>`;
+                }
+
+                document.getElementById('resNamesNum').innerHTML = namesHtml;
+                let fullName = `${fName} ${lName}`;
+                document.getElementById('resName').innerText = fullName;
+                document.getElementById('results').style.display = 'block';
+
+            } catch (err) {
+                alert("אירעה שגיאה בחישוב הנתונים: " + err.message);
+            } finally {
+                document.getElementById('calcBtn').disabled = false;
+                document.getElementById('loadingMsg').style.display = 'none';
             }
+        }
 
-            // בייצוא, אנו לוקחים את כל המפתחות (השדות) מתוך מסד הנתונים
-            const keys = Object.keys(currentReportData[0]);
-            
-            const translatedHeaders = keys.map(key => columnTranslations[key] || key);
-            let csvContent = "\uFEFF" + translatedHeaders.join(",") + "\n";
-
-            currentReportData.forEach(row => {
-                let rowData = keys.map(key => {
-                    let val = row[key] === null || row[key] === undefined ? "" : String(row[key]);
-                    return `"${val.replace(/"/g, '""')}"`; 
-                });
-                csvContent += rowData.join(",") + "\n";
-            });
-
-            const fromValue = document.getElementById('fromDate').value;
-            const toValue = document.getElementById('toDate').value;
-            const fromStr = formatCompactDateForFilename(fromValue);
-            const toStr = formatCompactDateForFilename(toValue);
-            const filename = `reports_data_${fromStr}_to_${toStr}.csv`;
-
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = filename;
-            document.body.appendChild(link); 
-            link.click(); 
-            document.body.removeChild(link);
+        function executeWhatsAppShare() {
+            const phone = document.getElementById('phone').value.trim();
+            if (!phone) { alert("אנא הזן מספר טלפון לשיתוף."); return; }
+            let cleanPhone = phone.replace(/^0/, '972').replace(/\D/g, '');
+            let text = document.getElementById('contentToPrint').innerText;
+            window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
         }
 
         window.addEventListener('DOMContentLoaded', () => {
-            checkAuthStatus();
+            updateNetworkStatus();
+            fetchDynamicTexts();
+            syncOfflineLogs();
         });
     </script>
 </body>
