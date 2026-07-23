@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     
-    <!-- פקודות למניעת שמירה בזיכרון המטמון (Cache) כדי שהגרסה העדכנית תמיד תוצג -->
+    <!-- פקודות למניעת שמירה בזיכרון המטמון (Cache) -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta http-equiv="Pragma" content="no-cache">
     <meta http-equiv="Expires" content="0">
@@ -113,8 +113,10 @@
         .refresh-btn:hover { background-color: #7f8c8d; }
         .report-btn { background-color: var(--accent-color); height: 42px; }
         .report-btn:hover { background-color: #2980b9; }
-        .export-btn { background-color: var(--excel-color); height: 42px; display: none; }
+        
+        .export-btn { background-color: var(--excel-color); height: 42px; display: inline-block; }
         .export-btn:hover { background-color: #2ecc71; }
+        
         .logout-btn { background-color: var(--danger-color); font-size: 14px; padding: 8px 15px; }
         .logout-btn:hover { background-color: #c0392b; }
 
@@ -129,14 +131,12 @@
 </head>
 <body>
 
-    <!-- מצב 1: מסך התחברות -->
     <div id="loginView" class="container login-container">
         <h1>כניסת מנהל</h1>
         <p>מערכת הניהול מאובטחת. אנא התחבר עם חשבון Google מורשה כדי להמשיך.</p>
         <button class="google-btn" onclick="signInWithGoogle()">התחבר באמצעות Google</button>
     </div>
 
-    <!-- מצב 2: משתמש מחובר אך אינו מורשה -->
     <div id="unauthView" class="container unauth-container">
         <h1 style="color: var(--danger-color); border-color: var(--danger-color);">גישה נדחתה</h1>
         <p>חשבון ה-Google שאיתו התחברת אינו מורשה לגשת למסך זה.</p>
@@ -144,14 +144,12 @@
         <button class="logout-btn" onclick="signOut()" style="margin-top: 20px;">התנתק וחזור להתחברות</button>
     </div>
 
-    <!-- מצב 3: פאנל ניהול מרכזי (יוצג רק למייל המורשה) -->
     <div id="adminView" class="container">
         <div class="header-top">
             <h1>פאנל ניהול ודוחות - המרכז למיסטיקה</h1>
             <button class="logout-btn" onclick="signOut()">יציאה מהמערכת</button>
         </div>
 
-        <!-- אזור 1: סטטיסטיקות כלליות -->
         <div class="stats-section">
             <div class="stats-header">
                 <div class="stats-total">
@@ -165,7 +163,6 @@
             </ul>
         </div>
 
-        <!-- אזור 2: דוח גולמי מסונן (Raw Data) -->
         <h2 style="color: var(--primary-color); margin-bottom: 15px;">דוח נתונים גולמיים ומפורטים</h2>
         
         <div class="filters-section">
@@ -177,8 +174,11 @@
                 <label for="toDate">עד תאריך ושעה:</label>
                 <input type="datetime-local" id="toDate" step="1">
             </div>
+            
             <button class="report-btn" onclick="generateReport()">הפק דוח למסך</button>
-            <button id="exportBtn" class="export-btn" onclick="exportToCSV()">ייצא ל-Sheets (CSV)</button>
+            
+            <!-- הכפתור המעודכן שמפעיל את הפונקציה החדשה -->
+            <button id="exportBtn" class="export-btn" onclick="downloadCSV()">ייצא ל-Sheets (CSV)</button>
         </div>
 
         <div id="loadingMsg" class="loading">מעבד נתונים מול השרת, אנא המתן...</div>
@@ -192,13 +192,9 @@
     </div>
 
     <script>
-        // ==========================================
-        // 1. קונפיגורציה, הרשאות ומילוני תרגום
-        // ==========================================
         const AUTHORIZED_EMAIL = '4990920@gmail.com';
-        let currentReportData = []; // משתנה לשמירת הנתונים עבור ייצוא
+        let currentReportData = []; 
 
-        // מילון תרגום לסוגי הפעולות (אזור הסטטיסטיקה)
         const actionTranslations = {
             'basic_report': 'דוחות בסיסיים',
             'deep_report': 'דוחות עמוקים',
@@ -206,7 +202,6 @@
             'pdf_download': 'הורדות PDF'
         };
 
-        // מילון תרגום לשמות העמודות ממסד הנתונים (אזור הטבלה והאקסל)
         const columnTranslations = {
             'id': 'מזהה רשומה',
             'created_at': 'זמן רישום במערכת',
@@ -226,9 +221,6 @@
             'city': 'עיר'
         };
 
-        // ==========================================
-        // 2. מנגנון האבטחה (Auth)
-        // ==========================================
         async function checkAuthStatus() {
             const { data: { session } } = await supabaseClient.auth.getSession();
             routeUser(session);
@@ -248,7 +240,6 @@
             } else {
                 if (session.user.email === AUTHORIZED_EMAIL) {
                     document.getElementById('adminView').style.display = 'block';
-                    // טעינת שני חלקי המסך במקביל לאחר אימות מוצלח
                     loadStatistics(); 
                     initDateFilters(); 
                 } else {
@@ -269,9 +260,6 @@
             await supabaseClient.auth.signOut();
         }
 
-        // ==========================================
-        // 3. לוגיקת סטטיסטיקות כלליות (החלק העליון)
-        // ==========================================
         async function loadStatistics() {
             const counterElement = document.getElementById('totalRecordsCounter');
             const breakdownList = document.getElementById('actionBreakdownList');
@@ -309,9 +297,6 @@
             }
         }
 
-        // ==========================================
-        // 4. לוגיקת דוח גולמי מסונן (החלק התחתון)
-        // ==========================================
         function formatDateTimeLocal(dateObj) {
             return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}T${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}:${String(dateObj.getSeconds()).padStart(2, '0')}`;
         }
@@ -337,7 +322,6 @@
             document.getElementById('loadingMsg').style.display = 'block';
             document.getElementById('tableHead').innerHTML = '';
             document.getElementById('tableBody').innerHTML = '';
-            document.getElementById('exportBtn').style.display = 'none';
 
             try {
                 const { data, error } = await supabaseClient.rpc('get_full_log').gte('created_at', fromIso).lte('created_at', toIso);
@@ -346,7 +330,6 @@
                 currentReportData = data;
                 renderDynamicTable(data);
                 
-                if (data && data.length > 0) document.getElementById('exportBtn').style.display = 'inline-block';
             } catch (err) { 
                 alert("שגיאה במשיכת הנתונים. ייתכן ואין לך הרשאה מספקת מול מסד הנתונים."); 
             } finally { 
@@ -379,7 +362,6 @@
                 keys.forEach(key => {
                     let cellValue = row[key];
                     if (cellValue === null || cellValue === undefined) cellValue = '-';
-                    // המרת סוגי תאריכים להצגה נוחה ויישור נתונים באנגלית
                     if (key === 'created_at') cellValue = new Date(cellValue).toLocaleString('he-IL');
                     let isLtr = ['ip_address', 'created_at', 'birth_date', 'action_date'].includes(key);
                     bodyContent += `<td ${isLtr ? 'dir="ltr"' : ''}>${cellValue}</td>`;
@@ -390,8 +372,16 @@
         }
 
         // ==========================================
-        // 5. ייצוא ל-CSV (אקסל)
+        // הפונקציה החדשה: הורדת CSV בצורה חכמה
         // ==========================================
+        async function downloadCSV() {
+            // 1. קודם מבקשים לייצר את הדוח ולמשוך את הנתונים החדשים מהשרת (ממתינים לסיום)
+            await generateReport();
+            
+            // 2. מיד לאחר שהנתונים נמשכו בהצלחה והוצגו על המסך, מבצעים את הייצוא לקובץ
+            exportToCSV();
+        }
+
         function formatCompactDateForFilename(dateString) {
             const d = new Date(dateString);
             const day = String(d.getDate()).padStart(2, '0');
@@ -401,22 +391,25 @@
         }
 
         function exportToCSV() {
-            if (!currentReportData || currentReportData.length === 0) return;
+            // הודעת השגיאה הותאמה למקרה שאין נתונים בטווח הנבחר
+            if (!currentReportData || currentReportData.length === 0) {
+                alert("אין נתונים בטווח התאריכים המבוקש. לא ניתן לייצא קובץ ריק.");
+                return;
+            }
+
             const keys = Object.keys(currentReportData[0]);
             
-            // תרגום כותרות עבור האקסל
             const translatedHeaders = keys.map(key => columnTranslations[key] || key);
             let csvContent = "\uFEFF" + translatedHeaders.join(",") + "\n";
 
             currentReportData.forEach(row => {
                 let rowData = keys.map(key => {
                     let val = row[key] === null || row[key] === undefined ? "" : String(row[key]);
-                    return `"${val.replace(/"/g, '""')}"`; // עטיפה למניעת שבירה עקב פסיקים פנימיים
+                    return `"${val.replace(/"/g, '""')}"`; 
                 });
                 csvContent += rowData.join(",") + "\n";
             });
 
-            // בניית שם הקובץ עם תאריכי הסינון
             const fromValue = document.getElementById('fromDate').value;
             const toValue = document.getElementById('toDate').value;
             const fromStr = formatCompactDateForFilename(fromValue);
@@ -432,7 +425,6 @@
             document.body.removeChild(link);
         }
 
-        // הפעלת בדיקת האבטחה מיד כשהדף עולה
         window.addEventListener('DOMContentLoaded', () => {
             checkAuthStatus();
         });
