@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>בדיקת חדירות ואבטחה</title>
+    
+    <!-- טעינת ספריות קונפיגורציה בסיסיות (כמו שהאקר היה עושה) -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #2c3e50;
+            color: white;
+            text-align: center;
+            padding: 50px;
+        }
+        .hacker-box {
+            background-color: #000;
+            border: 2px solid #27ae60;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 600px;
+            margin: 0 auto;
+            box-shadow: 0 0 15px rgba(39, 174, 96, 0.5);
+        }
+        h1 { color: #27ae60; }
+        button {
+            background-color: #c0392b;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+        button:hover { background-color: #e74c3c; }
+        #output {
+            margin-top: 30px;
+            background-color: #111;
+            color: #2ecc71;
+            padding: 15px;
+            border-radius: 5px;
+            min-height: 100px;
+            text-align: left;
+            direction: ltr;
+            font-family: monospace;
+            white-space: pre-wrap;
+            border: 1px solid #333;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="hacker-box">
+        <h1>בדיקת פריצה (סימולציה)</h1>
+        <p>קובץ זה מנסה לפנות לשרת Supabase שלך ולקרוא את כל הנתונים מתוך הפונקציה <strong>get_full_log</strong> מבלי לעבור אימות של גוגל.</p>
+        
+        <button onclick="attemptBreach()">נסה למשוך נתונים (סימולציית פריצה)</button>
+
+        <div id="output">תוצאות השרת יופיעו כאן...</div>
+    </div>
+
+    <script>
+        async function attemptBreach() {
+            const outputDiv = document.getElementById('output');
+            outputDiv.innerHTML = "מנסה להתחבר לשרת ולמשוך נתונים...\n";
+
+            try {
+                // מנסים לקרוא לפונקציה המיוחדת שלנו בדיוק כמו שקובץ האדמין עושה
+                const { data, error } = await supabaseClient.rpc('get_full_log');
+
+                if (error) {
+                    // אם השרת החזיר שגיאה מפורשת
+                    outputDiv.innerHTML += `\n❌ השרת דחה את הבקשה!\nשגיאה: ${error.message}`;
+                } else if (!data || data.length === 0) {
+                    // אם השרת החזיר מערך ריק בגלל חוקי ה-RLS
+                    outputDiv.innerHTML += `\n🛡️ הצלחה באבטחה! השרת סירב להחזיר נתונים.\nהתקבל מערך ריק: ${JSON.stringify(data)}`;
+                } else {
+                    // אם חלילה הפריצה הצליחה והתקבלו נתונים
+                    outputDiv.innerHTML += `\n⚠️ אזהרה: הנתונים נמשכו בהצלחה!\n${JSON.stringify(data, null, 2)}`;
+                }
+                
+                // בדיקה נוספת: נסיון קריאה ישירה מהטבלה ללא פונקציה
+                outputDiv.innerHTML += `\n\nמנסה לפנות ישירות לטבלה reports_log...`;
+                const tableResponse = await supabaseClient.from('reports_log').select('*');
+                
+                if (tableResponse.error) {
+                    outputDiv.innerHTML += `\n❌ גישה ישירה לטבלה נדחתה: ${tableResponse.error.message}`;
+                } else if (!tableResponse.data || tableResponse.data.length === 0) {
+                    outputDiv.innerHTML += `\n🛡️ גישה ישירה לטבלה חזרה ריקה. הנתונים מוגנים!`;
+                }
+
+            } catch (err) {
+                outputDiv.innerHTML += `\nשגיאת רשת או קוד: ${err.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
