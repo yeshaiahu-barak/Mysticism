@@ -66,10 +66,14 @@
         
         #loadingMsg { display: none; text-align: center; color: var(--primary-color); font-weight: bold; margin-top: 15px; font-size: 1.1em;}
 
+        /* חיווי סטטוס רשת */
+        #networkStatus { text-align: center; font-size: 0.9em; padding: 5px; margin-bottom: 15px; border-radius: 4px; display: none; }
+        .status-offline { background-color: #f8d7da; color: #721c24; display: block !important; }
+
         @media print {
             body { background-color: white; padding: 0; }
             .container { box-shadow: none; padding: 0; }
-            .form-row, h1, .action-buttons-top, .actions, #loadingMsg { display: none !important; }
+            .form-row, h1, .action-buttons-top, .actions, #loadingMsg, #networkStatus { display: none !important; }
             #results { display: block !important; border: none; margin: 0; padding: 0; }
             #contentToPrint { border: none; padding: 0; }
             .result-item { page-break-inside: avoid; border-right: 4px solid black; text-align: justify; }
@@ -79,6 +83,8 @@
 <body>
 
     <div class="container">
+        <div id="networkStatus">מצב אופליין: אין חיבור לאינטרנט. הפעולות נשמרות מקומית.</div>
+        
         <h1>הדוח המיסטי שלי</h1>
         
         <div class="form-row">
@@ -127,13 +133,16 @@
     </div>
 
     <script>
+        // ==========================================
+        // מילוני נתונים (גיבוי מקומי במקרה של אופליין)
+        // ==========================================
         const gematriaDict = {
             'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,
             'כ':20,'ך':20,'ל':30,'מ':40,'ם':40,'נ':50,'ן':50,'ס':60,'ע':70,
             'פ':80,'ף':80,'צ':90,'ץ':90,'ק':100,'ר':200,'ש':300,'ת':400
         };
 
-        var numerologyTexts = {
+        let numerologyTexts = {
             1: "מנהיגות מולדת, עצמאות וכוח רצון עז. אנשי ה-1 הם חלוצים, יזמים ובעלי ביטחון עצמי גבוה.",
             2: "זוגיות, שותפות, דיפלומטיה ורגישות רגשית גבוהה. מגשרים טבעיים השואפים להרמוניה.",
             3: "ביטוי עצמי, יצירתיות, שמחת חיים וכריזמה מתפרצת. תקשורתיים ואופטימיים.",
@@ -145,7 +154,7 @@
             9: "הומניטריות, נתינה אוניברסלית ללא תנאי, אצילות נפש וסיום מעגלים."
         };
 
-        var zodiacSigns = [
+        let zodiacSigns = [
             { name: "טלה", desc: "מזל אש דינמי ויצרי. פורץ דרך, אמיץ ומוביל." },
             { name: "שור", desc: "מזל אדמה יציב ופרקטי. נאמן, חושני ואמין כסלע." },
             { name: "תאומים", desc: "מזל אוויר אינטלקטואלי ומהיר תפיסה. סקרן ותקשורתי." },
@@ -160,7 +169,7 @@
             { name: "דגים", desc: "מזל מים רוחני, חומל, אמנותי ובעל דמיון עשיר." }
         ];
 
-        var ascendantTexts = {
+        let ascendantTexts = {
             "טלה": "חזות נמרצת, ישירה ומהירה. כישרון ליזמות ופיקוד.",
             "שור": "נוכחות רגועה, שורשית ויציבה. כישרון לפיננסים ועיצוב.",
             "תאומים": "אנרגיה קלילה, תקשורתית וסקרנית. כישרון לתקשורת ותכנות.",
@@ -175,46 +184,53 @@
             "דגים": "עדינות, רגישות ורוחניות. כישרון לאמנות וטיפול."
         };
 
-        let cityTimeout = null;
-        async function fetchCitySuggestions(query) {
-            const box = document.getElementById('citySuggestionsBox');
-            if (!query || query.length < 2) {
-                box.style.display = 'none';
-                return;
-            }
-            clearTimeout(cityTimeout);
-            cityTimeout = setTimeout(async () => {
-                try {
-                    let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
-                    let data = await res.json();
-                    box.innerHTML = '';
-                    if (data && data.length > 0) {
-                        data.forEach(item => {
-                            let cityName = item.display_name.split(',')[0];
-                            let div = document.createElement('div');
-                            div.className = 'suggestion-item';
-                            div.innerText = cityName;
-                            div.onclick = () => {
-                                document.getElementById('city').value = cityName;
-                                box.style.display = 'none';
-                            };
-                            box.appendChild(div);
-                        });
-                        box.style.display = 'block';
-                    } else {
-                        box.style.display = 'none';
-                    }
-                } catch (err) {
-                    box.style.display = 'none';
+        // ==========================================
+        // משיכת טקסטים מהשרת במידה ויש חיבור
+        // ==========================================
+        async function fetchDynamicTexts() {
+            if (!navigator.onLine || typeof supabaseClient === 'undefined') return;
+            try {
+                // ** אנא עדכן את השם 'mystic_texts' לשם הטבלה האמיתית שלך ב-DB **
+                const { data, error } = await supabaseClient.from('mystic_texts').select('*');
+                if (!error && data && data.length > 0) {
+                    console.log("טקסטים נמשכו מהשרת בהצלחה.");
+                    // כאן נוכל להוסיף את ההמרה של הטקסטים מהשרת למשתנים שלנו, 
+                    // בהתאם לשמות העמודות האמיתיות שלך.
                 }
-            }, 300);
+            } catch (err) {
+                console.warn("לא ניתן למשוך טקסטים מהשרת, משתמש בגיבוי המקומי.");
+            }
         }
 
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('#city') && !e.target.closest('#citySuggestionsBox')) {
-                document.getElementById('citySuggestionsBox').style.display = 'none';
+        // ==========================================
+        // ניהול רשת ולוגים (אונליין / אופליין)
+        // ==========================================
+        function updateNetworkStatus() {
+            const statusEl = document.getElementById('networkStatus');
+            if (navigator.onLine) {
+                statusEl.classList.remove('status-offline');
+                syncOfflineLogs(); // ברגע שהאינטרנט חוזר, משדרים את הלוגים
+            } else {
+                statusEl.classList.add('status-offline');
             }
-        });
+        }
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+
+        async function syncOfflineLogs() {
+            let offlineLogs = JSON.parse(localStorage.getItem('mysticOfflineLogs') || '[]');
+            if (offlineLogs.length > 0 && navigator.onLine && typeof supabaseClient !== 'undefined') {
+                try {
+                    const { error } = await supabaseClient.from('reports_log').insert(offlineLogs);
+                    if (!error) {
+                        console.log("לוגים שנשמרו באופליין שודרו בהצלחה!");
+                        localStorage.removeItem('mysticOfflineLogs');
+                    }
+                } catch (err) {
+                    console.error("שגיאה בסנכרון לוגים מהאופליין:", err);
+                }
+            }
+        }
 
         async function writeToExperimentLog(actionType) {
             try {
@@ -238,23 +254,23 @@
                     city: getFieldValue('city')
                 };
 
-                // ניקוי ערכים ריקים למניעת שגיאת 400 מול מסד הנתונים
+                // ניקוי ערכים ריקים למניעת שגיאת 400
                 Object.keys(logEntry).forEach(key => {
-                    if (logEntry[key] === null) {
-                        delete logEntry[key];
-                    }
+                    if (logEntry[key] === null) delete logEntry[key];
                 });
 
                 if (navigator.onLine && typeof supabaseClient !== 'undefined') {
                     const { error } = await supabaseClient.from('reports_log').insert([logEntry]);
-                    if (error) {
-                        console.error("שגיאת רישום מול שרת Supabase:", error);
-                    } else {
-                        console.log("הלוג נרשם בהצלחה במסד הנתונים!");
-                    }
+                    if (error) throw error;
+                } else {
+                    // שמירה באופליין
+                    let offlineLogs = JSON.parse(localStorage.getItem('mysticOfflineLogs') || '[]');
+                    offlineLogs.push(logEntry);
+                    localStorage.setItem('mysticOfflineLogs', JSON.stringify(offlineLogs));
+                    console.log("אין חיבור. הלוג נשמר מקומית וישודר בהמשך.");
                 }
             } catch (err) {
-                console.error("שגיאה במנגנון יצירת הלוג:", err);
+                console.error("שגיאה במנגנון הלוג:", err);
             }
         }
 
@@ -264,17 +280,15 @@
                 const res = await fetch('https://api.ipify.org?format=json');
                 const data = await res.json();
                 return data.ip;
-            } catch {
-                return "Unknown";
-            }
+            } catch { return "Unknown"; }
         }
 
+        // ==========================================
+        // אלגוריתמים ונומרולוגיה
+        // ==========================================
         function calcGematria(word) {
-            let sum = 0;
-            if (!word) return 0;
-            for (let i = 0; i < word.length; i++) {
-                if (gematriaDict[word[i]]) sum += gematriaDict[word[i]];
-            }
+            let sum = 0; if (!word) return 0;
+            for (let i = 0; i < word.length; i++) { if (gematriaDict[word[i]]) sum += gematriaDict[word[i]]; }
             return sum;
         }
 
@@ -320,13 +334,48 @@
             return zodiacSigns[(sunSignIndex + offset) % 12].name;
         }
 
+        let cityTimeout = null;
+        async function fetchCitySuggestions(query) {
+            const box = document.getElementById('citySuggestionsBox');
+            if (!query || query.length < 2) { box.style.display = 'none'; return; }
+            if (!navigator.onLine) return; // לא ניתן להביא השלמות ללא אינטרנט
+            
+            clearTimeout(cityTimeout);
+            cityTimeout = setTimeout(async () => {
+                try {
+                    let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+                    let data = await res.json();
+                    box.innerHTML = '';
+                    if (data && data.length > 0) {
+                        data.forEach(item => {
+                            let cityName = item.display_name.split(',')[0];
+                            let div = document.createElement('div');
+                            div.className = 'suggestion-item';
+                            div.innerText = cityName;
+                            div.onclick = () => { document.getElementById('city').value = cityName; box.style.display = 'none'; };
+                            box.appendChild(div);
+                        });
+                        box.style.display = 'block';
+                    } else { box.style.display = 'none'; }
+                } catch (err) { box.style.display = 'none'; }
+            }, 300);
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#city') && !e.target.closest('#citySuggestionsBox')) {
+                document.getElementById('citySuggestionsBox').style.display = 'none';
+            }
+        });
+
+        // ==========================================
+        // פעולות משתמש והפקת הדוח
+        // ==========================================
         async function handleUserAction(actionType) {
             await writeToExperimentLog(actionType);
 
-            if (actionType === 'deep_report') {
-                alert("הפקת דוח עמוק נמצאת עדיין בפיתוח.");
-                return;
-            }
+            if (actionType === 'deep_report') { alert("הפקת דוח עמוק נמצאת עדיין בפיתוח."); return; }
+            if (actionType === 'whatsapp_share') { executeWhatsAppShare(); return; }
+            if (actionType === 'pdf_download') { window.print(); return; }
 
             const fName = document.getElementById('firstName').value.trim();
             const mName = document.getElementById('middleName').value.trim();
@@ -344,10 +393,8 @@
                 }
 
                 const hebrewRegex = /^[\u0590-\u05FF\s'-]+$/;
-                if ((fName && !hebrewRegex.test(fName)) || 
-                    (mName && !hebrewRegex.test(mName)) || 
-                    (lName && !hebrewRegex.test(lName)) || 
-                    (eName && !hebrewRegex.test(eName))) {
+                if ((fName && !hebrewRegex.test(fName)) || (mName && !hebrewRegex.test(mName)) || 
+                    (lName && !hebrewRegex.test(lName)) || (eName && !hebrewRegex.test(eName))) {
                     alert("שדות השם חייבים להכיל אותיות בעברית בלבד.");
                     return;
                 }
@@ -359,20 +406,10 @@
                 }
 
                 const digitsRegex = /^\d+$/;
-                if (!digitsRegex.test(phone)) {
-                    alert("מספר טלפון חייב להכיל ספרות בלבד.");
-                    return;
-                }
-                if (idNumber && !digitsRegex.test(idNumber)) {
-                    alert("מספר תעודת זהות חייב להכיל ספרות בלבד.");
-                    return;
-                }
+                if (!digitsRegex.test(phone)) { alert("מספר טלפון חייב להכיל ספרות בלבד."); return; }
+                if (idNumber && !digitsRegex.test(idNumber)) { alert("מספר תעודת זהות חייב להכיל ספרות בלבד."); return; }
 
                 runBasicReportCalculation();
-            } else if (actionType === 'whatsapp_share') {
-                executeWhatsAppShare();
-            } else if (actionType === 'pdf_download') {
-                window.print();
             }
         }
 
@@ -392,10 +429,12 @@
             document.getElementById('results').style.display = 'none';
 
             try {
+                // חישובי תאריכים מול APIs (אם אין אינטרנט, המערכת תיפול ל-catch)
+                if (!navigator.onLine) throw new Error("אין חיבור אינטרנט פעיל. לא ניתן להמיר תאריכים עבריים כרגע.");
+
                 let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=5`);
                 let geoData = await geoRes.json();
                 if (geoData.length === 0) throw new Error("העיר לא נמצאה, אנא בדוק את האיות.");
-
                 let matchedGeo = geoData.find(item => item.display_name.toLowerCase().includes(city.toLowerCase())) || geoData[0];
 
                 let sunsetRes = await fetch(`https://api.sunrise-sunset.org/json?lat=${matchedGeo.lat}&lng=${matchedGeo.lon}&date=${dateVal}&formatted=0`);
@@ -494,14 +533,18 @@
 
         function executeWhatsAppShare() {
             const phone = document.getElementById('phone').value.trim();
-            if (!phone) {
-                alert("אנא הזן מספר טלפון לשיתוף.");
-                return;
-            }
+            if (!phone) { alert("אנא הזן מספר טלפון לשיתוף."); return; }
             let cleanPhone = phone.replace(/^0/, '972').replace(/\D/g, '');
             let text = document.getElementById('contentToPrint').innerText;
             window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(text)}`;
         }
+
+        // טעינה ראשונית של מצב הרשת ושליפת טקסטים מהשרת
+        window.addEventListener('DOMContentLoaded', () => {
+            updateNetworkStatus();
+            fetchDynamicTexts();
+            syncOfflineLogs();
+        });
     </script>
 </body>
 </html>
