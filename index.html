@@ -259,7 +259,6 @@
                 const now = new Date();
                 const getFieldValue = (id) => { const el = document.getElementById(id); return el && el.value.trim() !== '' ? el.value.trim() : null; };
 
-                // הוספנו ברירת מחדל גם לרישום במידה והשדה ריק
                 let cityValue = getFieldValue('city');
                 if (!cityValue) cityValue = "ירושלים";
 
@@ -395,7 +394,31 @@
 
             if (actionType === 'deep_report') { alert("הפקת דוח עמוק נמצאת עדיין בפיתוח."); return; }
             if (actionType === 'whatsapp_share') { executeWhatsAppShare(); return; }
-            if (actionType === 'pdf_download') { window.print(); return; }
+            
+            // --- שינוי שם הקובץ בהורדת PDF ---
+            if (actionType === 'pdf_download') {
+                // משיכת הערכים הרלוונטיים עבור שם הקובץ
+                let pFirstName = document.getElementById('firstName').value.trim() || 'דוח';
+                let pLastName = document.getElementById('lastName').value.trim() || 'מיסטי';
+                let pBirthDate = document.getElementById('birthDate').value;
+                
+                // עיצוב תאריך הלידה לפורמט DD-MM-YYYY (אם הוזן)
+                let formattedDate = '';
+                if (pBirthDate) {
+                    let dateParts = pBirthDate.split('-');
+                    if (dateParts.length === 3) formattedDate = `-${dateParts[2]}-${dateParts[1]}-${dateParts[0]}`;
+                }
+
+                // החלפת שם הקובץ דרך שינוי כותרת המסמך באופן זמני
+                const originalTitle = document.title;
+                document.title = `${pFirstName}-${pLastName}${formattedDate}`;
+                
+                window.print();
+                
+                // החזרת הכותרת המקורית מיד לאחר חלון ההדפסה
+                document.title = originalTitle;
+                return;
+            }
 
             const fName = document.getElementById('firstName').value.trim();
             const mName = document.getElementById('middleName').value.trim();
@@ -406,13 +429,9 @@
             const dateVal = document.getElementById('birthDate').value;
             let city = document.getElementById('city').value.trim();
 
-            // הוספת ברירת מחדל אם העיר ריקה
-            if (!city) {
-                city = "ירושלים";
-            }
+            if (!city) { city = "ירושלים"; }
 
             if (actionType === 'basic_report') {
-                // הסרנו את התנאי המחייב הזנת עיר, מכיוון שיש לנו עכשיו ברירת מחדל
                 if (!fName || !lName || !phone || !dateVal) {
                     alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון ותאריך לידה.");
                     return;
@@ -426,7 +445,6 @@
                 }
 
                 const cityRegex = /^[\u0590-\u05FFa-zA-Z\s'-]+$/;
-                // בודקים תקינות רק אם הוזנה עיר (למרות שתמיד תהיה לנו אחת בשלב זה)
                 if (city && !cityRegex.test(city)) {
                     alert("שדה עיר הלידה חייב להכיל אותיות בלבד (ללא מספרים או תווים מיוחדים).");
                     return;
@@ -451,10 +469,9 @@
             const phone = document.getElementById('phone').value.trim();
             const idNumber = document.getElementById('idNumber').value.trim();
 
-            // יישום ברירת המחדל לחישוב
             if (!city) {
                 city = "ירושלים";
-                document.getElementById('city').value = "ירושלים"; // מעדכן גם חזותית במסך
+                document.getElementById('city').value = "ירושלים"; 
             }
 
             document.getElementById('calcBtn').disabled = true;
