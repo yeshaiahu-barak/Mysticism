@@ -98,7 +98,6 @@
             </div>
             
             <ul id="actionBreakdownList" class="action-breakdown">
-                <!-- הסטטיסטיקות שמבוססות על ה-DB יטענו לכאן -->
                 <li>טוען נתונים...</li>
             </ul>
         </div>
@@ -198,7 +197,6 @@
             await supabaseClient.auth.signOut();
         }
 
-        // פונקציית הסטטיסטיקות הוחזרה במלואה! מחשבת סוגי פעולות מה-DB
         async function loadStatistics() {
             const counterElement = document.getElementById('totalRecordsCounter');
             const breakdownList = document.getElementById('actionBreakdownList');
@@ -285,7 +283,6 @@
                 return;
             }
 
-            // הוספת העמודה action_type (סוג פעולה) לתצוגת המסך
             const screenKeys = ['id', 'action_date', 'action_time', 'action_type', 'first_name', 'last_name', 'phone', 'birth_date'];
 
             let headRow = '<tr>';
@@ -296,23 +293,23 @@
             headRow += '</tr>';
             thead.innerHTML = headRow;
 
-            let bodyContent = '';
-            dataArray.forEach(row => {
-                bodyContent += '<tr>';
-                screenKeys.forEach(key => {
+            document.getElementById('tBody').innerHTML = dataArray.map(row => 
+                `<tr>${screenKeys.map(key => {
                     let cellValue = row[key];
                     if (cellValue === null || cellValue === undefined) cellValue = '-';
+                    
+                    if ((key === 'action_date' || key === 'birth_date') && cellValue !== '-') {
+                        cellValue = cellValue.split('-').reverse().join('-');
+                    }
                     
                     if (key === 'action_type' && actionTranslations[cellValue]) {
                         cellValue = actionTranslations[cellValue];
                     }
                     
                     let isLtr = ['id', 'action_date', 'action_time', 'phone', 'birth_date'].includes(key);
-                    bodyContent += `<td ${isLtr ? 'dir="ltr"' : ''}>${cellValue}</td>`;
-                });
-                bodyContent += '</tr>';
-            });
-            tbody.innerHTML = bodyContent;
+                    return `<td ${isLtr ? 'dir="ltr"' : ''}>${cellValue}</td>`;
+                }).join('')}</tr>`
+            ).join('');
         }
 
         async function downloadCSV() {
