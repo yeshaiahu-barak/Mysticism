@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>הדוח המיסטי שלי</title>
     
-    <!-- חיבור לקובץ ההגדרות (Manifest) -->
+    <!-- חיבור לקובץ ההגדרות (Manifest) כדי לאפשר התקנת PWA -->
     <link rel="manifest" href="manifest.json">
     
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -28,7 +28,7 @@
         .container { max-width: 850px; margin: auto; background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         h1, h2, h3 { text-align: center; color: var(--text-color); }
         
-        /* עיצוב באנר ההתקנה לאנדרואיד ומחשבים */
+        /* עיצוב באנר ההתקנה */
         #installBanner {
             display: none;
             background-color: var(--accent-color);
@@ -405,7 +405,12 @@
                 let pFirstName = document.getElementById('firstName').value.trim() || 'דוח';
                 let pLastName = document.getElementById('lastName').value.trim() || 'מיסטי';
                 let pBirthDate = document.getElementById('birthDate').value;
-                let formattedDate = pBirthDate ? `-${pBirthDate.split('-').reverse().join('-')}` : '';
+                let formattedDate = '';
+                
+                if (pBirthDate) {
+                    let parts = pBirthDate.split('-');
+                    formattedDate = `-${parts[2]}${parts[1]}${parts[0]}`; 
+                }
 
                 const originalTitle = document.title;
                 document.title = `${pFirstName}-${pLastName}${formattedDate}`;
@@ -557,45 +562,56 @@
         }
 
         // ==========================================
-        // PWA - רישום האפליקציה והתקנה
+        // PWA - רישום האפליקציה והתקנה (עם הגנת כפילויות)
         // ==========================================
         
-        // 1. רישום ה-Service Worker
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Error:', err));
             });
         }
 
-        // 2. טיפול באנדרואיד ומחשבים (לכידת אירוע התקנה)
         let deferredPrompt;
+        
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
+        const isInstalledLocally = localStorage.getItem('mysticAppInstalled') === 'true';
+
         window.addEventListener('beforeinstallprompt', (e) => {
             e.preventDefault(); 
             deferredPrompt = e;
-            document.getElementById('installBanner').style.display = 'block';
+            
+            if (!isStandalone && !isInstalledLocally) {
+                document.getElementById('installBanner').style.display = 'block';
+            }
         });
 
         async function installApp() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
-                if (outcome === 'accepted') console.log('App installed');
+                
+                if (outcome === 'accepted') {
+                    console.log('המשתמש אישר את ההתקנה');
+                    localStorage.setItem('mysticAppInstalled', 'true');
+                }
+                
                 deferredPrompt = null; 
                 document.getElementById('installBanner').style.display = 'none';
             }
         }
 
-        // 3. טיפול באייפון (iOS)
+        window.addEventListener('appinstalled', (evt) => {
+            console.log('ההתקנה הושלמה בהצלחה ברמת מערכת ההפעלה');
+            localStorage.setItem('mysticAppInstalled', 'true');
+            document.getElementById('installBanner').style.display = 'none';
+        });
+
         const isIos = () => {
             const userAgent = window.navigator.userAgent.toLowerCase();
             return /iphone|ipad|ipod/.test(userAgent);
         };
         
-        // בדיקה אם המשתמש כבר פתח את האפליקציה ממסך הבית (Standalone mode)
-        const isInStandaloneMode = () => ('standalone' in window.navigator) && (window.navigator.standalone);
-
-        // אם זה אייפון וזה עדיין לא הותקן, נציג את באנר ההדרכה
-        if (isIos() && !isInStandaloneMode()) {
+        if (isIos() && !isStandalone && !isInstalledLocally) {
             document.getElementById('iosInstallBanner').style.display = 'block';
         }
 
