@@ -1,16 +1,16 @@
-// שם המטמון שלנו בזיכרון של הדפדפן
-const CACHE_NAME = 'mystic-report-v1';
+const CACHE_NAME = 'mystic-report-svg-v1';
 
-// רשימת הקבצים שאנחנו רוצים לשמור בטלפון של המשתמש
+// רשימת הקבצים הנחוצים להתקנה תקינה ולעבודה באופליין
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './manifest.json',
-  './config.js'
+  './config.js',
+  './logo.svg'
 ];
 
-// אירוע התקנה: קורה פעם אחת כשהמשתמש פותח את האתר. כאן שומרים את הקבצים.
 self.addEventListener('install', (event) => {
+  console.log('[Service Worker] שומר קבצים למטמון...');
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(ASSETS_TO_CACHE);
@@ -19,12 +19,10 @@ self.addEventListener('install', (event) => {
   self.skipWaiting();
 });
 
-// אירוע הפעלה: מנקה גרסאות ישנות של המטמון אם עדכנו את האפליקציה.
 self.addEventListener('activate', (event) => {
   event.waitUntil(self.clients.claim());
 });
 
-// אירוע משיכה (fetch): זה החלק החשוב! כשהאתר מבקש קובץ, נבדוק קודם אם הוא בזיכרון.
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
