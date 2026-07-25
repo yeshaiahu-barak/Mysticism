@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    
+    <title>מסך ניהול ובקרה - מרכז מיסטיקה</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="config.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --accent-color: #3498db;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --danger-color: #e74c3c;
+            --google-color: #4285F4;
+            --excel-color: #27ae60;
+            --border-color: #bdc3c7;
+        }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; background: var(--card-bg); padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        
+        #loginView, #unauthView, #adminView { display: none; }
+        .unauth-container, .login-container { max-width: 600px; text-align: center; margin: 0 auto; }
+        
+        h1 { color: var(--primary-color); border-bottom: 2px solid var(--accent-color); padding-bottom: 10px; }
+        
+        .header-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-color); padding-bottom: 10px; margin-bottom: 20px; }
+        .header-top h1 { border: none; padding: 0; margin: 0; }
+        .header-actions { display: flex; gap: 15px; align-items: center; }
+
+        .stats-section { background-color: #ecf0f1; padding: 20px; border-radius: 8px; margin-bottom: 30px; color: var(--primary-color); }
+        .stats-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #bdc3c7; padding-bottom: 15px; margin-bottom: 15px; }
+        .stats-total { font-size: 22px; font-weight: bold; }
+        .action-breakdown { list-style-type: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 15px; }
+        .action-breakdown li { background: #fff; padding: 10px 15px; border-radius: 6px; border: 1px solid #ccc; flex: 1; min-width: 200px; display: flex; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
+        
+        .filters-section { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; background: #e8f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #d1e8f0; }
+        .form-group { display: flex; flex-direction: column; gap: 5px; }
+        .form-group label { font-weight: bold; color: var(--primary-color); }
+        .form-group input[type="datetime-local"] { padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 16px; font-family: inherit; }
+        
+        button { padding: 10px 20px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; transition: background-color 0.3s; color: white; }
+        .google-btn { background-color: var(--google-color); margin-top: 20px; font-size: 18px; padding: 12px 25px; }
+        .google-btn:hover { background-color: #357abd; }
+        .refresh-btn { background-color: #f39c12; font-size: 14px; }
+        .refresh-btn:hover { background-color: #d68910; }
+        .report-btn { background-color: var(--accent-color); height: 42px; }
+        .report-btn:hover { background-color: #2980b9; }
+        .export-btn { background-color: var(--excel-color); height: 42px; display: inline-block; }
+        .export-btn:hover { background-color: #2ecc71; }
+        .deep-btn { background-color: #8e44ad; height: 42px; }
+        .deep-btn:hover { background-color: #732d91; }
+        .logout-btn { background-color: var(--danger-color); font-size: 14px; padding: 10px 15px; }
+        .logout-btn:hover { background-color: #c0392b; }
+
+        .table-responsive { overflow-x: auto; max-height: 500px; border: 1px solid #ddd; border-radius: 4px; margin-bottom: 30px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { padding: 10px 12px; font-size: 14px; text-align: right; border-bottom: 1px solid #ddd; vertical-align: top;}
+        th { background-color: var(--primary-color); color: white; position: sticky; top: 0; z-index: 10; }
+        tr:hover { background-color: #f9f9f9; }
+        .loading { text-align: center; font-size: 18px; color: var(--accent-color); font-weight: bold; display: none; margin: 20px 0; }
+        
+        .section-title { color: var(--primary-color); margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid var(--accent-color); padding-bottom: 5px;}
+    </style>
+</head>
+<body>
+
+    <div id="loginView" class="container login-container">
+        <h1>כניסת מנהל מערכת</h1>
+        <p>אזור זה מאובטח ומוגן. אנא התחבר עם חשבון ה-Google המורשה לבקרת הנתונים.</p>
+        <button class="google-btn" onclick="signInWithGoogle()">התחבר באמצעות Google</button>
+    </div>
+
+    <div id="unauthView" class="container unauth-container">
+        <h1 style="color: var(--danger-color); border-color: var(--danger-color);">גישה נדחתה</h1>
+        <p>חשבון ה-Google שאיתו התחברת אינו מורשה לגשת למסך הניהול.</p>
+        <p><strong>גישה מותרת לכתובת: 4990920@gmail.com בלבד.</strong></p>
+        <button class="logout-btn" onclick="signOut()" style="margin-top: 20px;">התנתק וחזור להתחברות</button>
+    </div>
+
+    <div id="adminView" class="container">
+        <div class="header-top">
+            <h1>פאנל בקרה וניהול - מרכז מיסטיקה</h1>
+            <div class="header-actions">
+                <button class="refresh-btn" onclick="loadStatistics()">רענן סטטיסטיקות</button>
+                <button class="logout-btn" onclick="signOut()">יציאה מהמערכת</button>
+            </div>
+        </div>
+
+        <div class="stats-section">
+            <div class="stats-header">
+                <div class="stats-total">
+                    סה"כ פעולות משתמשים במערכת: <span id="totalRecordsCounter" style="color: var(--accent-color);">טוען...</span>
+                </div>
+            </div>
+            
+            <ul id="actionBreakdownList" class="action-breakdown">
+                <li>טוען נתונים...</li>
+            </ul>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- אזור חדש: דוח טבלת הטקסטים העמוקים -->
+        <!-- ========================================== -->
+        <div class="section-title">
+            <h2>דוח נתוני טבלת "דוחות עמוקים" (deep_report_texts)</h2>
+        </div>
+        <p style="color: #666; margin-top: 0;">הצג את התכנים העשירים ממסד הנתונים וייצא אותם לקובץ CSV.</p>
+        
+        <div class="filters-section">
+            <button class="deep-btn" onclick="loadDeepTextsToScreen()">הצג נתונים למסך</button>
+            <button class="export-btn" onclick="exportDeepTextsToCSV()">ייצא טבלה זו ל-CSV</button>
+        </div>
+
+        <div id="loadingDeepMsg" class="loading">מושך נתונים מהטבלה, אנא המתן...</div>
+
+        <div class="table-responsive">
+            <table id="deepTextsTable">
+                <thead>
+                    <tr>
+                        <th>מזהה (ID)</th>
+                        <th>קטגוריה (Category)</th>
+                        <th>מפתח סעיף (Section Key)</th>
+                        <th>כותרת (Title)</th>
+                        <th>תוכן הטקסט (Content)</th>
+                    </tr>
+                </thead>
+                <tbody id="deepTextsTableBody">
+                    <tr><td colspan="5" style="text-align: center;">לחץ על "הצג נתונים למסך" כדי לטעון את הטבלה.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- ========================================== -->
+        <!-- אזור קיים: לוג פעולות משתמשים -->
+        <!-- ========================================== -->
+        <div class="section-title">
+            <h2>לוג פעולות גולמיות של משתמשים (reports_log)</h2>
+        </div>
+        
+        <div class="filters-section">
+            <div class="form-group">
+                <label for="fromDate">מתאריך ושעה:</label>
+                <input type="datetime-local" id="fromDate" step="1">
+            </div>
+            <div class="form-group">
+                <label for="toDate">עד תאריך ושעה:</label>
+                <input type="datetime-local" id="toDate" step="1">
+            </div>
+            
+            <button class="report-btn" onclick="generateReport()">הפק דוח לוגים למסך</button>
+            <button class="export-btn" onclick="downloadCSV()">ייצא לוגים ל-CSV</button>
+        </div>
+
+        <div id="loadingMsg" class="loading">מעבד נתונים מול השרת, אנא המתן...</div>
+
+        <div class="table-responsive">
+            <table id="reportTable">
+                <thead id="tableHead"></thead>
+                <tbody id="tableBody"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const AUTHORIZED_EMAIL = '4990920@gmail.com';
+        let currentReportData = []; // לוגים
+        let currentDeepTextsData = []; // טקסטים עמוקים
+
+        const actionTranslations = {
+            'basic_report': 'דוחות בסיסיים',
+            'deep_report': 'דוחות עמוקים',
+            'whatsapp_share': 'שיתופים לוואטסאפ',
+            'pdf_download': 'הורדות PDF'
+        };
+
+        const columnTranslations = {
+            'id': 'מפתח שורה',
+            'created_at': 'זמן רישום במערכת',
+            'action_date': 'תאריך הזנה',
+            'action_time': 'שעת הזנה',
+            'ip_address': 'כתובת IP',
+            'browser_info': 'פרטי דפדפן',
+            'action_type': 'סוג פעולה',
+            'first_name': 'שם פרטי',
+            'middle_name': 'שם אמצעי',
+            'last_name': 'שם משפחה',
+            'extra_last_name': 'שם משפחה נוסף',
+            'phone': 'מספר טלפון',
+            'id_number': 'תעודת זהות',
+            'birth_date': 'תאריך לידה',
+            'birth_time': 'שעת לידה',
+            'city': 'עיר'
+        };
+
+        async function checkAuthStatus() {
+            const { data: { session } } = await supabaseClient.auth.getSession();
+            routeUser(session);
+        }
+
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+            routeUser(session);
+        });
+
+        function routeUser(session) {
+            document.getElementById('loginView').style.display = 'none';
+            document.getElementById('unauthView').style.display = 'none';
+            document.getElementById('adminView').style.display = 'none';
+
+            if (!session) {
+                document.getElementById('loginView').style.display = 'block';
+            } else {
+                if (session.user.email === AUTHORIZED_EMAIL) {
+                    document.getElementById('adminView').style.display = 'block';
+                    loadStatistics(); 
+                    initDateFilters(); 
+                } else {
+                    document.getElementById('unauthView').style.display = 'block';
+                }
+            }
+        }
+
+        async function signInWithGoogle() {
+            const { error } = await supabaseClient.auth.signInWithOAuth({
+                provider: 'google',
+                options: { redirectTo: window.location.href }
+            });
+            if (error) alert("שגיאה בהתחברות ל-Google: " + error.message);
+        }
+
+        async function signOut() {
+            await supabaseClient.auth.signOut();
+        }
+
+        async function loadStatistics() {
+            const counterElement = document.getElementById('totalRecordsCounter');
+            const breakdownList = document.getElementById('actionBreakdownList');
+            
+            counterElement.innerText = "טוען...";
+            breakdownList.innerHTML = "<li>טוען נתונים...</li>";
+
+            try {
+                const { data, error } = await supabaseClient.from('reports_log').select('action_type');
+                if (error) throw error;
+
+                counterElement.innerText = data.length;
+
+                const actionCounts = {};
+                data.forEach(row => {
+                    const type = row.action_type || 'לא ידוע';
+                    actionCounts[type] = (actionCounts[type] || 0) + 1;
+                });
+
+                breakdownList.innerHTML = '';
+                
+                if (Object.keys(actionCounts).length === 0) {
+                    breakdownList.innerHTML = "<li>אין נתונים במערכת.</li>";
+                } else {
+                    for (const [actionKey, count] of Object.entries(actionCounts)) {
+                        const li = document.createElement('li');
+                        const translatedName = actionTranslations[actionKey] || actionKey;
+                        li.innerHTML = `<span>${translatedName}</span> <strong style="color: var(--primary-color);">${count}</strong>`;
+                        breakdownList.appendChild(li);
+                    }
+                }
+            } catch (err) {
+                counterElement.innerText = "שגיאה בטעינה";
+                breakdownList.innerHTML = "<li>שגיאה בטעינת הסטטיסטיקה.</li>";
+            }
+        }
+
+        // ==========================================
+        // פונקציות לטבלת הדוחות העמוקים (deep_report_texts)
+        // ==========================================
+
+        async function loadDeepTextsToScreen() {
+            document.getElementById('loadingDeepMsg').style.display = 'block';
+            const tbody = document.getElementById('deepTextsTableBody');
+            tbody.innerHTML = '';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('deep_report_texts')
+                    .select('*')
+                    .order('id', { ascending: true });
+
+                if (error) throw error;
+
+                currentDeepTextsData = data || [];
+
+                if (currentDeepTextsData.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center;">הטבלה ריקה, לא נמצאו נתונים.</td></tr>';
+                    return;
+                }
+
+                tbody.innerHTML = currentDeepTextsData.map(row => `
+                    <tr>
+                        <td dir="ltr">${row.id}</td>
+                        <td dir="ltr">${row.category}</td>
+                        <td dir="ltr">${row.section_key}</td>
+                        <td>${row.title}</td>
+                        <td style="max-width: 400px; white-space: normal; word-break: break-word;">${row.content}</td>
+                    </tr>
+                `).join('');
+
+            } catch (err) {
+                alert("שגיאה במשיכת הנתונים: " + err.message);
+                tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">שגיאה בטעינת הנתונים.</td></tr>';
+            } finally {
+                document.getElementById('loadingDeepMsg').style.display = 'none';
+            }
+        }
+
+        function exportDeepTextsToCSV() {
+            if (!currentDeepTextsData || currentDeepTextsData.length === 0) {
+                alert("אין נתונים לייצוא. אנא לחץ קודם על 'הצג נתונים למסך'.");
+                return;
+            }
+
+            const keys = ['id', 'category', 'section_key', 'title', 'content'];
+            let csvContent = "\uFEFF" + keys.join(",") + "\n";
+
+            currentDeepTextsData.forEach(row => {
+                let rowData = keys.map(key => {
+                    let val = row[key] === null || row[key] === undefined ? "" : String(row[key]);
+                    return `"${val.replace(/"/g, '""')}"`; 
+                });
+                csvContent += rowData.join(",") + "\n";
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            
+            // יצירת תאריך נוכחי לשם הקובץ
+            const now = new Date();
+            const dateStr = `${String(now.getDate()).padStart(2, '0')}${String(now.getMonth() + 1).padStart(2, '0')}${now.getFullYear()}`;
+            link.download = `Deep_Report_Texts_${dateStr}.csv`;
+            
+            document.body.appendChild(link); 
+            link.click(); 
+            document.body.removeChild(link);
+        }
+
+        // ==========================================
+        // פונקציות לוג פעולות וייצוא (reports_log)
+        // ==========================================
+
+        function formatDateTimeLocal(dateObj) {
+            return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}T${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}:${String(dateObj.getSeconds()).padStart(2, '0')}`;
+        }
+
+        async function initDateFilters() {
+            const toDate = new Date(); toDate.setHours(23, 59, 59, 999);
+            document.getElementById('toDate').value = formatDateTimeLocal(toDate);
+            
+            let fromDate = new Date(); fromDate.setHours(0, 0, 0, 0);
+            try {
+                const { data } = await supabaseClient.from('reports_log').select('created_at').order('created_at', { ascending: true }).limit(1);
+                if (data && data.length > 0 && data[0].created_at) fromDate = new Date(data[0].created_at);
+                fromDate.setHours(0, 0, 0, 0);
+            } catch (err) {}
+            
+            document.getElementById('fromDate').value = formatDateTimeLocal(fromDate);
+        }
+
+        async function generateReport() {
+            const fromVal = document.getElementById('fromDate').value;
+            const toVal = document.getElementById('toDate').value;
+            
+            if (!fromVal || !toVal) return;
+
+            const fromIso = new Date(fromVal).toISOString();
+            const toIso = new Date(toVal).toISOString();
+            
+            document.getElementById('loadingMsg').style.display = 'block';
+            document.getElementById('tableHead').innerHTML = '';
+            document.getElementById('tableBody').innerHTML = '';
+
+            try {
+                const { data, error } = await supabaseClient
+                    .from('reports_log')
+                    .select('*')
+                    .gte('created_at', fromIso)
+                    .lte('created_at', toIso)
+                    .order('created_at', { ascending: false });
+                    
+                if (error) throw error;
+                
+                currentReportData = data || [];
+                renderDynamicTable(currentReportData);
+                
+            } catch (err) { 
+                console.error("Fetch error:", err);
+                alert("שגיאה במשיכת הנתונים מהשרת:\n" + err.message); 
+            } finally { 
+                document.getElementById('loadingMsg').style.display = 'none'; 
+            }
+        }
+
+        function renderDynamicTable(dataArray) {
+            const thead = document.getElementById('tableHead');
+            const tbody = document.getElementById('tableBody');
+            
+            if (!dataArray || dataArray.length === 0) {
+                tbody.innerHTML = '<tr><td style="text-align: center;" colspan="8">לא נמצאו רשומות בטווח התאריכים המבוקש.</td></tr>';
+                return;
+            }
+
+            const screenKeys = ['id', 'action_date', 'action_time', 'action_type', 'first_name', 'last_name', 'phone', 'birth_date'];
+
+            let headRow = '<tr>';
+            screenKeys.forEach(key => {
+                const translatedHeader = columnTranslations[key] || key;
+                headRow += `<th>${translatedHeader}</th>`;
+            });
+            headRow += '</tr>';
+            thead.innerHTML = headRow;
+
+            tbody.innerHTML = dataArray.map(row => 
+                `<tr>${screenKeys.map(key => {
+                    let cellValue = row[key];
+                    
+                    if (cellValue === null || cellValue === undefined || cellValue === '') {
+                        cellValue = '-';
+                    }
+                    
+                    if ((key === 'action_date' || key === 'birth_date') && typeof cellValue === 'string' && cellValue.includes('-') && cellValue !== '-') {
+                        cellValue = cellValue.split('-').reverse().join('-');
+                    }
+                    
+                    if (key === 'action_type' && actionTranslations[cellValue]) {
+                        cellValue = actionTranslations[cellValue];
+                    }
+                    
+                    let isLtr = ['id', 'action_date', 'action_time', 'phone', 'birth_date'].includes(key);
+                    return `<td ${isLtr ? 'dir="ltr"' : ''}>${cellValue}</td>`;
+                }).join('')}</tr>`
+            ).join('');
+        }
+
+        async function downloadCSV() {
+            await generateReport();
+            
+            if (!currentReportData || currentReportData.length === 0) {
+                alert("אין נתונים בטווח התאריכים המבוקש. לא ניתן לייצא קובץ ריק.");
+                return;
+            }
+
+            const keys = Object.keys(currentReportData[0]);
+            const translatedHeaders = keys.map(key => columnTranslations[key] || key);
+            let csvContent = "\uFEFF" + translatedHeaders.join(",") + "\n";
+
+            currentReportData.forEach(row => {
+                let rowData = keys.map(key => {
+                    let val = row[key] === null || row[key] === undefined ? "" : String(row[key]);
+                    if (key === 'action_type' && actionTranslations[val]) val = actionTranslations[val];
+                    return `"${val.replace(/"/g, '""')}"`; 
+                });
+                csvContent += rowData.join(",") + "\n";
+            });
+
+            const fromValue = document.getElementById('fromDate').value;
+            const toValue = document.getElementById('toDate').value;
+            
+            const dFrom = new Date(fromValue);
+            const fromStr = `${String(dFrom.getDate()).padStart(2, '0')}${String(dFrom.getMonth() + 1).padStart(2, '0')}${dFrom.getFullYear()}`;
+            
+            const dTo = new Date(toValue);
+            const toStr = `${String(dTo.getDate()).padStart(2, '0')}${String(dTo.getMonth() + 1).padStart(2, '0')}${dTo.getFullYear()}`;
+            
+            const filename = `Report-from-${fromStr}-to-${toStr}.csv`;
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            document.body.appendChild(link); 
+            link.click(); 
+            document.body.removeChild(link);
+        }
+
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAuthStatus();
+        });
+    </script>
+</body>
+</html>
