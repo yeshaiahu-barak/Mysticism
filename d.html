@@ -1,842 +1,197 @@
-<!DOCTYPE html>
-<html lang="he" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>הדוח המיסטי שלי</title>
-    
-    <!-- חיבור לקובץ ההגדרות (Manifest) כדי לאפשר התקנת PWA -->
-    <link rel="manifest" href="manifest.json">
-    
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="config.js"></script>
-    
-    <style>
-        :root {
-            --primary-color: #3498db;
-            --primary-dark: #2980b9;
-            --accent-color: #f39c12;
-            --accent-dark: #d68910;
-            --bg-color: #f0f4f8;
-            --card-bg: #ffffff;
-            --text-color: #2c3e50;
-            --border-color: #ccd1d9;
-            --ios-color: #007aff;
-            --premium-color: #8e44ad;
-            --premium-bg: #f5eef8;
-        }
-
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); padding: 20px; line-height: 1.6; color: var(--text-color); }
-        .container { max-width: 850px; margin: auto; background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        h1, h2, h3 { text-align: center; color: var(--text-color); }
-        
-        /* עיצוב באנר ההתקנה */
-        #installBanner {
-            display: none;
-            background-color: var(--accent-color);
-            color: white;
-            text-align: center;
-            padding: 12px;
-            cursor: pointer;
-            font-weight: bold;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: background 0.3s;
-        }
-        #installBanner:hover { background-color: var(--accent-dark); }
-
-        /* עיצוב באנר הדרכה לאייפון (iOS) */
-        #iosInstallBanner {
-            display: none;
-            background-color: var(--ios-color);
-            color: white;
-            text-align: center;
-            padding: 12px;
-            font-weight: bold;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
-
-        .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
-        .form-group { flex: 1; margin-bottom: 0; min-width: 0; position: relative; } 
-        
-        @media (max-width: 600px) {
-            .form-row { flex-direction: column; gap: 15px; }
-        }
-
-        label { display: block; margin-bottom: 5px; font-weight: bold; color: var(--primary-color); font-size: 0.95em; transform: translateX(-2ch); }
-        input { width: 100%; height: 38px; padding: 6px 12px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 6px; font-size: 15px; background: #ffffff; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04); text-align: right; transition: all 0.3s; }
-        input:focus { border-color: var(--primary-color); box-shadow: inset 0 2px 4px rgba(0,0,0,0.04), 0 0 8px rgba(52, 152, 219, 0.3); outline: none; }
-
-        .suggestions-box { position: absolute; top: 100%; right: 0; left: 0; background: #ffffff; border: 1px solid var(--border-color); border-top: none; border-radius: 0 0 6px 6px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); z-index: 1000; max-height: 150px; overflow-y: auto; display: none; }
-        .suggestion-item { padding: 8px 12px; cursor: pointer; font-size: 14px; text-align: right; border-bottom: 1px solid #f0f0f0; }
-        .suggestion-item:hover { background-color: #ebf5fb; color: var(--primary-dark); }
-        
-        .action-buttons-top { display: flex; gap: 15px; margin-top: 25px; }
-        .main-btn { background-color: var(--primary-color); color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s;}
-        .main-btn:hover { background-color: var(--primary-dark); }
-        .main-btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
-        
-        .premium-btn { background-color: var(--accent-color); color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s;}
-        .premium-btn:hover { background-color: var(--accent-dark); }
-        .premium-btn:disabled { background-color: #f5cba7; cursor: not-allowed; }
-        
-        #results { margin-top: 30px; display: none; }
-        #contentToPrint { background-color: #ffffff; padding: 20px; border: 2px solid #ecf0f1; border-radius: 8px; }
-        #contentToPrint h2 { text-decoration: underline; text-underline-offset: 8px; margin-bottom: 25px;}
-        
-        .result-section { margin-bottom: 15px; }
-        .result-item { background: #f7fbfe; padding: 15px; margin-bottom: 12px; border-radius: 6px; border-right: 5px solid #85c1e9; }
-        .result-zodiac { background: #ebf5fb; border-right-color: var(--primary-color); }
-        .result-date { background: #d4e6f1; border-right-color: #1b4f72; }
-        
-        .result-item h4 { margin: 0 0 8px 0; font-size: 1.1em; color: var(--text-color); }
-        .result-item p { margin: 0 0 5px 0; color: #333; text-align: justify; }
-        .light-text { color: #555 !important; }
-
-        .actions { display: flex; gap: 15px; margin-top: 25px; }
-        .whatsapp-btn { background-color: #25D366; color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
-        .pdf-btn { background-color: #e74c3c; color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
-        
-        #loadingMsg { display: none; text-align: center; color: var(--primary-color); font-weight: bold; margin-top: 15px; font-size: 1.1em;}
-
-        #networkStatus { text-align: center; font-size: 0.9em; padding: 5px; margin-bottom: 15px; border-radius: 4px; display: none; }
-        .status-offline { background-color: #f8d7da; color: #721c24; display: block !important; }
-
-        @media print {
-            body { background-color: white; padding: 0; color: #000; }
-            .container { box-shadow: none; padding: 0; max-width: 100%; }
-            .form-row, h1, .action-buttons-top, .actions, #loadingMsg, #networkStatus, #installBanner, #iosInstallBanner { display: none !important; }
-            #results { display: block !important; border: none; margin: 0; padding: 0; }
-            #contentToPrint { border: none; padding: 0; background: white; }
-            .result-item { page-break-inside: avoid; border-right: 4px solid #2c3e50 !important; background: #fdfdfd !important; padding: 12px; margin-bottom: 10px; box-shadow: none; text-align: justify; }
-            h3, h4 { color: #000 !important; }
-        }
-    </style>
-</head>
-<body>
-
-    <div class="container">
-        <div id="networkStatus">מצב אופליין: אין חיבור לאינטרנט. הפעולות נשמרות מקומית.</div>
-        
-        <div id="installBanner" onclick="installApp()">📲 התקן את האפליקציה על המכשיר שלך לחוויה מהירה ומושלמת</div>
-        <div id="iosInstallBanner">🍏 להתקנת האפליקציה באייפון: לחץ על כפתור השיתוף (למטה) ובחר "הוסף למסך הבית"</div>
-        
-        <h1>הדוח המיסטי שלי</h1>
-        
-        <div class="form-row">
-            <div class="form-group"><label>שם פרטי (חובה):</label><input type="text" id="firstName" autocomplete="given-name"></div>
-            <div class="form-group"><label>שם פרטי נוסף (לא חובה):</label><input type="text" id="middleName" autocomplete="additional-name"></div>
-        </div>
-        <div class="form-row">
-            <div class="form-group"><label>שם משפחה (חובה):</label><input type="text" id="lastName" autocomplete="family-name"></div>
-            <div class="form-group"><label>שם משפחה נוסף (לא חובה):</label><input type="text" id="extraLastName" autocomplete="off"></div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group"><label>מספר טלפון נייד (חובה):</label><input type="tel" id="phone" autocomplete="tel"></div>
-            <div class="form-group"><label>מספר תעודת זהות (לא חובה):</label><input type="text" id="idNumber" autocomplete="off"></div>
-        </div>
-
-        <div class="form-row">
-            <div class="form-group"><label>תאריך לידה (חובה):</label><input type="date" id="birthDate" autocomplete="bday"></div>
-            <div class="form-group"><label>שעת לידה (24 שעות):</label><input type="time" id="birthTime" value="12:00"></div>
-            <div class="form-group">
-                <label>עיר לידה (לא חובה):</label>
-                <input type="text" id="city" value="ירושלים" autocomplete="off" oninput="fetchCitySuggestions(this.value)">
-                <div id="citySuggestionsBox" class="suggestions-box"></div>
-            </div>
-        </div>
-
-        <div class="action-buttons-top">
-            <button id="calcBtn" class="main-btn" onclick="handleUserAction('basic_report')">הפק דוח בסיסי</button>
-            <button class="premium-btn" onclick="handleUserAction('deep_report')">הפק דוח עמוק</button>
-        </div>
-        
-        <div id="loadingMsg">מעבד נתונים מול כוכבי השמיים ומאגרי התאריכים... נא להמתין...</div>
-
-        <div id="results">
-            <div id="contentToPrint">
-                <h2><span id="resName"></span> - דוח מיסטי</h2>
-                <div class="result-section"><div id="resAstro"></div></div>
-                <div class="result-section"><div id="resNamesNum"></div></div>
-            </div>
-            
-            <div class="actions">
-                <button class="whatsapp-btn" onclick="handleUserAction('whatsapp_share')">שלח דוח לוואטסאפ</button>
-                <button class="pdf-btn" onclick="handleUserAction('pdf_download')">הורד דוח כ-PDF</button>
-            </div>
-        </div>
-    </div>
-
-    <script>
-        // ==========================================
-        // מילוני נתונים (גיבוי אופליין / דוח בסיסי)
-        // ==========================================
-        const gematriaDict = {
-            'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,
-            'כ':20,'ך':20,'ל':30,'מ':40,'ם':40,'נ':50,'ן':50,'ס':60,'ע':70,
-            'פ':80,'ף':80,'צ':90,'ץ':90,'ק':100,'ר':200,'ש':300,'ת':400
-        };
-
-        let numerologyTexts = {
-            1: "מנהיגות מולדת, עצמאות וכוח רצון עז. אנשי ה-1 הם חלוצים, יזמים ובעלי ביטחון עצמי גבוה.",
-            2: "זוגיות, שותפות, דיפלומטיה ורגישות רגשית גבוהה. מגשרים טבעיים השואפים להרמוניה.",
-            3: "ביטוי עצמי, יצירתיות, שמחת חיים וכריזמה מתפרצת. תקשורתיים ואופטימיים.",
-            4: "יציבות, סדר, משמעת קפדנית ועבודה קשה. הבסיס האיתן שאפשר לסמוך עליו.",
-            5: "חופש, הרפתקנות, תנועה מתמדת ושינויים. זקוקים למרחב נשימה ענק וגיוון.",
-            6: "האהבה, המשפחתיות, ההרמוניה והשירות המסור לזולת. המטפלים והמגוננים.",
-            7: "רוחניות, העמקה, חשיבה חקרנית ואינטואיציה חדה כתער. הוגי דעות וחוקרים.",
-            8: "עוצמה, סמכות, שפע חומרי, סטאטוס והישגיות בקנה מידה גדול.",
-            9: "הומניטריות, נתינה אוניברסלית ללא תנאי, אצילות נפש וסיום מעגלים."
-        };
-
-        let zodiacSigns = [
-            { name: "טלה", desc: "מזל אש דינמי ויצרי. פורץ דרך, אמיץ ומוביל." },
-            { name: "שור", desc: "מזל אדמה יציב ופרקטי. נאמן, חושני ואמין כסלע." },
-            { name: "תאומים", desc: "מזל אוויר אינטלקטואלי ומהיר תפיסה. סקרן ותקשורתי." },
-            { name: "סרטן", desc: "מזל מים רגשי, משפחתי ועמוק בעל אינטואיציה חזקה." },
-            { name: "אריה", desc: "מזל אש מלכותי וזורח. כריזמטי, נדיב ובעל לב ענק." },
-            { name: "בתולה", desc: "מזל אדמה מאורגן, אנליטי ויורד לפרטים הקטנים." },
-            { name: "מאזניים", desc: "מזל אוויר אסתטי, דיפלומטי ושואף להרמוניה וצדק." },
-            { name: "עקרב", desc: "מזל מים אינטנסיבי, מגנטי ובעל עוצמה נפשית אדירה." },
-            { name: "קשת", desc: "מזל אש אופטימי, פילוסופי וחובב חופש והרפתקאות." },
-            { name: "גדי", desc: "מזל אדמה שאפתן, מעשי, בוגר ואחראי לטווח רחוק." },
-            { name: "דלי", desc: "מזל אוויר מקורי, אינדיבידואליסט והומניטרי." },
-            { name: "דגים", desc: "מזל מים רוחני, חומל, אמנותי ובעל דמיון עשיר." }
-        ];
-
-        let ascendantTexts = {
-            "טלה": "חזות נמרצת, ישירה ומהירה. כישרון ליזמות ופיקוד.",
-            "שור": "נוכחות רגועה, שורשית ויציבה. כישרון לפיננסים ועיצוב.",
-            "תאומים": "אנרגיה קלילה, תקשורתית וסקרנית. כישרון לתקשורת ותכנות.",
-            "סרטן": "הילה רכה, מכילה ואמפתית. כישרון לטיפול ופסיכולוגיה.",
-            "אריה": "נוכחות כריזמטית ומרשימה. כישרון לניהול ובמה.",
-            "בתולה": "חזות רצינית, מסודרת ואנליטית. כישרון למדעים וארגון.",
-            "מאזניים": "קסם אישי, נעימות ודיפלומטיה. כישרון לגישור ומשפטים.",
-            "עקרב": "מבט חודר, עומק ומסתוריות. כישרון לחקירות וניתוח.",
-            "קשת": "אופטימיות, פתיחות ושמחת חיים. כישרון להוראה ותיירות.",
-            "גדי": "רושם סמכותי, בוגר ואחראי. כישרון לניהול מערכות גדולות.",
-            "דלי": "מקוריות, חדשנות ועצמאות מחשבתית. כישרון להייטק.",
-            "דגים": "עדינות, רגישות ורוחניות. כישרון לאמנות וטיפול."
-        };
-
-        let chineseZodiacTexts = {
-            "קוף": "אינטליגנציה, סקרנות ושובבות. יכולת אלתור ופתרון בעיות יצירתי.",
-            "תרנגול": "ביטחון עצמי, חריצות וסדר. נטייה לארגון, דייקנות ותשומת לב לפרטים.",
-            "כלב": "נאמנות, צדק והגנה. חברות אמתית, כנות ורצון לעזור לזולת.",
-            "חזיר": "טוב לב, כנות ושפע. אופי נדיב, סבלני ואוהב שלום והרמוניה.",
-            "חולדה": "פיקחות, כושר הסתגלות וקסם אישי. מחשבה מהירה ויכולת הישרדות גבוהה.",
-            "שור": "כוח, התמדה ואמינות. יציבות עמוקה, סבלנות ומוסר עבודה גבוה.",
-            "נמר": "אומץ, תחרותיות ומנהיגות. אנרגיה דינמית, נועזות ורצון לפרוץ דרך.",
-            "ארנב": "עדינות, אלגנטיות ורגישות. גישה דיפלומטית, נימוס וחיפוש אחר שלווה.",
-            "דרקון": "כריזמה, כוח ומזל. שאפתנות גבוהה, נוכחות בולטת ויכולת הובלה.",
-            "נחש": "חוכמה, אינטואיציה ומסתוריות. עומק מחשבתי, רגישות לסביבה ותכנון מוקפד.",
-            "סוס": "מרץ, עצמאות ואהבת חופש. פעילות מתמדת, הרפתקנות ורוח חופשייה.",
-            "עז": "יצירתיות, רוגע ואמפתיה. נשמה אמנותית, סבלנות והבנה רגשית עמוקה."
-        };
-
-        // ==========================================
-        // פונקציות תשתית ותקשורת שרת
-        // ==========================================
-        async function fetchDynamicTexts() {
-            if (!navigator.onLine || typeof supabaseClient === 'undefined') return;
-            const COL_CATEGORY = 'category';     
-            const COL_KEY_NAME = 'item_key';     
-            const COL_TEXT_CONTENT = 'content'; 
-
-            try {
-                const { data, error } = await supabaseClient.from('dynamic_texts').select('*');
-                if (error) return;
-                
-                if (data && data.length > 0) {
-                    data.forEach(item => {
-                        const category = item[COL_CATEGORY]; 
-                        const key = item[COL_KEY_NAME];      
-                        const content = item[COL_TEXT_CONTENT]; 
-
-                        if (category === 'numerology' || category === 'נומרולוגיה') {
-                            if (numerologyTexts[key]) numerologyTexts[key] = content;
-                        } else if (category === 'zodiac' || category === 'מזלות') {
-                            let zIndex = zodiacSigns.findIndex(z => z.name === key);
-                            if (zIndex !== -1) zodiacSigns[zIndex].desc = content;
-                        } else if (category === 'ascendant' || category === 'אופק') {
-                            if (ascendantTexts[key]) ascendantTexts[key] = content;
-                        } else if (category === 'chinese_zodiac' || category === 'מזל_סיני') {
-                            if (chineseZodiacTexts[key]) chineseZodiacTexts[key] = content;
-                        }
-                    });
-                }
-            } catch (err) {}
-        }
-
-        function updateNetworkStatus() {
-            const statusEl = document.getElementById('networkStatus');
-            if (navigator.onLine) {
-                statusEl.classList.remove('status-offline');
-                syncOfflineLogs(); 
-                fetchDynamicTexts(); 
-            } else {
-                statusEl.classList.add('status-offline');
-            }
-        }
-        window.addEventListener('online', updateNetworkStatus);
-        window.addEventListener('offline', updateNetworkStatus);
-
-        async function syncOfflineLogs() {
-            let offlineLogs = JSON.parse(localStorage.getItem('mysticOfflineLogs') || '[]');
-            if (offlineLogs.length > 0 && navigator.onLine && typeof supabaseClient !== 'undefined') {
-                try {
-                    const { error } = await supabaseClient.from('reports_log').insert(offlineLogs);
-                    if (!error) localStorage.removeItem('mysticOfflineLogs');
-                } catch (err) {}
-            }
-        }
-
-        async function writeToExperimentLog(actionType) {
-            try {
-                const now = new Date();
-                const getFieldValue = (id) => { const el = document.getElementById(id); return el && el.value.trim() !== '' ? el.value.trim() : null; };
-
-                let cityValue = getFieldValue('city');
-                if (!cityValue) cityValue = "ירושלים";
-
-                let logEntry = {
-                    action_date: now.toISOString().split('T')[0],
-                    action_time: now.toTimeString().split(' ')[0],
-                    ip_address: await fetchUserIP(),
-                    browser_info: navigator.userAgent,
-                    action_type: actionType,
-                    first_name: getFieldValue('firstName'),
-                    middle_name: getFieldValue('middleName'),
-                    last_name: getFieldValue('lastName'),
-                    extra_last_name: getFieldValue('extraLastName'),
-                    phone: getFieldValue('phone'),
-                    id_number: getFieldValue('idNumber'),
-                    birth_date: getFieldValue('birthDate'),
-                    birth_time: getFieldValue('birthTime'),
-                    city: cityValue
-                };
-
-                Object.keys(logEntry).forEach(key => { if (logEntry[key] === null) delete logEntry[key]; });
-
-                if (navigator.onLine && typeof supabaseClient !== 'undefined') {
-                    await supabaseClient.from('reports_log').insert([logEntry]);
-                } else {
-                    let offlineLogs = JSON.parse(localStorage.getItem('mysticOfflineLogs') || '[]');
-                    offlineLogs.push(logEntry);
-                    localStorage.setItem('mysticOfflineLogs', JSON.stringify(offlineLogs));
-                }
-            } catch (err) {}
-        }
-
-        async function fetchUserIP() {
-            if (!navigator.onLine) return "Offline";
-            try { return (await (await fetch('https://api.ipify.org?format=json')).json()).ip; } 
-            catch { return "Unknown"; }
-        }
-
-        // ==========================================
-        // פונקציות חישוב טהורות
-        // ==========================================
-        function calcGematria(word) {
-            let sum = 0; if (!word) return 0;
-            for (let i = 0; i < word.length; i++) { if (gematriaDict[word[i]]) sum += gematriaDict[word[i]]; }
-            return sum;
-        }
-
-        function calcNumerology(number) {
-            if (!number) return 0;
-            let sum = number;
-            while (sum > 9) {
-                let temp = 0, str = sum.toString();
-                for (let i = 0; i < str.length; i++) temp += parseInt(str[i]);
-                sum = temp;
-            }
-            return sum;
-        }
-
-        function calcNumFromDigits(str) {
-            let onlyNum = str.replace(/\D/g, '');
-            let sum = 0;
-            for (let i = 0; i < onlyNum.length; i++) sum += parseInt(onlyNum[i]);
-            return sum;
-        }
-
-        function getZodiacIndex(day, month) {
-            if ((month == 3 && day >= 21) || (month == 4 && day <= 19)) return 0;
-            if ((month == 4 && day >= 20) || (month == 5 && day <= 20)) return 1;
-            if ((month == 5 && day >= 21) || (month == 6 && day <= 20)) return 2;
-            if ((month == 6 && day >= 21) || (month == 7 && day <= 22)) return 3;
-            if ((month == 7 && day >= 23) || (month == 8 && day <= 22)) return 4;
-            if ((month == 8 && day >= 23) || (month == 9 && day <= 22)) return 5;
-            if ((month == 9 && day >= 23) || (month == 10 && day <= 22)) return 6;
-            if ((month == 10 && day >= 23) || (month == 11 && day <= 21)) return 7;
-            if ((month == 11 && day >= 22) || (month == 12 && day <= 21)) return 8;
-            if ((month == 12 && day >= 22) || (month == 1 && day <= 19)) return 9;
-            if ((month == 1 && day >= 20) || (month == 2 && day <= 18)) return 10;
-            return 11;
-        }
-
-        function calculateAscendant(sunSignIndex, birthTimeStr) {
-            let parts = birthTimeStr.split(":");
-            let decimalTime = parseInt(parts[0]) + (parseInt(parts[1]) / 60);
-            let diff = decimalTime - 6;
-            if (diff < 0) diff += 24;
-            let offset = Math.floor(diff / 2);
-            return zodiacSigns[(sunSignIndex + offset) % 12].name;
-        }
-
-        function getChineseZodiac(year) {
-            const animals = ["קוף", "תרנגול", "כלב", "חזיר", "חולדה", "שור", "נמר", "ארנב", "דרקון", "נחש", "סוס", "עז"];
-            return animals[year % 12];
-        }
-
-        let cityTimeout = null;
-        async function fetchCitySuggestions(query) {
-            const box = document.getElementById('citySuggestionsBox');
-            if (!query || query.length < 2) { box.style.display = 'none'; return; }
-            if (!navigator.onLine) return; 
-            
-            clearTimeout(cityTimeout);
-            cityTimeout = setTimeout(async () => {
-                try {
-                    let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
-                    let data = await res.json();
-                    box.innerHTML = '';
-                    if (data && data.length > 0) {
-                        data.forEach(item => {
-                            let cityName = item.display_name.split(',')[0];
-                            let div = document.createElement('div');
-                            div.className = 'suggestion-item';
-                            div.innerText = cityName;
-                            div.onclick = () => { document.getElementById('city').value = cityName; box.style.display = 'none'; };
-                            box.appendChild(div);
-                        });
-                        box.style.display = 'block';
-                    } else { box.style.display = 'none'; }
-                } catch (err) { box.style.display = 'none'; }
-            }, 300);
-        }
-
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('#city') && !e.target.closest('#citySuggestionsBox')) {
-                document.getElementById('citySuggestionsBox').style.display = 'none';
-            }
-        });
-
-        // ==========================================
-        // הניתוב המרכזי לפעולות המשתמש
-        // ==========================================
-        async function handleUserAction(actionType) {
-            await writeToExperimentLog(actionType);
-
-            if (actionType === 'whatsapp_share') { executeWhatsAppShare(); return; }
-            
-            if (actionType === 'pdf_download') {
-                let pFirstName = document.getElementById('firstName').value.trim() || 'דוח';
-                let pLastName = document.getElementById('lastName').value.trim() || 'מיסטי';
-                let pBirthDate = document.getElementById('birthDate').value;
-                let formattedDate = '';
-                
-                if (pBirthDate) {
-                    let parts = pBirthDate.split('-');
-                    formattedDate = `-${parts[2]}${parts[1]}${parts[0]}`; 
-                }
-
-                const originalTitle = document.title;
-                document.title = `${pFirstName}-${pLastName}${formattedDate}`;
-                
-                window.print();
-                
-                setTimeout(() => {
-                    document.title = originalTitle;
-                }, 1000);
-                
-                return;
-            }
-
-            const fName = document.getElementById('firstName').value.trim();
-            const mName = document.getElementById('middleName').value.trim();
-            const lName = document.getElementById('lastName').value.trim();
-            const eName = document.getElementById('extraLastName').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-            const idNumber = document.getElementById('idNumber').value.trim();
-            const dateVal = document.getElementById('birthDate').value;
-            let city = document.getElementById('city').value.trim();
-
-            if (!city) { city = "ירושלים"; }
-
-            if (actionType === 'basic_report' || actionType === 'deep_report') {
-                if (!fName || !lName || !phone || !dateVal) { alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון ותאריך לידה."); return; }
-                const hebrewRegex = /^[\u0590-\u05FF\s'-]+$/;
-                if ((fName && !hebrewRegex.test(fName)) || (mName && !hebrewRegex.test(mName)) || 
-                    (lName && !hebrewRegex.test(lName)) || (eName && !hebrewRegex.test(eName))) {
-                    alert("שדות השם חייבים להכיל אותיות בעברית בלבד."); return;
-                }
-                const cityRegex = /^[\u0590-\u05FFa-zA-Z\s'-]+$/;
-                if (city && !cityRegex.test(city)) { alert("שדה עיר חייב להכיל אותיות בלבד."); return; }
-                if (!/^\d+$/.test(phone)) { alert("מספר טלפון חייב להכיל ספרות בלבד."); return; }
-                if (idNumber && !/^\d+$/.test(idNumber)) { alert("מספר תעודת זהות חייב להכיל ספרות בלבד."); return; }
-
-                if (actionType === 'basic_report') {
-                    runBasicReportCalculation();
-                } else {
-                    runDeepReportCalculation();
-                }
-            }
-        }
-
-        // ==========================================
-        // דוח בסיסי - חישוב ותצוגה
-        // ==========================================
-        async function runBasicReportCalculation() {
-            const fName = document.getElementById('firstName').value.trim();
-            const mName = document.getElementById('middleName').value.trim();
-            const lName = document.getElementById('lastName').value.trim();
-            const eName = document.getElementById('extraLastName').value.trim();
-            const dateVal = document.getElementById('birthDate').value;
-            const timeVal = document.getElementById('birthTime').value;
-            let city = document.getElementById('city').value.trim() || "ירושלים";
-            const phone = document.getElementById('phone').value.trim();
-            const idNumber = document.getElementById('idNumber').value.trim();
-
-            document.getElementById('calcBtn').disabled = true;
-            document.querySelector('.premium-btn').disabled = true;
-            document.getElementById('loadingMsg').style.display = 'block';
-            document.getElementById('results').style.display = 'none';
-
-            try {
-                if (!navigator.onLine) throw new Error("אין חיבור אינטרנט פעיל. לא ניתן להמיר תאריכים עבריים.");
-
-                let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=5`);
-                let geoData = await geoRes.json();
-                if (geoData.length === 0) throw new Error("העיר לא נמצאה.");
-                let matchedGeo = geoData.find(item => item.display_name.toLowerCase().includes(city.toLowerCase())) || geoData[0];
-
-                let sunsetRes = await fetch(`https://api.sunrise-sunset.org/json?lat=${matchedGeo.lat}&lng=${matchedGeo.lon}&date=${dateVal}&formatted=0`);
-                let sunsetData = await sunsetRes.json();
-                let isAfterSunset = new Date(`${dateVal}T${timeVal}:00`) > new Date(sunsetData.results.sunset);
-
-                let birthDt = new Date(`${dateVal}T${timeVal}:00`);
-                if (isAfterSunset) birthDt.setDate(birthDt.getDate() + 1);
-
-                let hebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${birthDt.getFullYear()}&gm=${birthDt.getMonth()+1}&gd=${birthDt.getDate()}&g2h=1`);
-                let hebData = await hebRes.json();
-
-                let today = new Date();
-                let todayHebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${today.getFullYear()}&gm=${today.getMonth()+1}&gd=${today.getDate()}&g2h=1`);
-                let todayHebData = await todayHebRes.json();
-
-                let targetHy = todayHebData.hy;
-                let bdayCheckRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
-                let bdayCheckData = await bdayCheckRes.json();
-                let bdayGregorian = new Date(bdayCheckData.gy, bdayCheckData.gm - 1, bdayCheckData.gd);
-
-                if (bdayGregorian < today) {
-                    targetHy++;
-                    bdayCheckData = await (await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`)).json();
-                }
-
-                let hebrewYearOnly = bdayCheckData.hebrew ? "ה'" + bdayCheckData.hebrew.split(' ').pop().replace(/״/g, '"').replace(/׳/g, "'") : bdayCheckData.hy;
-                let nextBdayFormatted = `${bdayCheckData.gd}/${bdayCheckData.gm}/${bdayCheckData.gy}`;
-                let hebrewBdayFull = hebData.hebrew ? hebData.hebrew.replace(/״/g, '"').replace(/׳/g, "'") : hebData.hebrew;
-
-                let dateObj = new Date(dateVal);
-                let zIndex = getZodiacIndex(dateObj.getDate(), dateObj.getMonth() + 1);
-                let sunSign = zodiacSigns[zIndex];
-                let ascendant = calculateAscendant(zIndex, timeVal);
-                let birthYear = dateObj.getFullYear();
-                let chineseAnimal = getChineseZodiac(birthYear);
-
-                document.getElementById('resAstro').innerHTML = `
-                    <div class="result-item result-date">
-                        <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
-                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong> <span style="font-weight: bold; font-size: 1.5em;">[${hebrewYearOnly}]</span></p>
-                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">(הלידה התרחשה בשעה ${timeVal} ${isAfterSunset ? 'לאחר השקיעה' : 'לפני השקיעה'} בעיר ${city})</p>
-                    </div>
-                    <div class="result-item result-zodiac">
-                        <h4>מזל שמש: ${sunSign.name}</h4><p class="light-text">${sunSign.desc}</p>
-                    </div>
-                    <div class="result-item result-zodiac">
-                        <h4>מזל אופק: ${ascendant}</h4><p class="light-text">${ascendantTexts[ascendant]}</p>
-                    </div>
-                    <div class="result-item result-zodiac">
-                        <h4>מזל סיני: ${chineseAnimal}</h4><p class="light-text">${chineseZodiacTexts[chineseAnimal]}</p>
-                    </div>
-                `;
-
-                let namesHtml = "";
-                const namesList = [
-                    { label: "שם פרטי", val: fName }, { label: "שם פרטי נוסף", val: mName },
-                    { label: "שם משפחה", val: lName }, { label: "שם משפחה נוסף", val: eName }
-                ];
-
-                namesList.forEach(item => {
-                    if (item.val) {
-                        let g = calcGematria(item.val); let n = calcNumerology(g);
-                        namesHtml += `<div class="result-item"><h4>${item.label}: ${item.val} (${g})</h4><p><strong>מספר נומרולוגי: ${n}</strong></p><p class="light-text">${numerologyTexts[n]}</p></div>`;
-                    }
-                });
-
-                let totGematria = calcGematria(fName + (mName||"") + lName + (eName||""));
-                let totNum = calcNumerology(totGematria);
-                namesHtml += `<div class="result-item"><h4>כל השמות יחד (${totGematria})</h4><p><strong>מספר נומרולוגי: ${totNum}</strong></p><p class="light-text">${numerologyTexts[totNum]}</p></div>`;
-
-                let dParts = dateVal.split('-');
-                let dateNumValue = calcNumerology(calcNumFromDigits(dateVal));
-                namesHtml += `<div class="result-item"><h4>מספר מזל: ${dParts[2]}/${dParts[1]}/${dParts[0]}</h4><p><strong>מספר נומרולוגי: ${dateNumValue}</strong></p><p class="light-text">${numerologyTexts[dateNumValue]}</p></div>`;
-
-                if (phone) {
-                    let pNum = calcNumerology(calcNumFromDigits(phone));
-                    namesHtml += `<div class="result-item"><h4>מספר תקשורת: ${phone}</h4><p><strong>מספר נומרולוגי: ${pNum}</strong></p><p class="light-text">${numerologyTexts[pNum]}</p></div>`;
-                }
-
-                if (idNumber) {
-                    let idNumValue = calcNumerology(calcNumFromDigits(idNumber));
-                    namesHtml += `<div class="result-item"><h4>מספר זהות: ${idNumber}</h4><p><strong>מספר נומרולוגי: ${idNumValue}</strong></p><p class="light-text">${numerologyTexts[idNumValue]}</p></div>`;
-                }
-
-                document.getElementById('resNamesNum').innerHTML = namesHtml;
-                document.getElementById('resName').innerText = `${fName} ${lName}`;
-                document.getElementById('results').style.display = 'block';
-
-            } catch (err) { alert("אירעה שגיאה בחישוב הנתונים: " + err.message); } 
-            finally { 
-                document.getElementById('calcBtn').disabled = false; 
-                document.querySelector('.premium-btn').disabled = false;
-                document.getElementById('loadingMsg').style.display = 'none'; 
-            }
-        }
-
-        // ==========================================
-        // דוח עמוק - חישוב ותצוגה (מבוסס שרת)
-        // ==========================================
-        async function runDeepReportCalculation() {
-            const fName = document.getElementById('firstName').value.trim();
-            const mName = document.getElementById('middleName').value.trim();
-            const lName = document.getElementById('lastName').value.trim();
-            const eName = document.getElementById('extraLastName').value.trim();
-            const dateVal = document.getElementById('birthDate').value;
-            const timeVal = document.getElementById('birthTime').value;
-            let city = document.getElementById('city').value.trim() || "ירושלים";
-            const phone = document.getElementById('phone').value.trim();
-            const idNumber = document.getElementById('idNumber').value.trim();
-
-            document.getElementById('calcBtn').disabled = true;
-            document.querySelector('.premium-btn').disabled = true;
-            document.getElementById('loadingMsg').style.display = 'block';
-            document.getElementById('results').style.display = 'none';
-
-            try {
-                if (!navigator.onLine) throw new Error("אין חיבור אינטרנט פעיל. נדרש חיבור מקוון לשליפת נתוני הדוח העמוק.");
-
-                const { data: deepData, error: deepError } = await supabaseClient.from('deep_report_texts').select('section_key, content');
-                if (deepError) throw deepError;
-                
-                let deepDict = {};
-                if (deepData) {
-                    deepData.forEach(item => {
-                        deepDict[item.section_key] = item.content;
-                    });
-                }
-
-                let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=5`);
-                let geoData = await geoRes.json();
-                if (geoData.length === 0) throw new Error("העיר לא נמצאה.");
-                let matchedGeo = geoData.find(item => item.display_name.toLowerCase().includes(city.toLowerCase())) || geoData[0];
-
-                let sunsetRes = await fetch(`https://api.sunrise-sunset.org/json?lat=${matchedGeo.lat}&lng=${matchedGeo.lon}&date=${dateVal}&formatted=0`);
-                let sunsetData = await sunsetRes.json();
-                let isAfterSunset = new Date(`${dateVal}T${timeVal}:00`) > new Date(sunsetData.results.sunset);
-
-                let birthDt = new Date(`${dateVal}T${timeVal}:00`);
-                if (isAfterSunset) birthDt.setDate(birthDt.getDate() + 1);
-
-                let hebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${birthDt.getFullYear()}&gm=${birthDt.getMonth()+1}&gd=${birthDt.getDate()}&g2h=1`);
-                let hebData = await hebRes.json();
-
-                let today = new Date();
-                let todayHebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${today.getFullYear()}&gm=${today.getMonth()+1}&gd=${today.getDate()}&g2h=1`);
-                let todayHebData = await todayHebRes.json();
-
-                let targetHy = todayHebData.hy;
-                let bdayCheckRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
-                let bdayCheckData = await bdayCheckRes.json();
-                let bdayGregorian = new Date(bdayCheckData.gy, bdayCheckData.gm - 1, bdayCheckData.gd);
-
-                if (bdayGregorian < today) {
-                    targetHy++;
-                    bdayCheckData = await (await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`)).json();
-                }
-
-                let hebrewYearOnly = bdayCheckData.hebrew ? "ה'" + bdayCheckData.hebrew.split(' ').pop().replace(/״/g, '"').replace(/׳/g, "'") : bdayCheckData.hy;
-                let nextBdayFormatted = `${bdayCheckData.gd}/${bdayCheckData.gm}/${bdayCheckData.gy}`;
-                let hebrewBdayFull = hebData.hebrew ? hebData.hebrew.replace(/״/g, '"').replace(/׳/g, "'") : hebData.hebrew;
-
-                let dateObj = new Date(dateVal);
-                let zIndex = getZodiacIndex(dateObj.getDate(), dateObj.getMonth() + 1);
-                let sunSign = zodiacSigns[zIndex];
-                let ascendant = calculateAscendant(zIndex, timeVal);
-                let birthYear = dateObj.getFullYear();
-                let chineseAnimal = getChineseZodiac(birthYear);
-
-                let deepSunDesc = deepDict[sunSign.name] || sunSign.desc;
-                let deepAscDesc = deepDict[ascendant] || ascendantTexts[ascendant];
-                let deepChineseDesc = deepDict[chineseAnimal] || chineseZodiacTexts[chineseAnimal];
-
-                document.getElementById('resAstro').innerHTML = `
-                    <div class="result-item result-date" style="border-right-color: var(--premium-color); background-color: var(--premium-bg);">
-                        <h3 style="color: var(--premium-color); margin-top: 0;">דוח מיסטי עמוק (פרימיום)</h3>
-                        <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
-                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong> <span style="font-weight: bold; font-size: 1.5em;">[${hebrewYearOnly}]</span></p>
-                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">(הלידה התרחשה בשעה ${timeVal} ${isAfterSunset ? 'לאחר השקיעה' : 'לפני השקיעה'} בעיר ${city})</p>
-                    </div>
-                    <div class="result-item result-zodiac" style="border-right-color: var(--premium-color);">
-                        <h4 style="color: var(--premium-color);">מזל שמש: ${sunSign.name}</h4><p class="light-text">${deepSunDesc}</p>
-                    </div>
-                    <div class="result-item result-zodiac" style="border-right-color: var(--premium-color);">
-                        <h4 style="color: var(--premium-color);">מזל אופק: ${ascendant}</h4><p class="light-text">${deepAscDesc}</p>
-                    </div>
-                    <div class="result-item result-zodiac" style="border-right-color: var(--premium-color);">
-                        <h4 style="color: var(--premium-color);">מזל סיני: ${chineseAnimal}</h4><p class="light-text">${deepChineseDesc}</p>
-                    </div>
-                `;
-
-                let namesHtml = "";
-                const namesList = [
-                    { label: "שם פרטי", val: fName }, { label: "שם פרטי נוסף", val: mName },
-                    { label: "שם משפחה", val: lName }, { label: "שם משפחה נוסף", val: eName }
-                ];
-
-                namesList.forEach(item => {
-                    if (item.val) {
-                        let g = calcGematria(item.val); let n = calcNumerology(g);
-                        let nDesc = deepDict[n.toString()] || numerologyTexts[n];
-                        namesHtml += `<div class="result-item" style="border-right-color: var(--premium-color);">
-                            <h4 style="color: var(--premium-color);">${item.label}: ${item.val} (${g})</h4>
-                            <p><strong>מספר נומרולוגי: ${n}</strong></p>
-                            <p class="light-text">${nDesc}</p>
-                        </div>`;
-                    }
-                });
-
-                let totGematria = calcGematria(fName + (mName||"") + lName + (eName||""));
-                let totNum = calcNumerology(totGematria);
-                let totDesc = deepDict[totNum.toString()] || numerologyTexts[totNum];
-                namesHtml += `<div class="result-item" style="border-right-color: var(--premium-color);">
-                    <h4 style="color: var(--premium-color);">כל השמות יחד (${totGematria})</h4>
-                    <p><strong>מספר נומרולוגי: ${totNum}</strong></p>
-                    <p class="light-text">${totDesc}</p>
-                </div>`;
-
-                let dParts = dateVal.split('-');
-                let dateNumValue = calcNumerology(calcNumFromDigits(dateVal));
-                let dateDesc = deepDict[dateNumValue.toString()] || numerologyTexts[dateNumValue];
-                namesHtml += `<div class="result-item" style="border-right-color: var(--premium-color);">
-                    <h4 style="color: var(--premium-color);">מספר מזל: ${dParts[2]}/${dParts[1]}/${dParts[0]}</h4>
-                    <p><strong>מספר נומרולוגי: ${dateNumValue}</strong></p>
-                    <p class="light-text">${dateDesc}</p>
-                </div>`;
-
-                if (phone) {
-                    let pNum = calcNumerology(calcNumFromDigits(phone));
-                    let pDesc = deepDict[pNum.toString()] || numerologyTexts[pNum];
-                    namesHtml += `<div class="result-item" style="border-right-color: var(--premium-color);">
-                        <h4 style="color: var(--premium-color);">מספר תקשורת: ${phone}</h4>
-                        <p><strong>מספר נומרולוגי: ${pNum}</strong></p>
-                        <p class="light-text">${pDesc}</p>
-                    </div>`;
-                }
-
-                if (idNumber) {
-                    let idNumValue = calcNumerology(calcNumFromDigits(idNumber));
-                    let idDesc = deepDict[idNumValue.toString()] || numerologyTexts[idNumValue];
-                    namesHtml += `<div class="result-item" style="border-right-color: var(--premium-color);">
-                        <h4 style="color: var(--premium-color);">מספר זהות: ${idNumber}</h4>
-                        <p><strong>מספר נומרולוגי: ${idNumValue}</strong></p>
-                        <p class="light-text">${idDesc}</p>
-                    </div>`;
-                }
-
-                document.getElementById('resNamesNum').innerHTML = namesHtml;
-                document.getElementById('resName').innerText = `${fName} ${lName}`;
-                document.getElementById('results').style.display = 'block';
-
-            } catch (err) { alert("אירעה שגיאה בחישוב הנתונים: " + err.message); } 
-            finally { 
-                document.getElementById('calcBtn').disabled = false; 
-                document.querySelector('.premium-btn').disabled = false;
-                document.getElementById('loadingMsg').style.display = 'none'; 
-            }
-        }
-
-        // ==========================================
-        // פונקציית שיתוף לוואטסאפ
-        // ==========================================
-        function executeWhatsAppShare() {
-            const phone = document.getElementById('phone').value.trim();
-            if (!phone) return alert("אנא הזן מספר טלפון לשיתוף.");
-            window.location.href = `whatsapp://send?phone=${phone.replace(/^0/, '972').replace(/\D/g, '')}&text=${encodeURIComponent(document.getElementById('contentToPrint').innerText)}`;
-        }
-
-        // ==========================================
-        // PWA - רישום האפליקציה והתקנה (עם הגנת כפילויות)
-        // ==========================================
-        
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Error:', err));
-            });
-        }
-
-        let deferredPrompt;
-        
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-        const isInstalledLocally = localStorage.getItem('mysticAppInstalled') === 'true';
-
-        window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault(); 
-            deferredPrompt = e;
-            
-            if (!isStandalone && !isInstalledLocally) {
-                document.getElementById('installBanner').style.display = 'block';
-            }
-        });
-
-        async function installApp() {
-            if (deferredPrompt) {
-                deferredPrompt.prompt();
-                const { outcome } = await deferredPrompt.userChoice;
-                
-                if (outcome === 'accepted') {
-                    console.log('המשתמש אישר את ההתקנה');
-                    localStorage.setItem('mysticAppInstalled', 'true');
-                }
-                
-                deferredPrompt = null; 
-                document.getElementById('installBanner').style.display = 'none';
-            }
-        }
-
-        window.addEventListener('appinstalled', (evt) => {
-            console.log('ההתקנה הושלמה בהצלחה ברמת מערכת ההפעלה');
-            localStorage.setItem('mysticAppInstalled', 'true');
-            document.getElementById('installBanner').style.display = 'none';
-        });
-
-        const isIos = () => {
-            const userAgent = window.navigator.userAgent.toLowerCase();
-            return /iphone|ipad|ipod/.test(userAgent);
-        };
-        
-        if (isIos() && !isStandalone && !isInstalledLocally) {
-            document.getElementById('iosInstallBanner').style.display = 'block';
-        }
-
-        window.addEventListener('DOMContentLoaded', () => { updateNetworkStatus(); fetchDynamicTexts(); syncOfflineLogs(); });
-    </script>
-</body>
-</html>
+-- מחיקת הנתונים הקיימים כדי להתחיל מאפס בצורה נקייה
+TRUNCATE TABLE deep_report_texts RESTART IDENTITY;
+
+-- הזרקת הנתונים המשולבים (בסיסי + עומק) לטבלה
+INSERT INTO deep_report_texts (category, section_key, title, content) VALUES
+
+-- ==========================================
+-- פרק 1: נומרולוגיה
+-- ==========================================
+('numerology', '1', 'מספר 1: עוצמה, מנהיגות וחדשנות', 
+'<strong>תקציר בסיסי:</strong> מנהיגות מולדת, עצמאות וכוח רצון עז. אנשי ה-1 הם חלוצים, יזמים ובעלי ביטחון עצמי גבוה.<br><br>
+<strong>ניתוח עומק מורחב:</strong> המספר 1 נושא עמו תדר עוצמתי של בריאה מתוך האין. נשמתך בחרה להגיע לעולם הזה כדי להוביל, לפרוץ דרכים חדשות ולא להסתפק בקיים. באספקט המקצועי, אתה נועדת להיות עצמאי או לנהל אחרים; עבודה תחת מרות קשה לך מאוד. באספקט הרגשי, יש בך אש פנימית יוקדת שדורשת ביטוי, ועוצמה אישית שאינה זקוקה לאישור מאחרים. המסע העמוק שלך הוא ללמוד לסמוך על הקול הפנימי שלך גם כשאתה צועד לבד בחושך. התיקון שלך הוא להפוך את האגו למשרת של הלב, להנהיג מתוך השראה ולא מתוך כוח, ולזכור שהעצמאות שלך נועדה להאיר את הדרך גם עבור אלו שחוששים לצעוד בה.'),
+
+('numerology', '2', 'מספר 2: נתיב הדיפלומטיה, הזוגיות והרגש', 
+'<strong>תקציר בסיסי:</strong> זוגיות, שותפות, דיפלומטיה ורגישות רגשית גבוהה. מגשרים טבעיים השואפים להרמוניה.<br><br>
+<strong>ניתוח עומק מורחב:</strong> המספר 2 הוא תדר של אהבה רכה, אינטואיציה נדירה וחיבור נשמתי. הגעת לעולם עם "רדאר" רגשי שקולט כל תנודה זעירה בסביבה, ויכולת מופלאה לרפא כאב של אחרים. באספקט הזוגי והחברתי, אתה מחפש מיזוג מוחלט וזקוק לשותף אמיתי לדרך. ייעודך הוא ליצור גשרים במקומות של נתק. עם זאת, הרגישות העצומה שלך היא גם האתגר הגדול ביותר שלך. העבודה הקרמתית שלך היא ללמוד להציב גבולות של ברזל סביב הלב הרך שלך, להפסיק לספוג את הכאב של העולם אל תוך גופך, ולמצוא את הקול הייחודי שלך מבלי לאבד את עצמך בתוך האחר.'),
+
+('numerology', '3', 'מספר 3: יצירתיות, ביטוי עצמי ושמחת חיים', 
+'<strong>תקציר בסיסי:</strong> ביטוי עצמי, יצירתיות, שמחת חיים וכריזמה מתפרצת. תקשורתיים ואופטימיים.<br><br>
+<strong>ניתוח עומק מורחב:</strong> המספר 3 רוטט בתדר של שמחה קוסמית וקסם אישי שאי אפשר לעמוד בפניו. נשמתך זוכרת את שפת האור, והגעת לכאן כדי להזכיר לעולם איך לשחק ולהתרגש. באספקט המקצועי, אתה חייב לעסוק בתחום שמאפשר ביטוי (כתיבה, במה, הדרכה, מכירות). המילים שלך והנוכחות שלך הם כלי הריפוי שלך. האתגר העמוק שמלווה אותך הוא הקושי להתמקד ולשאת בעול השגרה. התיקון שלך הוא ללמוד לקרקע את הרעיונות המבריקים שלך אל תוך עשייה מתמדת, ולא לתת לפחד מביקורת לכבות את הניצוץ הטהור שבוער בך.'),
+
+('numerology', '4', 'מספר 4: יציבות, מסגרת ובניית יסודות', 
+'<strong>תקציר בסיסי:</strong> יציבות, סדר, משמעת קפדנית ועבודה קשה. הבסיס האיתן שאפשר לסמוך עליו.<br><br>
+<strong>ניתוח עומק מורחב:</strong> המספר 4 הוא תדר מקודש של חומר, סדר והגשמה פיזית. נשמתך לקחה על עצמה תפקיד של עוגן במציאות סוערת. בחיי היום-יום, אתה האדם שניתן לסמוך עליו כשהכל קורס, זה שיודע להפוך חלומות מופשטים לתוכנית עבודה מוחשית. העוצמה שלך טמונה ביכולת שלך להתמיד היכן שאחרים מוותרים. עם זאת, האתגר הרוחני שלך הוא להשתחרר מהפחד מאי-ודאות ומנוקשות מחשבתית. עליך ללמוד שהחיים זורמים גם מעבר לגבולות התוכנית, ולאפשר לרוח, לספונטניות ולרכות להיכנס אל תוך המבצר החזק שבנית.'),
+
+('numerology', '5', 'מספר 5: תנועה, חופש והרפתקנות', 
+'<strong>תקציר בסיסי:</strong> חופש, הרפתקנות, תנועה מתמדת ושינויים. זקוקים למרחב נשימה ענק וגיוון.<br><br>
+<strong>ניתוח עומק מורחב:</strong> המספר 5 נושא אנרגיה של רוח פראית שאינה ניתנת לאילוף. הגעת לעולם כדי לחוות את החיים במלוא עוצמתם, לפרוץ מסגרות כובלות ולחפש ללא הרף את האמת המסתתרת מעבר לאופק. השגרה היא כלוב עבור נשמתך, והתנועה היא החמצן שלך. באספקט הזוגי, אתה זקוק לבן זוג שיעוף איתך ולא יכבול אותך. התיקון הקרמתי שלך הוא ללמוד את ההבדל בין חופש אמיתי לבריחה. המסע שלך דורש ממך למצוא את החירות העמוקה דווקא בתוך מחויבות, ולגלות שניתן לעוף רחוק גם כשיש לך שורשים חזקים.'),
+
+('numerology', '6', 'מספר 6: הרמוניה, משפחה ואהבה ללא תנאי', 
+'<strong>תקציר בסיסי:</strong> האהבה, המשפחתיות, ההרמוניה והשירות המסור לזולת. המטפלים והמגוננים.<br><br>
+<strong>ניתוח עומק מורחב:</strong> המספר 6 נחשב למספר ההרמוניה האלוהית. נשמתך הגיעה מצוידת בלב ענק ורצון עמוק לטפל, להגן ולעטוף את יקיריך באהבה. הבית, המשפחה והקהילה הם המקדש שלך, ויש בך כוח לרפא פצעים רגשיים עמוקים של אחרים. אך זוהי גם נקודת התורפה שלך: הנטייה לקחת אחריות על סבל שלא שלך. עבודת הנשמה שלך היא ללמוד שאינך יכול להציל את כולם, להפסיק לחפש שלמות במערכות יחסים, ולהעניק לעצמך את אותה אהבה אינסופית שאתה מפזר על העולם.'),
+
+('numerology', '7', 'מספר 7: רוחניות, חקר האמת ופילוסופיה', 
+'<strong>תקציר בסיסי:</strong> רוחניות, העמקה, חשיבה חקרנית ואינטואיציה חדה כתער. הוגי דעות וחוקרים.<br><br>
+<strong>ניתוח עומק מורחב:</strong> המספר 7 הוא תדר נדיר המחבר בין העולם הפיזי לממדים הנסתרים. הגעת לכאן עם שאלות עמוקות על מהות הקיום ועיניים שרואות מעבר למסך האשליות של החומר. אתה זקוק להתבודדות כדי לשמוע את קול האינטואיציה שלך ולעבד את המידע שאתה קולט. האתגר הקרמתי שלך הוא סכנת הניתוק מן החומר והבדידות. התיקון שלך הוא ללמוד לתת אמון בעולם הפיזי, לא להסתגר בתוך מגדל שן של חוכמה רוחנית, ולהסכים לשתף את האור ואת התובנות העמוקות שלך עם הסביבה שצמאה להן.'),
+
+('numerology', '8', 'מספר 8: שפע, עוצמה וחוקי הקרמה', 
+'<strong>תקציר בסיסי:</strong> עוצמה, סמכות, שפע חומרי, סטאטוס והישגיות בקנה מידה גדול.<br><br>
+<strong>ניתוח עומק מורחב:</strong> המספר 8 מייצג את צורת האינסוף - חיבור מושלם בין חומר לרוח. נשמתך בחרה במסלול עוצמתי שנועד לשלוט בעולם הגשמי ולהניע כוחות גדולים, ליצור מערכות, עסקים או הון, לא למען אגו, אלא למען יצירת שפע שיטיב עם הכלל. המבחן העמוק שלך בחיים אלו הוא מבחן הכוח. עליך ללמוד לאזן בין שאפתנות אדירה לבין ענווה, להימנע משתלטנות, ולהבין שכסף והישגים הם רק כלים אנרגטיים שנועדו לשרת את ההתפתחות הרוחנית שלך ושל הסובבים אותך.'),
+
+('numerology', '9', 'מספר 9: אוניברסליות, חמלה וסגירת מעגלים', 
+'<strong>תקציר בסיסי:</strong> הומניטריות, נתינה אוניברסלית ללא תנאי, אצילות נפש וסיום מעגלים.<br><br>
+<strong>ניתוח עומק מורחב:</strong> המספר 9 מכיל בתוכו את התדר של כל המספרים הקודמים. זוהי נשמה עתיקה ובוגרת שהגיעה לכאן כדי לסיים מחזורים קרמתיים ולשרת מטרה גדולה יותר מעצמה. יש בך אצילות, סובלנות וחיבור אמיתי לכאב ולשמחה של האנושות כולה. התיקון הקרמתי של ה-9 הוא הקשה מכולם: אמנות השחרור. עליך ללמוד לסלוח פנימה והחוצה, לשחרר אנשים, זיכרונות ומצבים שסיימו את תפקידם בחייך, ולפעול מתוך אהבה טהורה שאינה מצפה לתמורה.'),
+
+-- ==========================================
+-- פרק 2: מזל שמש (אסטרולוגיה מערבית)
+-- ==========================================
+('zodiac', 'טלה', 'מזל טלה: הלוחם והחלוץ', 
+'<strong>תקציר בסיסי:</strong> מזל אש דינמי ויצרי. פורץ דרך, אמיץ ומוביל.<br><br>
+<strong>ניתוח עומק מורחב:</strong> השמש במזל טלה היא הניצוץ האלוהי שמדליק את גלגל המזלות כולו. אתה נושא בתוכך אנרגיה של התחלות, אומץ פראי וכוח חיים שאינו יודע פחד. ברמה הנשמתית, אתה לוחם של אור שנשלח כדי לפלס דרכים באזורים חשוכים. בחיי האהבה, אתה מתאהב במהירות וזקוק לריגוש מתמיד. האתגר העמוק שלך הוא ללמוד לתעל את האש הזו מבלי לשרוף את מי שעומד בדרכך, למצוא סבלנות מול הקצב האיטי של העולם, ולהבין שחולשה אינה כישלון אלא חלק מהחוויה האנושית.'),
+
+('zodiac', 'שור', 'מזל שור: שורשיות, אדמה ויציבות', 
+'<strong>תקציר בסיסי:</strong> מזל אדמה יציב ופרקטי. נאמן, חושני ואמין כסלע.<br><br>
+<strong>ניתוח עומק מורחב:</strong> השמש בשור מחברת אותך לאנרגיה הקדומה והמייצבת של יסוד האדמה. אתה ניחן ביכולת מופלאה לברוא יופי, שפע וביטחון מתוך הכאוס. יש בך כוח סבל אדיר ונאמנות שאינה תלויה בדבר, מה שהופך אותך לבן זוג וחבר נדיר. המסע הרוחני שלך עוסק בשחרור האחזקה. האתגר הוא להבין שביטחון אמיתי לא נובע מאנשים, כסף או רכוש, אלא מהעוגן הפנימי שלך. כשתצליח לשחרר את הפחד משינויים, תגלה שאתה צינור של ריפוי ואהבה טהורה.'),
+
+('zodiac', 'תאומים', 'מזל תאומים: תקשורת, דואליות וסקרנות', 
+'<strong>תקציר בסיסי:</strong> מזל אוויר אינטלקטואלי ומהיר תפיסה. סקרן ותקשורתי.<br><br>
+<strong>ניתוח עומק מורחב:</strong> השמש בתאומים מברכת אותך במיינד מהיר כברק וביכולת לראות את העולם דרך אלפי עדשות שונות בו-זמנית. אתה נושא את האנרגיה של שליח האלים, זה שמחבר בין רעיונות, עולמות ואנשים. הקסם שלך טמון בסקרנות חסרת הגבולות שלך. התיקון הקרמתי שלך הוא לעשות סדר ברעש הפנימי. עליך ללמוד לאסוף את חלקי התודעה המפוזרים שלך למרכז אחד יציב, להימנע מבריחה אל השכל כשעולים רגשות כואבים, ולמצוא אמת פנימית אחת ושקטה.'),
+
+('zodiac', 'סרטן', 'מזל סרטן: רגש עמוק, בית ואינטואיציה', 
+'<strong>תקציר בסיסי:</strong> מזל מים רגשי, משפחתי ועמוק בעל אינטואיציה חזקה.<br><br>
+<strong>ניתוח עומק מורחב:</strong> השמש בסרטן עושה אותך לשומר סף של העולם הרגשי והתת-מודע. נשמתך כיוונה אותך להיות עוגן של הכלה, טיפול והגנה. יש בך אינטואיציה עמוקה שקולטת כל תדר בחדר, ורצון עז ליצור מפלט בטוח וחם. בקריירה ובמשפחה, אתה המנוע הרגשי. המסע ההתפתחותי שלך הוא לחתוך את חבלי התלות. האתגר הוא לבנות שריון פנימי ולא חיצוני - ללמוד להיות חזק מתוך רכות, ולהפסיק להעניק אהבה על חשבון הכוח והרווחה האישית שלך.'),
+
+('zodiac', 'אריה', 'מזל אריה: נוכחות מלכותית, כריזמה ולב פתוח', 
+'<strong>תקציר בסיסי:</strong> מזל אש מלכותי וזורח. כריזמטי, נדיב ובעל לב ענק.<br><br>
+<strong>ניתוח עומק מורחב:</strong> השמש באריה מציבה אותך במרכז הבמה הקוסמית, מוארת באנרגיה של יצירה, כריזמה ולב זהב שאין לו תחתית. הגעת כדי להראות לעולם איך לאהוב בנדיבות ולהקרין שמחת חיים פשוטה ועוצמתית. אולם המסע האמיתי של האריה הוא פנימי לחלוטין. המבחן הקרמתי שלך הוא ללמוד לשאוב את הערך העצמי שלך מבפנים, ולא ממחיאות הכפיים של הסביבה. כשתשתחרר מהצורך באישור חיצוני, תהפוך למנהיג רוחני אמיתי שמעצים אחרים מעצם נוכחותו.'),
+
+('zodiac', 'בתולה', 'מזל בתולה: דיוק, אנליזה וטוהר פנימי', 
+'<strong>תקציר בסיסי:</strong> מזל אדמה מאורגן, אנליטי ויורד לפרטים הקטנים.<br><br>
+<strong>ניתוח עומק מורחב:</strong> השמש בבתולה מעניקה לך תדר של טוהר, דיוק ורצון עמוק להיטיב עם עולם פגום. יש בך יכולת נדירה לראות את השלם דרך הפרטים הקטנים ביותר, וכישרון לרפא, לסדר ולשפר כל מצב וכל אדם. האתגר הנשמתי שלך הוא ההתמודדות עם שד הביקורת העצמית והפרפקציוניזם. המסע שלך הוא מסע אל הקבלה. עליך ללמוד שהאנושיות היא קדושה. ברגע שתחליף את הביקורת בחמלה, השירות שלך יהפוך מיצירת סדר פיזי לריפוי נשמתי עמוק.'),
+
+('zodiac', 'מאזניים', 'מזל מאזניים: דיפלומטיה, יופי והרמוניה', 
+'<strong>תקציר בסיסי:</strong> מזל אוויר אסתטי, דיפלומטי ושואף להרמוניה וצדק.<br><br>
+<strong>ניתוח עומק מורחב:</strong> השמש במאזניים מציבה אותך על ציר נצחי של חיפוש אחר אסתטיקה, צדק ואהבה. נשמתך כמהה להרמוניה מושלמת ולחיבור עמוק עם הזולת, ויש בך כישרון טבעי לפשר ולגשר על פערים שנדמים בלתי ניתנים לגישור. עם זאת, כאן בדיוק טמונה סכנת איבוד העצמי. התיקון שלך דורש ממך לעמוד באומץ מול קונפליקטים, למצוא את נקודת האמת הפנימית שלך גם אם היא מפרה את השלום החיצוני, ולהבין שאיזון אמיתי מגיע מנוכחות אותנטית ושלמה.'),
+
+('zodiac', 'עקרב', 'מזל עקרב: טרנספורמציה, מגנטיות ועוצמה', 
+'<strong>תקציר בסיסי:</strong> מזל מים אינטנסיבי, מגנטי ובעל עוצמה נפשית אדירה.<br><br>
+<strong>ניתוח עומק מורחב:</strong> השמש בעקרב היא צלילה למים העמוקים והאפלים ביותר של הקיום. אתה ניחן בעוצמה נפשית אדירה, יכולת הישרדות פנומנלית ורדאר פנימי שמזהה כל שקר וזיוף. נולדת לעבור תהליכים של מוות ולידה מחדש בחייך. האתגר הקרמתי שלך הוא הפיכת החושך לאור. המשימה היא להרפות מהצורך הכפייתי בשליטה, להתגבר על החשדנות הטבעית שלך, ולהשתמש בכוח החדירה שלך כדי לרפא כואבים ולהאיר פצעים, ולא כדי להתגונן מתוך פחד.'),
+
+('zodiac', 'קשת', 'מזל קשת: אופטימיות, מרחבים וחיפוש האמת', 
+'<strong>תקציר בסיסי:</strong> מזל אש אופטימי, פילוסופי וחובב חופש והרפתקאות.<br><br>
+<strong>ניתוח עומק מורחב:</strong> השמש בקשת מחברת אותך לאנרגיה של התרחבות, אמונה בלתי מתפשרת בטוב, וצורך קיומי למצוא משמעות גדולה לחיים. אתה מורה דרך מטבעך, שמביא תקווה ומרחבים לכל מקום שאליו הוא מגיע. למרות זאת, הסכנה של הקשת היא הבריחה אל המופשט ופחד ממחויבות. התיקון הרוחני שלך הוא לקרקע את החזון הגדול אל תוך המציאות היומיומית האפורה, ללמוד לקחת מחויבות, ולהבין שהאמת העליונה נמצאת גם בפרטים הקטנים של החומר.'),
+
+('zodiac', 'גדי', 'מזל גדי: סמכות, שאפתנות ופסגת ההר', 
+'<strong>תקציר בסיסי:</strong> מזל אדמה שאפתן, מעשי, בוגר ואחראי לטווח רחוק.<br><br>
+<strong>ניתוח עומק מורחב:</strong> השמש בגדי נושאת משא כבד של חוכמה עתיקה ואחריות. אתה ניגש לחיים במלוא הרצינות, בונה מסלול איטי ובטוח אל פסגת השאיפות שלך, וניחן בכושר סיבולת שאנשים אחרים יכולים רק לחלום עליו. באהבה, אתה שותף נאמן לטווח ארוך. התיקון של הגדי הוא לרכך את החומות. המסע שלך דורש ממך לאפשר לרגש, לפגיעות ולילד הפנימי לצאת החוצה, ולהבין שהצלחה וכבוד לעולם לא ימלאו חלל רגשי.'),
+
+('zodiac', 'דלי', 'מזל דלי: מקוריות, מרדנות ואידיאליזם', 
+'<strong>תקציר בסיסי:</strong> מזל אוויר מקורי, אינדיבידואליסט והומניטרי.<br><br>
+<strong>ניתוח עומק מורחב:</strong> השמש בדלי ממקמת אותך צעד אחד לפני כולם. אתה נושא תדר אלקטרוני, שובר מוסכמות, ורואה את החזון של האנושות המאוחדת בצורה ברורה. המקוריות שלך היא מתנה לעולם. ואולם, האתגר העמוק של הדלי הוא גשר הרגש. קל לך לאהוב את "האנושות" כמושג מופשט, אך קשה לך להתמסר לאינטימיות כובלת. התיקון הקרמתי שלך הוא לחבר את השכל הגאוני ללב הפועם, וללמוד לחוות רגשות אנושיים פשוטים מבלי להתנתק.'),
+
+('zodiac', 'דגים', 'מזל דגים: חמלה, דמיון ומיזוג רוחני', 
+'<strong>תקציר בסיסי:</strong> מזל מים רוחני, חומל, אמנותי ובעל דמיון עשיר.<br><br>
+<strong>ניתוח עומק מורחב:</strong> השמש בדגים היא תחנת הסיום של גלגל המזלות. אתה מחובר ישירות למקור הבריאה, דרך דמיון עשיר, אינטואיציה פנומנלית ויכולת חמלה אינסופית שמסוגלת להמיס כל כאב. הסכנה הגדולה של הדגים היא אובדן הגבולות ואסקפיזם (בריחה מהמציאות). התיקון העמוק שלך הוא לבנות שלד פנימי חזק בתוך המים הרגשיים, ללמוד להגיד "לא" מבלי להרגיש אשמה, ולהשתמש בחיבור הרוחני שלך כדי לפעול במציאות הפיזית.'),
+
+-- ==========================================
+-- פרק 3: מזל אופק
+-- ==========================================
+('ascendant', 'טלה', 'אופק טלה: מסכת הלוחם הפעיל', 
+'<strong>תקציר בסיסי:</strong> חזות נמרצת, ישירה ומהירה. כישרון ליזמות ופיקוד.<br><br>
+<strong>ניתוח עומק מורחב:</strong> האופק בטלה מגדיר את נקודת הממשק שלך עם המציאות כישירה, מהירה וחסרת פשרות. כשאתה נכנס לחדר, האנרגיה משתנה מיד. אתה נתפס בעיני אחרים כחסר פחד, אקטיבי ומוכן לכל פעולה. זוהי חזות של יזם ופורץ דרך שמסתירה לעיתים מורכבות רגשית ורכות פנימית עמוקה. האופק הזה משמש כשריון אקטיבי שמאפשר לך לפלס דרך בעולם תחרותי מבלי לחשוף את הפגיעות שלך מיד.'),
+
+('ascendant', 'שור', 'אופק שור: מסכת היציבות והאדמה', 
+'<strong>תקציר בסיסי:</strong> נוכחות רגועה, שורשית ויציבה. כישרון לפיננסים ועיצוב.<br><br>
+<strong>ניתוח עומק מורחב:</strong> האופק בשור מעניק לך חזות חיצונית המקרינה סבלנות, ביטחון וכוח יציב שאינו מתרגש מסערות חולפות. אנשים נמשכים לנוכחות המרגיעה שלך ולאסתטיקה הטבעית שאתה מקרין. נקודת המפגש שלך עם העולם היא תמיד דרך החושים והבחינה המדוקדקת, המבטיחה שאתה צועד על קרקע בטוחה לפני שאתה מאפשר לאחרים להיכנס למרחב שלך. אתה נתפס כאדם מהימן שפועל בקצב משלו.'),
+
+('ascendant', 'תאומים', 'אופק תאומים: מסכת הסקרנות והתקשורת', 
+'<strong>תקציר בסיסי:</strong> אנרגיה קלילה, תקשורתית וסקרנית. כישרון לתקשורת ותכנות.<br><br>
+<strong>ניתוח עומק מורחב:</strong> כשהאופק בתאומים, הדרך שבה אתה חווה את העולם היא דרך תנועה, מידע ותקשורת שוטפת. המסכה החברתית שלך היא קלילה, חייכנית ומלאת קסם אינטלקטואלי. אתה משדר גמישות מחשבתית ורצון לגלות דברים חדשים כל הזמן, מה שמאפשר לך ליצור רשת קשרים ענפה. המסכה הזו מגנה עליך מפני שעמום או קיפאון רגשי, ומאפשרת לך להחליף דמויות בהתאם לסיטואציה.'),
+
+('ascendant', 'סרטן', 'אופק סרטן: מסכת המגן הרגשי', 
+'<strong>תקציר בסיסי:</strong> הילה רכה, מכילה ואמפתית. כישרון לטיפול ופסיכולוגיה.<br><br>
+<strong>ניתוח עומק מורחב:</strong> האופק בסרטן גורם לך לבחון מצבים חדשים וזרים באורח כמעט חשדני, כמו סרטן השולח מחושים למים. החזות שלך משדרת עדינות, רגישות ודאגה לאחרים, אך היא גם קונכייה שנועדה להגן על לב פגיע מאוד. אתה נתפס כמישהו שניתן להישען עליו בשעות משבר, ומשמש כרחם מכיל עבור אלו שזקוקים לנחמה. רק יחידי סגולה זוכים לראות את העולם הפנימי האמיתי שמאחורי השריון.'),
+
+('ascendant', 'אריה', 'אופק אריה: מסכת הכריזמה וההדר', 
+'<strong>תקציר בסיסי:</strong> נוכחות כריזמטית ומרשימה. כישרון לניהול ובמה.<br><br>
+<strong>ניתוח עומק מורחב:</strong> אי אפשר לפספס אותך. אופק אריה מקרין סביבך הילה של כריזמה, דרמה, גאווה ושמחת חיים זורחת. העולם הוא הבמה שלך, והרושם הראשוני שאתה מותיר הוא של אדם בעל ביטחון עצמי אדיר ולב רחב. המסכה הזו נועדה לעורר השראה באחרים, ולשמור על הכבוד העצמי שלך מפני כל פגיעה אפשרית במרחב הציבורי. אתה מנהיג טבעי ברגעים הראשונים של כל היכרות.'),
+
+('ascendant', 'בתולה', 'אופק בתולה: מסכת הדיוק והאיפוק', 
+'<strong>תקציר בסיסי:</strong> חזות רצינית, מסודרת ואנליטית. כישרון למדעים וארגון.<br><br>
+<strong>ניתוח עומק מורחב:</strong> האופק בבתולה מציג אותך לעולם כאדם מאורגן, ענייני, וקשוב לפרטים הקטנים ביותר. הרושם שאתה מקרין הוא של צניעות ואיפוק רגשי שמאחוריהם מסתתר מוח אנליטי שלא מפסיק לחשב ולנתח. החזות הזו מסייעת לך לשמור על סדר בסביבה כאוטית ומונעת מאנשים לחדור למרחב הפרטי שלך ללא הזמנה מפורשת. אתה משדר אמינות, דייקנות ורצון מעשי לעזור.'),
+
+('ascendant', 'מאזניים', 'אופק מאזניים: מסכת החן וההרמוניה', 
+'<strong>תקציר בסיסי:</strong> קסם אישי, נעימות ודיפלומטיה. כישרון לגישור ומשפטים.<br><br>
+<strong>ניתוח עומק מורחב:</strong> עם אופק במאזניים, ההופעה החיצונית שלך וסגנון התקשורת שלך מכוונים כולם ליצירת הרמוניה וסימפתיה מיידית. אתה מקרין קסם דיפלומטי בלתי רגיל ויכולת לגרום לכל אדם להרגיש בנוח במחיצתך. זוהי מסכה של פייסן ואיש חברה, המסייעת לך לנווט בעולם דרך שיתופי פעולה ומניעת עימותים פנים אל פנים. החזות שלך תמיד מעודנת ואסתטית.'),
+
+('ascendant', 'עקרב', 'אופק עקרב: מסכת העוצמה והמסתורין', 
+'<strong>תקציר בסיסי:</strong> מבט חודר, עומק ומסתוריות. כישרון לחקירות וניתוח.<br><br>
+<strong>ניתוח עומק מורחב:</strong> אופק עקרב מעניק לך הילה של כוח שקט, עומק בלתי נתפס ומבט שחודר היישר אל נשמתם של אחרים. אתה ניגש לעולם בחשדנות מחושבת, שומר את הקלפים קרוב לחזה ולא חושף את רגשותיך בקלות. נוכחותך משדרת סכנה מפתה וקסם מגנטי שגורם לאחרים לכבד את הגבולות שלך באופן אינסטינקטיבי. אתה קולט את חולשות הסביבה מבלי לומר מילה.'),
+
+('ascendant', 'קשת', 'אופק קשת: מסכת הפתיחות וההרפתקה', 
+'<strong>תקציר בסיסי:</strong> אופטימיות, פתיחות ושמחת חיים. כישרון להוראה ותיירות.<br><br>
+<strong>ניתוח עומק מורחב:</strong> האופק בקשת גורם לך לטרוק את דלתות החיים בפתיחות, אופטימיות כובשת וחיוך ששמור להרפתקנים. אתה מקרין ספונטניות, פילוסופיית חיים משוחררת וישירות שלפעמים חותכת כסכין. הרושם הראשוני הוא של אדם שלא ניתן לכבול אותו למקום אחד, שתמיד מחפש את האופק הבא ואת המשמעות הנסתרת של הדברים. אתה מביא איתך רוח של חופש והתלהבות לכל מקום.'),
+
+('ascendant', 'גדי', 'אופק גדי: מסכת הסמכות והשליטה', 
+'<strong>תקציר בסיסי:</strong> רושם סמכותי, בוגר ואחראי. כישרון לניהול מערכות גדולות.<br><br>
+<strong>ניתוח עומק מורחב:</strong> האופק בגדי מציג לעולם דמות בוגרת, סמכותית ומחושבת, לעיתים נראית מבוגרת מגילה האמיתי. אתה ניגש למצבים בגישה מעשית, שוקל כל צעד ומשדר שאתה שולט במצב בכל רגע נתון. המסכה הזו בונה חומת הגנה של כבוד וסטטוס, ומרתיעה אנשים מלהתייחס אליך בזלזול. היא מאפשרת לך לנווט בעולם העסקי והחברתי מתוך עמדת כוח יציבה.'),
+
+('ascendant', 'דלי', 'אופק דלי: מסכת הייחודיות והמרד', 
+'<strong>תקציר בסיסי:</strong> מקוריות, חדשנות ועצמאות מחשבתית. כישרון להייטק.<br><br>
+<strong>ניתוח עומק מורחב:</strong> כשהאופק בדלי, אתה נתפס מיד כעוף מוזר אך מרתק. ההופעה שלך, הדעות שלך או הגישה שלך לחיים תמיד יחרגו מהנורמה. אתה מקרין ידידותיות אוניברסלית יחד עם ריחוק אובייקטיבי וקריר. זוהי חזות המאפשרת לך לשמור על חירות פנימית מוחלטת ולבחון את העולם מזווית של צופה אנתרופולוגי, מבלי להישאב לדרמות רגשיות מיותרות.'),
+
+('ascendant', 'דגים', 'אופק דגים: מסכת הרוך והחלום', 
+'<strong>תקציר בסיסי:</strong> עדינות, רגישות ורוחניות. כישרון לאמנות וטיפול.<br><br>
+<strong>ניתוח עומק מורחב:</strong> האופק בדגים גורם לך להיראות כמי שמרחף מעט מעל פני הקרקע. אתה מקרין עדינות אינסופית, חולמנות ורכות שגורמת לאחרים לרצות להגן עליך. כמו זיקית, אתה מסוגל לספוג ולהחזיר את האנרגיה של הסביבה, מה שמאפשר לך להשתלב בכל מצב חברתי. החזות הרכה הזו ממיסה התנגדויות ופותחת דלתות דרך אמפתיה, גם אם בפנים אתה חש סערה.'),
+
+-- ==========================================
+-- פרק 4: אסטרולוגיה סינית
+-- ==========================================
+('chinese_zodiac', 'חולדה', 'מזל חולדה: תושייה, שפע וחוכמת הישרדות', 
+'<strong>תקציר בסיסי:</strong> פיקחות, כושר הסתגלות וקסם אישי. מחשבה מהירה ויכולת הישרדות גבוהה.<br><br>
+<strong>ניתוח עומק מורחב:</strong> על פי האסטרולוגיה הסינית העתיקה, החולדה פותחת את גלגל המזלות בזכות הפיקחות המדהימה שלה. נולדת עם אינטליגנציה מעשית יוצאת דופן ורדאר מדויק להזדמנויות. אתה שורד אולטימטיבי שיודע לחלץ את עצמו (ואת אהוביו) מכל צרה. למרות החזות החומרנית לעיתים, המשפחה והמסורת הם קודש הקודשים עבורך. עבודת הנפש שלך היא ללמוד לא לחשוש ממחסור, ולהחליף את הפחד הקיומי באמונה בשפע של היקום.'),
+
+('chinese_zodiac', 'שור', 'מזל שור: כוח התמדה, אמינות ושורשים', 
+'<strong>תקציר בסיסי:</strong> כוח, התמדה ואמינות. יציבות עמוקה, סבלנות ומוסר עבודה גבוה.<br><br>
+<strong>ניתוח עומק מורחב:</strong> השור הסיני הוא עמוד התווך של הקהילה. אתה מביא לעולם תדר של כוח פנימי שקט, סיבולת אדירה ואמינות שעליה אפשר לבנות חיים שלמים. אתה מאמין בעבודה קשה ללא קיצורי דרך ומתעב שקרים או תחבולות. הנאמנות שלך היא מוחלטת, ולכן פגיעה באמון שלך היא כמעט בלתי הפיכה. המסע הרוחני שלך דורש ממך ללמוד להרפות מאחיזת הברזל שלך באמונות ישנות, ולשלב גמישות בתוך המערכת הנוקשה שבנית.'),
+
+('chinese_zodiac', 'נמר', 'מזל נמר: אש התשוקה, אומץ ומרדנות', 
+'<strong>תקציר בסיסי:</strong> אומץ, תחרותיות ומנהיגות. אנרגיה דינמית, נועזות ורצון לפרוץ דרך.<br><br>
+<strong>ניתוח עומק מורחב:</strong> הנמר הוא סמל העוצמה הדינמית. נשמתך זקוקה לריגושים, לקרבות צדק ולמטרות גדולות מהחיים כדי להרגיש קיימת. אתה פועל מתוך תשוקה בוערת ולא מהסס לעמוד בקו החזית כשכולם בורחים. הכריזמה שלך סוחפת המונים, אך הנטייה שלך למרדנות ולפעולה מהירה עלולה לעלות לך ביוקר. התיקון העמוק שלך הוא לרסן את האימפולסיביות, ללמוד לחשוב לפני שאתה מסתער, ולהשתמש בכוח הפראי שלך כדי לבנות.'),
+
+('chinese_zodiac', 'ארנב', 'מזל ארנב: חסד, דיפלומטיה ושלווה', 
+'<strong>תקציר בסיסי:</strong> עדינות, אלגנטיות ורגישות. גישה דיפלומטית, נימוס וחיפוש אחר שלווה.<br><br>
+<strong>ניתוח עומק מורחב:</strong> הארנב נחשב לסמל המזל הטוב, השלום והאריכות ימים. אתה נושא עמך תדר של אלגנטיות נדירה וחוכמה חברתית שקטה. אתה קורא מצבים אנושיים בצורה מושלמת ויודע לחמוק מסכסוכים בחן ובתחכום. הבית שלך הוא המקדש המעוצב שלך. האתגר הנשמתי שלך הוא ההתמודדות עם הפחד מעימות. עליך ללמוד שלפעמים יש לעמוד על שלך באסרטיביות כדי להגן על מה שיקר לך, ולא לברוח למחוזות של אסקפיזם.'),
+
+('chinese_zodiac', 'דרקון', 'מזל דרקון: עוצמה מיסטית, מזל וכריזמה', 
+'<strong>תקציר בסיסי:</strong> כריזמה, כוח ומזל. שאפתנות גבוהה, נוכחות בולטת ויכולת הובלה.<br><br>
+<strong>ניתוח עומק מורחב:</strong> הדרקון הוא החיה המיתולוגית היחידה בגלגל, ומביא תדר קסום, עוצמתי ובלתי מנוצח. נולדת עם תחושת ייעוד עמוקה, ביטחון עצמי טבעי ויכולת להוביל שינויים טקטוניים. אנשים נמשכים לאנרגיה המחוללת שאתה מקרין. ואולם, העוצמה הזו מגיעה עם מחיר של גאווה. העבודה הקרמתית של הדרקון היא לטפח סבלנות וענווה מול פגמיהם של אחרים, ולכוון את השאפתנות הכבירה שלו לעשיית טוב אוניברסלי.'),
+
+('chinese_zodiac', 'נחש', 'מזל נחש: חוכמת הסוד, מסתורין ואלגנטיות', 
+'<strong>תקציר בסיסי:</strong> חוכמה, אינטואיציה ומסתוריות. עומק מחשבתי, רגישות לסביבה ותכנון מוקפד.<br><br>
+<strong>ניתוח עומק מורחב:</strong> הנחש הסיני מייצג פילוסופיה עמוקה, אסטרטגיה מחושבת ויכולות מיסטיות. אתה פועל מהצללים, מתבונן וסופג מידע הרבה לפני שאתה חושף את מהלכיך. אתה סומך אך ורק על תחושות הבטן שלך וניחן בקסם חושני ומהפנט. האתגר העמוק שלך טמון בשליטה העצמית הנוקשה ובחשדנות הטבעית כלפי זרים. התיקון שלך הוא ללמוד לתת אמון, להשתחרר מדפוסי קנאה ורכושנות, ולהשיל את העור הישן כדי לאפשר ריפוי.'),
+
+('chinese_zodiac', 'סוס', 'מזל סוס: חופש, מרץ ושמחת חיים', 
+'<strong>תקציר בסיסי:</strong> מרץ, עצמאות ואהבת חופש. פעילות מתמדת, הרפתקנות ורוח חופשייה.<br><br>
+<strong>ניתוח עומק מורחב:</strong> הסוס מסמל תנועה קדימה שאינה נעצרת לעולם. יש בך אהבת חיים מידבקת, ספונטניות משחררת וצורך בלתי פוסק לחוות, לנוע ולכבוש פסגות חדשות. אתה עובד קשה אבל יודע לחגוג את החיים עד תום. הקושי המרכזי שלך הוא בהתחייבויות ארוכות טווח ובשגרה המאיימת לחנוק את רוחך החופשית. המשימה שלך היא ללמוד שחירות אמיתית מושגת דרך משמעת פנימית וסיום משימות שהתחלת.'),
+
+('chinese_zodiac', 'עז', 'מזל עז: נשמת האמן, רוך ואמפתיה', 
+'<strong>תקציר בסיסי:</strong> יצירתיות, רוגע ואמפתיה. נשמה אמנותית, סבלנות והבנה רגשית עמוקה.<br><br>
+<strong>ניתוח עומק מורחב:</strong> העז מביאה לעולם תדר של אמנות, רוך וקשר עמוק לעולמות הרוח והטבע. אתה ניחן ביכולת מופלאה לסלוח, לדמיין ולברוא מציאות דרך אינטואיציה עדינה וחסד. הקצב שלך שונה, איטי ומהורהר יותר. האתגר הגדול של העז הוא הנטייה לדאגנות יתר, לתלות רגשית בפלטפורמות חיצוניות ולפסימיות. התיקון שלך דורש פיתוח עמוד שדרה פנימי וידיעה עמוקה שהרכות שלך היא העוצמה הגדולה ביותר שלך.'),
+
+('chinese_zodiac', 'קוף', 'מזל קוף: ניצוץ הגאונות, האלתור וההומור', 
+'<strong>תקציר בסיסי:</strong> אינטליגנציה, סקרנות ושובבות. יכולת אלתור ופתרון בעיות יצירתי.<br><br>
+<strong>ניתוח עומק מורחב:</strong> הקוף ניחן במוח אנליטי מבריק שלא מפסיק לחשב צעדים, ובקסם אישי שיכול לחלץ אותו מכל צרה. אתה יודע למצוא פתרונות יצירתיים למצבים בלתי אפשריים, ומביא קלילות והומור גם לסיטואציות הקשות ביותר. העולם עבורך הוא משחק שחמט מרתק. עם זאת, האתגר שלך הוא להימנע מתחבולות ולהפגין כנות אמיתית ויציבה. המסע שלך הוא להפוך את האלתור לחוכמה, ולייצר מחויבות כנה כלפי הסובבים אותך.'),
+
+('chinese_zodiac', 'תרנגול', 'מזל תרנגול: קול האמת, דיוק ופרפקציוניזם', 
+'<strong>תקציר בסיסי:</strong> ביטחון עצמי, חריצות וסדר. נטייה לארגון, דייקנות ותשומת לב לפרטים.<br><br>
+<strong>ניתוח עומק מורחב:</strong> התרנגול אוהב להתבלט, הוא עובד קשה, ישר מאוד ומקפיד על הופעה חיצונית נטולת רבב. הם מנהלים טבעיים שיודעים לארגן כל פרט קטן במערכת, ולא מהססים לומר את האמת בפרצוף, גם כשהיא לא נעימה לשמיעה. האתגר העמוק של התרנגול הוא לרכך את הביקורת. עליך ללמוד שפרפקציוניזם הוא אשליה, ולטפח ענווה וחמלה כדי שהביקורת שלך תבנה ותעצים אחרים במקום להרחיק אותם.'),
+
+('chinese_zodiac', 'כלב', 'מזל כלב: משמר הצדק, נאמנות וטוהר הלב', 
+'<strong>תקציר בסיסי:</strong> נאמנות, צדק והגנה. חברות אמתית, כנות ורצון לעזור לזולת.<br><br>
+<strong>ניתוח עומק מורחב:</strong> הכלב הוא אידאליסט בנשמתו, סמל לנאמנות ללא תנאי ולחוש צדק חברתי מפותח. אתה מונע מהרצון לתקן את העולם, להגן על החלשים ולהיות חבר אמיתי בעת צרה. אין בך זיוף, ואתה מעדיף אמת כואבת על פני שקר מנחם. האתגר הרוחני של הכלב הוא ההתמודדות עם אכזבות מהטבע האנושי, המובילות לעיתים לחרדה ודאגנות. התיקון שלך הוא לפתח אמונה בעולם גם כשהוא לא מושלם, ולהפנות את החמלה גם לעצמך.'),
+
+('chinese_zodiac', 'חזיר', 'מזל חזיר: שפע, נדיבות וסליחה טהורה', 
+'<strong>תקציר בסיסי:</strong> טוב לב, כנות ושפע. אופי נדיב, סבלני ואוהב שלום והרמוניה.<br><br>
+<strong>ניתוח עומק מורחב:</strong> החזיר מסיים את גלגל המזלות הסיני במפגן של שפע, נדיבות וטוב לב טהור. אתה חף ממניפולציות, אוהב את הנאות החיים הפשוטות, וניחן בסובלנות אינסופית וביכולת לאחות קרעים. הנוכחות שלך מביאה מזל וברכה למי שנמצא בקרבתך. הסכנה הגדולה שלך היא תמימות יתר שמאפשרת לאחרים לנצל את נדיבותך. התיקון העמוק שלך הוא ללמוד להגיד "לא", להציב גבולות ברורים, ולהבין ששמירה על האנרגיה שלך היא הכרח קיומי.');
