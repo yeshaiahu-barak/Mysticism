@@ -612,7 +612,7 @@
         }
 
         // ==========================================
-        // דוח עמוק - חישוב ותצוגה (מבוסס שרת)
+        // דוח עמוק - חישוב ותצוגה (מבוסס שרת + ספר היצירה)
         // ==========================================
         async function runDeepReportCalculation() {
             const fName = document.getElementById('firstName').value.trim();
@@ -715,7 +715,8 @@
                     if (item.val) {
                         let g = calcGematria(item.val); let n = calcNumerology(g);
                         let nDesc = deepDict[n.toString()] || numerologyTexts[n];
-                        namesHtml += `<div class="result-item" style="border-right-color: var(--premium-color);">
+                        namesHtml += `
+                        <div class="result-item" style="border-right-color: var(--premium-color);">
                             <h4 style="color: var(--premium-color);">${item.label}: ${item.val} (${g})</h4>
                             <p><strong>מספר נומרולוגי: ${n}</strong></p>
                             <p class="light-text">${nDesc}</p>
@@ -726,7 +727,8 @@
                 let totGematria = calcGematria(fName + (mName||"") + lName + (eName||""));
                 let totNum = calcNumerology(totGematria);
                 let totDesc = deepDict[totNum.toString()] || numerologyTexts[totNum];
-                namesHtml += `<div class="result-item" style="border-right-color: var(--premium-color);">
+                namesHtml += `
+                <div class="result-item" style="border-right-color: var(--premium-color);">
                     <h4 style="color: var(--premium-color);">כל השמות יחד (${totGematria})</h4>
                     <p><strong>מספר נומרולוגי: ${totNum}</strong></p>
                     <p class="light-text">${totDesc}</p>
@@ -735,7 +737,8 @@
                 let dParts = dateVal.split('-');
                 let dateNumValue = calcNumerology(calcNumFromDigits(dateVal));
                 let dateDesc = deepDict[dateNumValue.toString()] || numerologyTexts[dateNumValue];
-                namesHtml += `<div class="result-item" style="border-right-color: var(--premium-color);">
+                namesHtml += `
+                <div class="result-item" style="border-right-color: var(--premium-color);">
                     <h4 style="color: var(--premium-color);">מספר מזל: ${dParts[2]}/${dParts[1]}/${dParts[0]}</h4>
                     <p><strong>מספר נומרולוגי: ${dateNumValue}</strong></p>
                     <p class="light-text">${dateDesc}</p>
@@ -744,7 +747,8 @@
                 if (phone) {
                     let pNum = calcNumerology(calcNumFromDigits(phone));
                     let pDesc = deepDict[pNum.toString()] || numerologyTexts[pNum];
-                    namesHtml += `<div class="result-item" style="border-right-color: var(--premium-color);">
+                    namesHtml += `
+                    <div class="result-item" style="border-right-color: var(--premium-color);">
                         <h4 style="color: var(--premium-color);">מספר תקשורת: ${phone}</h4>
                         <p><strong>מספר נומרולוגי: ${pNum}</strong></p>
                         <p class="light-text">${pDesc}</p>
@@ -754,14 +758,47 @@
                 if (idNumber) {
                     let idNumValue = calcNumerology(calcNumFromDigits(idNumber));
                     let idDesc = deepDict[idNumValue.toString()] || numerologyTexts[idNumValue];
-                    namesHtml += `<div class="result-item" style="border-right-color: var(--premium-color);">
+                    namesHtml += `
+                    <div class="result-item" style="border-right-color: var(--premium-color);">
                         <h4 style="color: var(--premium-color);">מספר זהות: ${idNumber}</h4>
                         <p><strong>מספר נומרולוגי: ${idNumValue}</strong></p>
                         <p class="light-text">${idDesc}</p>
                     </div>`;
                 }
 
-                document.getElementById('resNamesNum').innerHTML = namesHtml;
+                // ==========================================
+                // תוספת מיוחדת: סוד האותיות מספר היצירה (כולל שם משפחה)
+                // ==========================================
+                let lettersHtml = `
+                <div class="result-section" style="margin-top: 35px;">
+                    <h3 style="color: var(--premium-color); border-bottom: 2px solid var(--premium-color); padding-bottom: 5px; text-align: right;">סוד האותיות: חוכמת ספר היצירה בשמך</h3>
+                    <p style="margin-bottom: 15px; color: #555; text-align: right;">ניתוח מהותן של האותיות המרכיבות את שמך הפרטי ושם משפחתך, החושפות את כוחות הנפש הפנימיים שלך.</p>
+                `;
+                
+                // 1. מחברים את השם הפרטי ושם המשפחה יחד
+                let combinedNames = fName + lName;
+                
+                // 2. מנקים רווחים ותווים שאינם אותיות בעברית
+                let cleanNames = combinedNames.replace(/[^א-ת]/g, ''); 
+                
+                // 3. מסננים כפילויות כדי לא להציג את אותה אות פעמיים
+                let uniqueLetters = [...new Set(cleanNames.split(''))];
+                
+                // 4. מריצים את הלולאה על האותיות הייחודיות
+                for (let i = 0; i < uniqueLetters.length; i++) {
+                    let char = uniqueLetters[i];
+                    let letterDesc = deepDict[char] || "אות זו נושאת תדר אנרגטי פנימי הייחודי לשורש נשמתך.";
+                    
+                    lettersHtml += `
+                    <div class="result-item" style="border-right-color: var(--premium-color); background-color: #faf5fc; margin-bottom: 10px; padding: 12px;">
+                        <h4 style="color: var(--premium-color); margin-bottom: 5px; font-size: 1.15em;">האות ${char}'</h4>
+                        <p class="light-text" style="margin: 0; line-height: 1.6;">${letterDesc}</p>
+                    </div>`;
+                }
+                lettersHtml += `</div>`;
+                // ==========================================
+                
+                document.getElementById('resNamesNum').innerHTML = namesHtml + lettersHtml;
                 document.getElementById('resName').innerText = `${fName} ${lName}`;
                 document.getElementById('results').style.display = 'block';
 
@@ -774,16 +811,39 @@
         }
 
         // ==========================================
-        // פונקציית שיתוף לוואטסאפ
+        // פונקציית שיתוף לוואטסאפ (עם תמיכה בדוחות עמוקים וארוכים)
         // ==========================================
-        function executeWhatsAppShare() {
+        async function executeWhatsAppShare() {
             const phone = document.getElementById('phone').value.trim();
             if (!phone) return alert("אנא הזן מספר טלפון לשיתוף.");
-            window.location.href = `whatsapp://send?phone=${phone.replace(/^0/, '972').replace(/\D/g, '')}&text=${encodeURIComponent(document.getElementById('contentToPrint').innerText)}`;
-        }
+            
+            // שאיבת הטקסט המלא של הדוח
+            const reportText = document.getElementById('contentToPrint').innerText;
+            const cleanPhone = phone.replace(/^0/, '972').replace(/\D/g, '');
 
+            // בודקים אם הדוח ארוך ממגבלת התווים המותרת בקישור (כ-2500 תווים)
+            if (reportText.length > 2500) {
+                try {
+                    // העתקה חכמה ללוח ההעתקות של המכשיר
+                    await navigator.clipboard.writeText(reportText);
+                    
+                    // התראת הדרכה למשתמש
+                    alert("הדוח העמוק מלא בתוכן עשיר ולכן הועתק אוטומטית ללוח שלך!\n\nמיד תועבר לוואטסאפ - פשוט לחץ 'הדבק' (Paste) בשורת ההודעה כדי לשלוח אותו ללקוח.");
+                    
+                    // פתיחת חלון השיחה מול הלקוח (ללא הטקסט בקישור, כדי למנוע קריסה)
+                    window.location.href = `whatsapp://send?phone=${cleanPhone}`;
+                } catch (err) {
+                    // גיבוי במקרה שהדפדפן חוסם העתקה אוטומטית
+                    alert("הדוח ארוך מאוד ולא הצלחנו להעתיק אותו אוטומטית. אנא השתמש בכפתור הורדת ה-PDF ושלח את הקובץ ללקוח.");
+                }
+            } else {
+                // אם זה דוח קצר, שולחים את הטקסט ישירות בקישור כמו פעם
+                window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(reportText)}`;
+            }
+        }
+        
         // ==========================================
-        // PWA - רישום האפליקציה והתקנה (עם הגנת כפילויות)
+        // PWA - רישום האפליקציה והתקנה
         // ==========================================
         
         if ('serviceWorker' in navigator) {
