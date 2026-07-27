@@ -811,14 +811,37 @@
         }
 
         // ==========================================
-        // פונקציית שיתוף לוואטסאפ
+        // פונקציית שיתוף לוואטסאפ (עם תמיכה בדוחות עמוקים וארוכים)
         // ==========================================
-        function executeWhatsAppShare() {
+        async function executeWhatsAppShare() {
             const phone = document.getElementById('phone').value.trim();
             if (!phone) return alert("אנא הזן מספר טלפון לשיתוף.");
-            window.location.href = `whatsapp://send?phone=${phone.replace(/^0/, '972').replace(/\D/g, '')}&text=${encodeURIComponent(document.getElementById('contentToPrint').innerText)}`;
-        }
+            
+            // שאיבת הטקסט המלא של הדוח
+            const reportText = document.getElementById('contentToPrint').innerText;
+            const cleanPhone = phone.replace(/^0/, '972').replace(/\D/g, '');
 
+            // בודקים אם הדוח ארוך ממגבלת התווים המותרת בקישור (כ-2500 תווים)
+            if (reportText.length > 2500) {
+                try {
+                    // העתקה חכמה ללוח ההעתקות של המכשיר
+                    await navigator.clipboard.writeText(reportText);
+                    
+                    // התראת הדרכה למשתמש
+                    alert("הדוח העמוק מלא בתוכן עשיר ולכן הועתק אוטומטית ללוח שלך!\n\nמיד תועבר לוואטסאפ - פשוט לחץ 'הדבק' (Paste) בשורת ההודעה כדי לשלוח אותו ללקוח.");
+                    
+                    // פתיחת חלון השיחה מול הלקוח (ללא הטקסט בקישור, כדי למנוע קריסה)
+                    window.location.href = `whatsapp://send?phone=${cleanPhone}`;
+                } catch (err) {
+                    // גיבוי במקרה שהדפדפן חוסם העתקה אוטומטית
+                    alert("הדוח ארוך מאוד ולא הצלחנו להעתיק אותו אוטומטית. אנא השתמש בכפתור הורדת ה-PDF ושלח את הקובץ ללקוח.");
+                }
+            } else {
+                // אם זה דוח קצר, שולחים את הטקסט ישירות בקישור כמו פעם
+                window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(reportText)}`;
+            }
+        }
+        
         // ==========================================
         // PWA - רישום האפליקציה והתקנה
         // ==========================================
