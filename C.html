@@ -551,11 +551,30 @@
                 let birthYear = dateObj.getFullYear();
                 let chineseAnimal = getChineseZodiac(birthYear);
 
+                // --- חישוב ימי השבוע (לועזי ועברי) ותיאור השעה ---
+                const daysHebrewArr = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+                let gregDayName = daysHebrewArr[dateObj.getDay()];
+                let hebDayName = daysHebrewArr[birthDt.getDay()]; 
+
+                let h = parseInt(timeVal.split(':')[0]);
+                let timeDesc = "";
+                if (h >= 5 && h < 12) timeDesc = "בבוקר";
+                else if (h >= 12 && h < 17) timeDesc = "בצהריים";
+                else if (h >= 17 && h < 20) timeDesc = "לפנות ערב";
+                else timeDesc = "בלילה / לפנות בוקר";
+
+                let exactDayString = "";
+                if (isAfterSunset) {
+                    exactDayString = `אור ליום ${hebDayName} בשבוע, בשעה ${timeVal} ${timeDesc}`;
+                } else {
+                    exactDayString = `ביום ${hebDayName} בשבוע, בשעה ${timeVal} ${timeDesc}`;
+                }
+
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date">
                         <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
                         <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong> <span style="font-weight: bold; font-size: 1.5em;">[${hebrewYearOnly}]</span></p>
-                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">(הלידה התרחשה בשעה ${timeVal} ${isAfterSunset ? 'לאחר השקיעה' : 'לפני השקיעה'} בעיר ${city})</p>
+                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">הלידה התרחשה <strong>${exactDayString}</strong> (לפי השעון הלועזי: יום ${gregDayName}), בעיר ${city}.</p>
                     </div>
                     <div class="result-item result-zodiac">
                         <h4>מזל שמש: ${sunSign.name}</h4><p class="light-text">${sunSign.desc}</p>
@@ -683,6 +702,25 @@
                 let birthYear = dateObj.getFullYear();
                 let chineseAnimal = getChineseZodiac(birthYear);
 
+                // --- חישוב ימי השבוע (לועזי ועברי) ותיאור השעה ---
+                const daysHebrewArr = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
+                let gregDayName = daysHebrewArr[dateObj.getDay()];
+                let hebDayName = daysHebrewArr[birthDt.getDay()]; 
+
+                let h = parseInt(timeVal.split(':')[0]);
+                let timeDesc = "";
+                if (h >= 5 && h < 12) timeDesc = "בבוקר";
+                else if (h >= 12 && h < 17) timeDesc = "בצהריים";
+                else if (h >= 17 && h < 20) timeDesc = "לפנות ערב";
+                else timeDesc = "בלילה / לפנות בוקר";
+
+                let exactDayString = "";
+                if (isAfterSunset) {
+                    exactDayString = `אור ליום ${hebDayName} בשבוע, בשעה ${timeVal} ${timeDesc}`;
+                } else {
+                    exactDayString = `ביום ${hebDayName} בשבוע, בשעה ${timeVal} ${timeDesc}`;
+                }
+
                 let deepSunDesc = deepDict[sunSign.name] || sunSign.desc;
                 let deepAscDesc = deepDict[ascendant] || ascendantTexts[ascendant];
                 let deepChineseDesc = deepDict[chineseAnimal] || chineseZodiacTexts[chineseAnimal];
@@ -692,7 +730,7 @@
                         <h3 style="color: var(--premium-color); margin-top: 0;">דוח מיסטי עמוק (פרימיום)</h3>
                         <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
                         <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong> <span style="font-weight: bold; font-size: 1.5em;">[${hebrewYearOnly}]</span></p>
-                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">(הלידה התרחשה בשעה ${timeVal} ${isAfterSunset ? 'לאחר השקיעה' : 'לפני השקיעה'} בעיר ${city})</p>
+                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">הלידה התרחשה <strong>${exactDayString}</strong> (לפי השעון הלועזי: יום ${gregDayName}), בעיר ${city}.</p>
                     </div>
                     <div class="result-item result-zodiac" style="border-right-color: var(--premium-color);">
                         <h4 style="color: var(--premium-color);">מזל שמש: ${sunSign.name}</h4><p class="light-text">${deepSunDesc}</p>
@@ -767,7 +805,7 @@
                 }
 
                 // ==========================================
-                // תוספת מיוחדת: סוד האותיות מספר היצירה (כולל שם משפחה)
+                // תוספת מיוחדת: סוד האותיות מספר היצירה (כולל שם משפחה ללא כפילויות)
                 // ==========================================
                 let lettersHtml = `
                 <div class="result-section" style="margin-top: 35px;">
@@ -775,16 +813,10 @@
                     <p style="margin-bottom: 15px; color: #555; text-align: right;">ניתוח מהותן של האותיות המרכיבות את שמך הפרטי ושם משפחתך, החושפות את כוחות הנפש הפנימיים שלך.</p>
                 `;
                 
-                // 1. מחברים את השם הפרטי ושם המשפחה יחד
                 let combinedNames = fName + lName;
-                
-                // 2. מנקים רווחים ותווים שאינם אותיות בעברית
                 let cleanNames = combinedNames.replace(/[^א-ת]/g, ''); 
-                
-                // 3. מסננים כפילויות כדי לא להציג את אותה אות פעמיים
                 let uniqueLetters = [...new Set(cleanNames.split(''))];
                 
-                // 4. מריצים את הלולאה על האותיות הייחודיות
                 for (let i = 0; i < uniqueLetters.length; i++) {
                     let char = uniqueLetters[i];
                     let letterDesc = deepDict[char] || "אות זו נושאת תדר אנרגטי פנימי הייחודי לשורש נשמתך.";
@@ -797,7 +829,7 @@
                 }
                 lettersHtml += `</div>`;
                 // ==========================================
-                
+
                 document.getElementById('resNamesNum').innerHTML = namesHtml + lettersHtml;
                 document.getElementById('resName').innerText = `${fName} ${lName}`;
                 document.getElementById('results').style.display = 'block';
@@ -811,37 +843,28 @@
         }
 
         // ==========================================
-        // פונקציית שיתוף לוואטסאפ (עם תמיכה בדוחות עמוקים וארוכים)
+        // פונקציית שיתוף לוואטסאפ (עם מעקף לדוחות ארוכים)
         // ==========================================
         async function executeWhatsAppShare() {
             const phone = document.getElementById('phone').value.trim();
             if (!phone) return alert("אנא הזן מספר טלפון לשיתוף.");
             
-            // שאיבת הטקסט המלא של הדוח
             const reportText = document.getElementById('contentToPrint').innerText;
             const cleanPhone = phone.replace(/^0/, '972').replace(/\D/g, '');
 
-            // בודקים אם הדוח ארוך ממגבלת התווים המותרת בקישור (כ-2500 תווים)
             if (reportText.length > 2500) {
                 try {
-                    // העתקה חכמה ללוח ההעתקות של המכשיר
                     await navigator.clipboard.writeText(reportText);
-                    
-                    // התראת הדרכה למשתמש
                     alert("הדוח העמוק מלא בתוכן עשיר ולכן הועתק אוטומטית ללוח שלך!\n\nמיד תועבר לוואטסאפ - פשוט לחץ 'הדבק' (Paste) בשורת ההודעה כדי לשלוח אותו ללקוח.");
-                    
-                    // פתיחת חלון השיחה מול הלקוח (ללא הטקסט בקישור, כדי למנוע קריסה)
                     window.location.href = `whatsapp://send?phone=${cleanPhone}`;
                 } catch (err) {
-                    // גיבוי במקרה שהדפדפן חוסם העתקה אוטומטית
                     alert("הדוח ארוך מאוד ולא הצלחנו להעתיק אותו אוטומטית. אנא השתמש בכפתור הורדת ה-PDF ושלח את הקובץ ללקוח.");
                 }
             } else {
-                // אם זה דוח קצר, שולחים את הטקסט ישירות בקישור כמו פעם
                 window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(reportText)}`;
             }
         }
-        
+
         // ==========================================
         // PWA - רישום האפליקציה והתקנה
         // ==========================================
