@@ -813,7 +813,7 @@
                 }
 
                 // ==========================================
-                // תוספת מיוחדת: סוד האותיות מספר היצירה (כולל כל השמות, ללא כפילויות)
+                // תוספת מיוחדת: סוד האותיות מספר היצירה (כולל כל השמות, ללא כפילויות, עם שיוך קוסמי ממסד הנתונים)
                 // ==========================================
                 let lettersHtml = `
                 <div class="result-section" style="margin-top: 35px;">
@@ -826,13 +826,26 @@
                 let cleanNames = combinedNames.replace(/[^א-ת]/g, ''); 
                 let uniqueLetters = [...new Set(cleanNames.split(''))];
                 
+                // המרת אותיות סופיות כדי שיתאימו למפתח במסד הנתונים
+                const finalLetters = {'ך':'כ', 'ם':'מ', 'ן':'נ', 'ף':'פ', 'ץ':'צ'};
+
                 for (let i = 0; i < uniqueLetters.length; i++) {
                     let char = uniqueLetters[i];
-                    let letterDesc = deepDict[char] || "אות זו נושאת תדר אנרגטי פנימי הייחודי לשורש נשמתך.";
                     
+                    // המרה לאות רגילה אם מדובר באות סופית
+                    let regularChar = finalLetters[char] ? finalLetters[char] : char;
+                    
+                    // משיכת תיאור האות מהמסד נתונים
+                    let letterDesc = deepDict[regularChar] || "אות זו נושאת תדר אנרגטי פנימי הייחודי לשורש נשמתך.";
+                    
+                    // משיכת השיוך הקוסמי מהמסד נתונים (מבוסס על מפתח cosmic_א וכו')
+                    let cosmicAssoc = deepDict['cosmic_' + regularChar] || '';
+                    let cosmicHtml = cosmicAssoc ? `<span style="display:inline-block; background:#e8daef; color:#5b2c6f; padding:3px 8px; border-radius:4px; font-size:0.85em; margin-bottom:8px; font-weight:bold;">שיוך קוסמי: ${cosmicAssoc}</span><br>` : '';
+
                     lettersHtml += `
                     <div class="result-item" style="border-right-color: var(--premium-color); background-color: #faf5fc; margin-bottom: 10px; padding: 12px;">
                         <h4 style="color: var(--premium-color); margin-bottom: 5px; font-size: 1.15em;">האות ${char}'</h4>
+                        ${cosmicHtml}
                         <p class="light-text" style="margin: 0; line-height: 1.6;">${letterDesc}</p>
                     </div>`;
                 }
