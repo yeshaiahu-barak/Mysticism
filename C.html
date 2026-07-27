@@ -571,11 +571,14 @@
                     exactDayString = `ביום ${hebDayName} בשבוע, בשעה ${timeVal} ${timeDesc}`;
                 }
 
+                // הצגת יום לועזי רק אם הוא שונה מהיום העברי (כדי למנוע כפילות מיותרת)
+                let gregNote = (gregDayName !== hebDayName) ? ` (לפי השעון הלועזי: יום ${gregDayName})` : ``;
+
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date">
                         <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
                         <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong> <span style="font-weight: bold; font-size: 1.5em;">[${hebrewYearOnly}]</span></p>
-                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">הלידה התרחשה <strong>${exactDayString}</strong> (לפי השעון הלועזי: יום ${gregDayName}), בעיר ${city}.</p>
+                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">הלידה התרחשה <strong>${exactDayString}</strong>${gregNote}, בעיר ${city}.</p>
                     </div>
                     <div class="result-item result-zodiac">
                         <h4>מזל שמש: ${sunSign.name}</h4><p class="light-text">${sunSign.desc}</p>
@@ -723,6 +726,9 @@
                     exactDayString = `ביום ${hebDayName} בשבוע, בשעה ${timeVal} ${timeDesc}`;
                 }
 
+                // הצגת יום לועזי רק אם הוא שונה מהיום העברי
+                let gregNote = (gregDayName !== hebDayName) ? ` (לפי השעון הלועזי: יום ${gregDayName})` : ``;
+
                 let deepSunDesc = deepDict[sunSign.name] || sunSign.desc;
                 let deepAscDesc = deepDict[ascendant] || ascendantTexts[ascendant];
                 let deepChineseDesc = deepDict[chineseAnimal] || chineseZodiacTexts[chineseAnimal];
@@ -732,7 +738,7 @@
                         <h3 style="color: var(--premium-color); margin-top: 0;">דוח מיסטי עמוק (פרימיום)</h3>
                         <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
                         <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong> <span style="font-weight: bold; font-size: 1.5em;">[${hebrewYearOnly}]</span></p>
-                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">הלידה התרחשה <strong>${exactDayString}</strong> (לפי השעון הלועזי: יום ${gregDayName}), בעיר ${city}.</p>
+                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">הלידה התרחשה <strong>${exactDayString}</strong>${gregNote}, בעיר ${city}.</p>
                     </div>
                     <div class="result-item result-zodiac" style="border-right-color: var(--premium-color);">
                         <h4 style="color: var(--premium-color);">מזל שמש: ${sunSign.name}</h4><p class="light-text">${deepSunDesc}</p>
@@ -807,15 +813,16 @@
                 }
 
                 // ==========================================
-                // תוספת מיוחדת: סוד האותיות מספר היצירה (כולל שם משפחה ללא כפילויות)
+                // תוספת מיוחדת: סוד האותיות מספר היצירה (כולל כל השמות, ללא כפילויות)
                 // ==========================================
                 let lettersHtml = `
                 <div class="result-section" style="margin-top: 35px;">
                     <h3 style="color: var(--premium-color); border-bottom: 2px solid var(--premium-color); padding-bottom: 5px; text-align: right;">סוד האותיות: חוכמת ספר היצירה בשמך</h3>
-                    <p style="margin-bottom: 15px; color: #555; text-align: right;">ניתוח מהותן של האותיות המרכיבות את שמך הפרטי ושם משפחתך, החושפות את כוחות הנפש הפנימיים שלך.</p>
+                    <p style="margin-bottom: 15px; color: #555; text-align: right;">ניתוח מהותן של האותיות המרכיבות את שמותיך, החושפות את כוחות הנפש הפנימיים שלך.</p>
                 `;
                 
-                let combinedNames = fName + lName;
+                // חיבור כל השמות שהוזנו
+                let combinedNames = fName + mName + lName + eName;
                 let cleanNames = combinedNames.replace(/[^א-ת]/g, ''); 
                 let uniqueLetters = [...new Set(cleanNames.split(''))];
                 
