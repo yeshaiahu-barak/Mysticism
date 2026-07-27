@@ -22,6 +22,8 @@
             --text-color: #2c3e50;
             --border-color: #ccd1d9;
             --ios-color: #007aff;
+            --premium-color: #8e44ad;
+            --premium-bg: #f5eef8;
         }
 
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); padding: 20px; line-height: 1.6; color: var(--text-color); }
@@ -79,6 +81,7 @@
         
         .premium-btn { background-color: var(--accent-color); color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s;}
         .premium-btn:hover { background-color: var(--accent-dark); }
+        .premium-btn:disabled { background-color: #f5cba7; cursor: not-allowed; }
         
         #results { margin-top: 30px; display: none; }
         #contentToPrint { background-color: #ffffff; padding: 20px; border: 2px solid #ecf0f1; border-radius: 8px; }
@@ -103,12 +106,13 @@
         .status-offline { background-color: #f8d7da; color: #721c24; display: block !important; }
 
         @media print {
-            body { background-color: white; padding: 0; }
-            .container { box-shadow: none; padding: 0; }
+            body { background-color: white; padding: 0; color: #000; }
+            .container { box-shadow: none; padding: 0; max-width: 100%; }
             .form-row, h1, .action-buttons-top, .actions, #loadingMsg, #networkStatus, #installBanner, #iosInstallBanner { display: none !important; }
             #results { display: block !important; border: none; margin: 0; padding: 0; }
-            #contentToPrint { border: none; padding: 0; }
-            .result-item { page-break-inside: avoid; border-right: 4px solid black; text-align: justify; }
+            #contentToPrint { border: none; padding: 0; background: white; }
+            .result-item { page-break-inside: avoid; border-right: 4px solid #2c3e50 !important; background: #fdfdfd !important; padding: 12px; margin-bottom: 10px; box-shadow: none; text-align: justify; }
+            h3, h4 { color: #000 !important; }
         }
     </style>
 </head>
@@ -117,10 +121,7 @@
     <div class="container">
         <div id="networkStatus">מצב אופליין: אין חיבור לאינטרנט. הפעולות נשמרות מקומית.</div>
         
-        <!-- באנר התקנה דינמי לאנדרואיד ולמחשב -->
         <div id="installBanner" onclick="installApp()">📲 התקן את האפליקציה על המכשיר שלך לחוויה מהירה ומושלמת</div>
-        
-        <!-- באנר הדרכה מיוחד למשתמשי אייפון (iOS) -->
         <div id="iosInstallBanner">🍏 להתקנת האפליקציה באייפון: לחץ על כפתור השיתוף (למטה) ובחר "הוסף למסך הבית"</div>
         
         <h1>הדוח המיסטי שלי</h1>
@@ -171,6 +172,9 @@
     </div>
 
     <script>
+        // ==========================================
+        // מילוני נתונים (גיבוי אופליין / דוח בסיסי)
+        // ==========================================
         const gematriaDict = {
             'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,
             'כ':20,'ך':20,'ל':30,'מ':40,'ם':40,'נ':50,'ן':50,'ס':60,'ע':70,
@@ -234,6 +238,9 @@
             "עז": "יצירתיות, רוגע ואמפתיה. נשמה אמנותית, סבלנות והבנה רגשית עמוקה."
         };
 
+        // ==========================================
+        // פונקציות תשתית ותקשורת שרת
+        // ==========================================
         async function fetchDynamicTexts() {
             if (!navigator.onLine || typeof supabaseClient === 'undefined') return;
             const COL_CATEGORY = 'category';     
@@ -331,6 +338,9 @@
             catch { return "Unknown"; }
         }
 
+        // ==========================================
+        // פונקציות חישוב טהורות
+        // ==========================================
         function calcGematria(word) {
             let sum = 0; if (!word) return 0;
             for (let i = 0; i < word.length; i++) { if (gematriaDict[word[i]]) sum += gematriaDict[word[i]]; }
@@ -417,10 +427,12 @@
             }
         });
 
+        // ==========================================
+        // הניתוב המרכזי לפעולות המשתמש
+        // ==========================================
         async function handleUserAction(actionType) {
             await writeToExperimentLog(actionType);
 
-            if (actionType === 'deep_report') { alert("הפקת דוח עמוק נמצאת עדיין בפיתוח."); return; }
             if (actionType === 'whatsapp_share') { executeWhatsAppShare(); return; }
             
             if (actionType === 'pdf_download') {
@@ -437,16 +449,15 @@
                 const originalTitle = document.title;
                 document.title = `${pFirstName}-${pLastName}${formattedDate}`;
                 
-                // פתיחת חלון ההדפסה ושמירת ה-PDF
                 window.print();
                 
-                // התיקון: השהיה של שנייה אחת (1000 אלפיות השנייה) לפני החזרת השם המקורי
                 setTimeout(() => {
                     document.title = originalTitle;
                 }, 1000);
                 
                 return;
             }
+
             const fName = document.getElementById('firstName').value.trim();
             const mName = document.getElementById('middleName').value.trim();
             const lName = document.getElementById('lastName').value.trim();
@@ -458,7 +469,7 @@
 
             if (!city) { city = "ירושלים"; }
 
-            if (actionType === 'basic_report') {
+            if (actionType === 'basic_report' || actionType === 'deep_report') {
                 if (!fName || !lName || !phone || !dateVal) { alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון ותאריך לידה."); return; }
                 const hebrewRegex = /^[\u0590-\u05FF\s'-]+$/;
                 if ((fName && !hebrewRegex.test(fName)) || (mName && !hebrewRegex.test(mName)) || 
@@ -470,10 +481,17 @@
                 if (!/^\d+$/.test(phone)) { alert("מספר טלפון חייב להכיל ספרות בלבד."); return; }
                 if (idNumber && !/^\d+$/.test(idNumber)) { alert("מספר תעודת זהות חייב להכיל ספרות בלבד."); return; }
 
-                runBasicReportCalculation();
+                if (actionType === 'basic_report') {
+                    runBasicReportCalculation();
+                } else {
+                    runDeepReportCalculation();
+                }
             }
         }
 
+        // ==========================================
+        // דוח בסיסי - חישוב ותצוגה
+        // ==========================================
         async function runBasicReportCalculation() {
             const fName = document.getElementById('firstName').value.trim();
             const mName = document.getElementById('middleName').value.trim();
@@ -486,6 +504,7 @@
             const idNumber = document.getElementById('idNumber').value.trim();
 
             document.getElementById('calcBtn').disabled = true;
+            document.querySelector('.premium-btn').disabled = true;
             document.getElementById('loadingMsg').style.display = 'block';
             document.getElementById('results').style.display = 'none';
 
@@ -529,12 +548,9 @@
                 let zIndex = getZodiacIndex(dateObj.getDate(), dateObj.getMonth() + 1);
                 let sunSign = zodiacSigns[zIndex];
                 let ascendant = calculateAscendant(zIndex, timeVal);
-                
-                // חישוב המזל הסיני
                 let birthYear = dateObj.getFullYear();
                 let chineseAnimal = getChineseZodiac(birthYear);
 
-                // הוספת הבלוק לתצוגה
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date">
                         <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
@@ -583,16 +599,183 @@
                     namesHtml += `<div class="result-item"><h4>מספר זהות: ${idNumber}</h4><p><strong>מספר נומרולוגי: ${idNumValue}</strong></p><p class="light-text">${numerologyTexts[idNumValue]}</p></div>`;
                 }
 
-                // --- הוספה חדשה: חוכמת האותיות על פי ספר היצירה ---
+                document.getElementById('resNamesNum').innerHTML = namesHtml;
+                document.getElementById('resName').innerText = `${fName} ${lName}`;
+                document.getElementById('results').style.display = 'block';
+
+            } catch (err) { alert("אירעה שגיאה בחישוב הנתונים: " + err.message); } 
+            finally { 
+                document.getElementById('calcBtn').disabled = false; 
+                document.querySelector('.premium-btn').disabled = false;
+                document.getElementById('loadingMsg').style.display = 'none'; 
+            }
+        }
+
+        // ==========================================
+        // דוח עמוק - חישוב ותצוגה (מבוסס שרת + ספר היצירה)
+        // ==========================================
+        async function runDeepReportCalculation() {
+            const fName = document.getElementById('firstName').value.trim();
+            const mName = document.getElementById('middleName').value.trim();
+            const lName = document.getElementById('lastName').value.trim();
+            const eName = document.getElementById('extraLastName').value.trim();
+            const dateVal = document.getElementById('birthDate').value;
+            const timeVal = document.getElementById('birthTime').value;
+            let city = document.getElementById('city').value.trim() || "ירושלים";
+            const phone = document.getElementById('phone').value.trim();
+            const idNumber = document.getElementById('idNumber').value.trim();
+
+            document.getElementById('calcBtn').disabled = true;
+            document.querySelector('.premium-btn').disabled = true;
+            document.getElementById('loadingMsg').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+
+            try {
+                if (!navigator.onLine) throw new Error("אין חיבור אינטרנט פעיל. נדרש חיבור מקוון לשליפת נתוני הדוח העמוק.");
+
+                const { data: deepData, error: deepError } = await supabaseClient.from('deep_report_texts').select('section_key, content');
+                if (deepError) throw deepError;
+                
+                let deepDict = {};
+                if (deepData) {
+                    deepData.forEach(item => {
+                        deepDict[item.section_key] = item.content;
+                    });
+                }
+
+                let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=5`);
+                let geoData = await geoRes.json();
+                if (geoData.length === 0) throw new Error("העיר לא נמצאה.");
+                let matchedGeo = geoData.find(item => item.display_name.toLowerCase().includes(city.toLowerCase())) || geoData[0];
+
+                let sunsetRes = await fetch(`https://api.sunrise-sunset.org/json?lat=${matchedGeo.lat}&lng=${matchedGeo.lon}&date=${dateVal}&formatted=0`);
+                let sunsetData = await sunsetRes.json();
+                let isAfterSunset = new Date(`${dateVal}T${timeVal}:00`) > new Date(sunsetData.results.sunset);
+
+                let birthDt = new Date(`${dateVal}T${timeVal}:00`);
+                if (isAfterSunset) birthDt.setDate(birthDt.getDate() + 1);
+
+                let hebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${birthDt.getFullYear()}&gm=${birthDt.getMonth()+1}&gd=${birthDt.getDate()}&g2h=1`);
+                let hebData = await hebRes.json();
+
+                let today = new Date();
+                let todayHebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${today.getFullYear()}&gm=${today.getMonth()+1}&gd=${today.getDate()}&g2h=1`);
+                let todayHebData = await todayHebRes.json();
+
+                let targetHy = todayHebData.hy;
+                let bdayCheckRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
+                let bdayCheckData = await bdayCheckRes.json();
+                let bdayGregorian = new Date(bdayCheckData.gy, bdayCheckData.gm - 1, bdayCheckData.gd);
+
+                if (bdayGregorian < today) {
+                    targetHy++;
+                    bdayCheckData = await (await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`)).json();
+                }
+
+                let hebrewYearOnly = bdayCheckData.hebrew ? "ה'" + bdayCheckData.hebrew.split(' ').pop().replace(/״/g, '"').replace(/׳/g, "'") : bdayCheckData.hy;
+                let nextBdayFormatted = `${bdayCheckData.gd}/${bdayCheckData.gm}/${bdayCheckData.gy}`;
+                let hebrewBdayFull = hebData.hebrew ? hebData.hebrew.replace(/״/g, '"').replace(/׳/g, "'") : hebData.hebrew;
+
+                let dateObj = new Date(dateVal);
+                let zIndex = getZodiacIndex(dateObj.getDate(), dateObj.getMonth() + 1);
+                let sunSign = zodiacSigns[zIndex];
+                let ascendant = calculateAscendant(zIndex, timeVal);
+                let birthYear = dateObj.getFullYear();
+                let chineseAnimal = getChineseZodiac(birthYear);
+
+                let deepSunDesc = deepDict[sunSign.name] || sunSign.desc;
+                let deepAscDesc = deepDict[ascendant] || ascendantTexts[ascendant];
+                let deepChineseDesc = deepDict[chineseAnimal] || chineseZodiacTexts[chineseAnimal];
+
+                document.getElementById('resAstro').innerHTML = `
+                    <div class="result-item result-date" style="border-right-color: var(--premium-color); background-color: var(--premium-bg);">
+                        <h3 style="color: var(--premium-color); margin-top: 0;">דוח מיסטי עמוק (פרימיום)</h3>
+                        <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
+                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong> <span style="font-weight: bold; font-size: 1.5em;">[${hebrewYearOnly}]</span></p>
+                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">(הלידה התרחשה בשעה ${timeVal} ${isAfterSunset ? 'לאחר השקיעה' : 'לפני השקיעה'} בעיר ${city})</p>
+                    </div>
+                    <div class="result-item result-zodiac" style="border-right-color: var(--premium-color);">
+                        <h4 style="color: var(--premium-color);">מזל שמש: ${sunSign.name}</h4><p class="light-text">${deepSunDesc}</p>
+                    </div>
+                    <div class="result-item result-zodiac" style="border-right-color: var(--premium-color);">
+                        <h4 style="color: var(--premium-color);">מזל אופק: ${ascendant}</h4><p class="light-text">${deepAscDesc}</p>
+                    </div>
+                    <div class="result-item result-zodiac" style="border-right-color: var(--premium-color);">
+                        <h4 style="color: var(--premium-color);">מזל סיני: ${chineseAnimal}</h4><p class="light-text">${deepChineseDesc}</p>
+                    </div>
+                `;
+
+                let namesHtml = "";
+                const namesList = [
+                    { label: "שם פרטי", val: fName }, { label: "שם פרטי נוסף", val: mName },
+                    { label: "שם משפחה", val: lName }, { label: "שם משפחה נוסף", val: eName }
+                ];
+
+                namesList.forEach(item => {
+                    if (item.val) {
+                        let g = calcGematria(item.val); let n = calcNumerology(g);
+                        let nDesc = deepDict[n.toString()] || numerologyTexts[n];
+                        namesHtml += `
+                        <div class="result-item" style="border-right-color: var(--premium-color);">
+                            <h4 style="color: var(--premium-color);">${item.label}: ${item.val} (${g})</h4>
+                            <p><strong>מספר נומרולוגי: ${n}</strong></p>
+                            <p class="light-text">${nDesc}</p>
+                        </div>`;
+                    }
+                });
+
+                let totGematria = calcGematria(fName + (mName||"") + lName + (eName||""));
+                let totNum = calcNumerology(totGematria);
+                let totDesc = deepDict[totNum.toString()] || numerologyTexts[totNum];
+                namesHtml += `
+                <div class="result-item" style="border-right-color: var(--premium-color);">
+                    <h4 style="color: var(--premium-color);">כל השמות יחד (${totGematria})</h4>
+                    <p><strong>מספר נומרולוגי: ${totNum}</strong></p>
+                    <p class="light-text">${totDesc}</p>
+                </div>`;
+
+                let dParts = dateVal.split('-');
+                let dateNumValue = calcNumerology(calcNumFromDigits(dateVal));
+                let dateDesc = deepDict[dateNumValue.toString()] || numerologyTexts[dateNumValue];
+                namesHtml += `
+                <div class="result-item" style="border-right-color: var(--premium-color);">
+                    <h4 style="color: var(--premium-color);">מספר מזל: ${dParts[2]}/${dParts[1]}/${dParts[0]}</h4>
+                    <p><strong>מספר נומרולוגי: ${dateNumValue}</strong></p>
+                    <p class="light-text">${dateDesc}</p>
+                </div>`;
+
+                if (phone) {
+                    let pNum = calcNumerology(calcNumFromDigits(phone));
+                    let pDesc = deepDict[pNum.toString()] || numerologyTexts[pNum];
+                    namesHtml += `
+                    <div class="result-item" style="border-right-color: var(--premium-color);">
+                        <h4 style="color: var(--premium-color);">מספר תקשורת: ${phone}</h4>
+                        <p><strong>מספר נומרולוגי: ${pNum}</strong></p>
+                        <p class="light-text">${pDesc}</p>
+                    </div>`;
+                }
+
+                if (idNumber) {
+                    let idNumValue = calcNumerology(calcNumFromDigits(idNumber));
+                    let idDesc = deepDict[idNumValue.toString()] || numerologyTexts[idNumValue];
+                    namesHtml += `
+                    <div class="result-item" style="border-right-color: var(--premium-color);">
+                        <h4 style="color: var(--premium-color);">מספר זהות: ${idNumber}</h4>
+                        <p><strong>מספר נומרולוגי: ${idNumValue}</strong></p>
+                        <p class="light-text">${idDesc}</p>
+                    </div>`;
+                }
+
+                // ==========================================
+                // תוספת מיוחדת: סוד האותיות מספר היצירה
+                // ==========================================
                 let lettersHtml = `
                 <div class="result-section" style="margin-top: 35px;">
                     <h3 style="color: var(--premium-color); border-bottom: 2px solid var(--premium-color); padding-bottom: 5px; text-align: right;">סוד האותיות: חוכמת ספר היצירה בשמך</h3>
                     <p style="margin-bottom: 15px; color: #555; text-align: right;">ניתוח מהותן של האותיות המרכיבות את שמך הפרטי, החושפות את כוחות הנפש הפנימיים שלך.</p>
                 `;
                 
-                // עוברים רק על השם הפרטי (fName), מסננים רווחים או תווים מיוחדים
                 let cleanFirstName = fName.replace(/[^א-ת]/g, ''); 
-                
                 for (let i = 0; i < cleanFirstName.length; i++) {
                     let char = cleanFirstName[i];
                     let letterDesc = deepDict[char] || "אות זו נושאת תדר אנרגטי פנימי הייחודי לשורש נשמתך.";
@@ -604,17 +787,23 @@
                     </div>`;
                 }
                 lettersHtml += `</div>`;
+                // ==========================================
 
-                // חיבור והדפסה למסך של שני החלקים (נומרולוגיה + ספר היצירה)
                 document.getElementById('resNamesNum').innerHTML = namesHtml + lettersHtml;
-                
                 document.getElementById('resName').innerText = `${fName} ${lName}`;
                 document.getElementById('results').style.display = 'block';
 
             } catch (err) { alert("אירעה שגיאה בחישוב הנתונים: " + err.message); } 
-            finally { document.getElementById('calcBtn').disabled = false; document.getElementById('loadingMsg').style.display = 'none'; }
+            finally { 
+                document.getElementById('calcBtn').disabled = false; 
+                document.querySelector('.premium-btn').disabled = false;
+                document.getElementById('loadingMsg').style.display = 'none'; 
+            }
         }
 
+        // ==========================================
+        // פונקציית שיתוף לוואטסאפ
+        // ==========================================
         function executeWhatsAppShare() {
             const phone = document.getElementById('phone').value.trim();
             if (!phone) return alert("אנא הזן מספר טלפון לשיתוף.");
@@ -622,7 +811,7 @@
         }
 
         // ==========================================
-        // PWA - רישום האפליקציה והתקנה (עם הגנת כפילויות)
+        // PWA - רישום האפליקציה והתקנה
         // ==========================================
         
         if ('serviceWorker' in navigator) {
