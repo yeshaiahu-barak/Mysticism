@@ -583,7 +583,31 @@
                     namesHtml += `<div class="result-item"><h4>מספר זהות: ${idNumber}</h4><p><strong>מספר נומרולוגי: ${idNumValue}</strong></p><p class="light-text">${numerologyTexts[idNumValue]}</p></div>`;
                 }
 
-                document.getElementById('resNamesNum').innerHTML = namesHtml;
+                // --- הוספה חדשה: חוכמת האותיות על פי ספר היצירה ---
+                let lettersHtml = `
+                <div class="result-section" style="margin-top: 35px;">
+                    <h3 style="color: var(--premium-color); border-bottom: 2px solid var(--premium-color); padding-bottom: 5px; text-align: right;">סוד האותיות: חוכמת ספר היצירה בשמך</h3>
+                    <p style="margin-bottom: 15px; color: #555; text-align: right;">ניתוח מהותן של האותיות המרכיבות את שמך הפרטי, החושפות את כוחות הנפש הפנימיים שלך.</p>
+                `;
+                
+                // עוברים רק על השם הפרטי (fName), מסננים רווחים או תווים מיוחדים
+                let cleanFirstName = fName.replace(/[^א-ת]/g, ''); 
+                
+                for (let i = 0; i < cleanFirstName.length; i++) {
+                    let char = cleanFirstName[i];
+                    let letterDesc = deepDict[char] || "אות זו נושאת תדר אנרגטי פנימי הייחודי לשורש נשמתך.";
+                    
+                    lettersHtml += `
+                    <div class="result-item" style="border-right-color: var(--premium-color); background-color: #faf5fc; margin-bottom: 10px; padding: 12px;">
+                        <h4 style="color: var(--premium-color); margin-bottom: 5px; font-size: 1.15em;">האות ${char}'</h4>
+                        <p class="light-text" style="margin: 0; line-height: 1.6;">${letterDesc}</p>
+                    </div>`;
+                }
+                lettersHtml += `</div>`;
+
+                // חיבור והדפסה למסך של שני החלקים (נומרולוגיה + ספר היצירה)
+                document.getElementById('resNamesNum').innerHTML = namesHtml + lettersHtml;
+                
                 document.getElementById('resName').innerText = `${fName} ${lName}`;
                 document.getElementById('results').style.display = 'block';
 
