@@ -767,17 +767,26 @@
                 }
 
                 // ==========================================
-                // תוספת מיוחדת: סוד האותיות מספר היצירה
+                // תוספת מיוחדת: סוד האותיות מספר היצירה (כולל שם משפחה)
                 // ==========================================
                 let lettersHtml = `
                 <div class="result-section" style="margin-top: 35px;">
                     <h3 style="color: var(--premium-color); border-bottom: 2px solid var(--premium-color); padding-bottom: 5px; text-align: right;">סוד האותיות: חוכמת ספר היצירה בשמך</h3>
-                    <p style="margin-bottom: 15px; color: #555; text-align: right;">ניתוח מהותן של האותיות המרכיבות את שמך הפרטי, החושפות את כוחות הנפש הפנימיים שלך.</p>
+                    <p style="margin-bottom: 15px; color: #555; text-align: right;">ניתוח מהותן של האותיות המרכיבות את שמך הפרטי ושם משפחתך, החושפות את כוחות הנפש הפנימיים שלך.</p>
                 `;
                 
-                let cleanFirstName = fName.replace(/[^א-ת]/g, ''); 
-                for (let i = 0; i < cleanFirstName.length; i++) {
-                    let char = cleanFirstName[i];
+                // 1. מחברים את השם הפרטי ושם המשפחה יחד
+                let combinedNames = fName + lName;
+                
+                // 2. מנקים רווחים ותווים שאינם אותיות בעברית
+                let cleanNames = combinedNames.replace(/[^א-ת]/g, ''); 
+                
+                // 3. מסננים כפילויות כדי לא להציג את אותה אות פעמיים
+                let uniqueLetters = [...new Set(cleanNames.split(''))];
+                
+                // 4. מריצים את הלולאה על האותיות הייחודיות
+                for (let i = 0; i < uniqueLetters.length; i++) {
+                    let char = uniqueLetters[i];
                     let letterDesc = deepDict[char] || "אות זו נושאת תדר אנרגטי פנימי הייחודי לשורש נשמתך.";
                     
                     lettersHtml += `
@@ -788,7 +797,7 @@
                 }
                 lettersHtml += `</div>`;
                 // ==========================================
-
+                
                 document.getElementById('resNamesNum').innerHTML = namesHtml + lettersHtml;
                 document.getElementById('resName').innerText = `${fName} ${lName}`;
                 document.getElementById('results').style.display = 'block';
