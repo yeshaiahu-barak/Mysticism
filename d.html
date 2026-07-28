@@ -571,7 +571,7 @@
                     exactDayString = `ביום ${hebDayName} בשבוע, בשעה ${timeVal} ${timeDesc}`;
                 }
 
-                // הצגת יום לועזי רק אם הוא שונה מהיום העברי (כדי למנוע כפילות מיותרת)
+                // הצגת יום לועזי רק אם הוא שונה מהיום העברי
                 let gregNote = (gregDayName !== hebDayName) ? ` (לפי השעון הלועזי: יום ${gregDayName})` : ``;
 
                 document.getElementById('resAstro').innerHTML = `
@@ -813,7 +813,7 @@
                 }
 
                 // ==========================================
-                // תוספת מיוחדת: סוד האותיות מספר היצירה (כולל כל השמות, ללא כפילויות)
+                // תוספת מיוחדת: סוד האותיות מספר היצירה (כולל כל השמות, ללא כפילויות, עם שיוך קוסמי בכותרת)
                 // ==========================================
                 let lettersHtml = `
                 <div class="result-section" style="margin-top: 35px;">
@@ -821,19 +821,37 @@
                     <p style="margin-bottom: 15px; color: #555; text-align: right;">ניתוח מהותן של האותיות המרכיבות את שמותיך, החושפות את כוחות הנפש הפנימיים שלך.</p>
                 `;
                 
-                // חיבור כל השמות שהוזנו
                 let combinedNames = fName + mName + lName + eName;
                 let cleanNames = combinedNames.replace(/[^א-ת]/g, ''); 
                 let uniqueLetters = [...new Set(cleanNames.split(''))];
                 
+                const finalLetters = {'ך':'כ', 'ם':'מ', 'ן':'נ', 'ף':'פ', 'ץ':'צ'};
+
                 for (let i = 0; i < uniqueLetters.length; i++) {
                     let char = uniqueLetters[i];
-                    let letterDesc = deepDict[char] || "אות זו נושאת תדר אנרגטי פנימי הייחודי לשורש נשמתך.";
+                    let regularChar = finalLetters[char] ? finalLetters[char] : char;
                     
+                    // משיכת התוכן הגולמי (שמורכב מכותרת ופסקה) מתוך מסד הנתונים
+                    let cosmicRaw = deepDict['cosmic_' + regularChar] || '';
+                    let letterDesc = deepDict[regularChar] || "אות זו נושאת תדר אנרגטי פנימי הייחודי לשורש נשמתך.";
+                    
+                    let cosmicTitle = '';
+                    let cosmicContent = '';
+                    
+                    // מנגנון חיתוך טקסט: אם יש תגיות STRONG אנחנו שולפים את הכותרת החוצה אל ה-H4
+                    if (cosmicRaw.includes('</strong><br>')) {
+                        let parts = cosmicRaw.split('</strong><br>');
+                        cosmicTitle = parts[0].replace('<strong>', '').replace(':', '').trim();
+                        cosmicContent = parts[1].trim();
+                    } else {
+                        // במקרה של תקלה או אם הטקסט לא הוזן נכון במסד הנתונים, נשתמש בטקסט כפי שהוא
+                        cosmicContent = cosmicRaw ? cosmicRaw : letterDesc;
+                    }
+
                     lettersHtml += `
                     <div class="result-item" style="border-right-color: var(--premium-color); background-color: #faf5fc; margin-bottom: 10px; padding: 12px;">
-                        <h4 style="color: var(--premium-color); margin-bottom: 5px; font-size: 1.15em;">האות ${char}'</h4>
-                        <p class="light-text" style="margin: 0; line-height: 1.6;">${letterDesc}</p>
+                        <h4 style="color: var(--premium-color); margin-bottom: 5px; font-size: 1.15em;">האות ${char}' ${cosmicTitle ? ' - ' + cosmicTitle : ''}</h4>
+                        <p class="light-text" style="margin: 0; line-height: 1.6;">${cosmicContent}</p>
                     </div>`;
                 }
                 lettersHtml += `</div>`;
