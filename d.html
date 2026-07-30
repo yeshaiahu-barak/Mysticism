@@ -551,7 +551,6 @@
                 let birthYear = dateObj.getFullYear();
                 let chineseAnimal = getChineseZodiac(birthYear);
 
-                // --- חישוב ימי השבוע (לועזי ועברי) ותיאור השעה ---
                 const daysHebrewArr = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
                 let gregDayName = daysHebrewArr[dateObj.getDay()];
                 let hebDayName = daysHebrewArr[birthDt.getDay()]; 
@@ -571,7 +570,6 @@
                     exactDayString = `ביום ${hebDayName} בשבוע, בשעה ${timeVal} ${timeDesc}`;
                 }
 
-                // הצגת יום לועזי רק אם הוא שונה מהיום העברי
                 let gregNote = (gregDayName !== hebDayName) ? ` (לפי השעון הלועזי: יום ${gregDayName})` : ``;
 
                 document.getElementById('resAstro').innerHTML = `
@@ -706,7 +704,6 @@
                 let birthYear = dateObj.getFullYear();
                 let chineseAnimal = getChineseZodiac(birthYear);
 
-                // --- חישוב ימי השבוע (לועזי ועברי) ותיאור השעה ---
                 const daysHebrewArr = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
                 let gregDayName = daysHebrewArr[dateObj.getDay()];
                 let hebDayName = daysHebrewArr[birthDt.getDay()]; 
@@ -726,7 +723,6 @@
                     exactDayString = `ביום ${hebDayName} בשבוע, בשעה ${timeVal} ${timeDesc}`;
                 }
 
-                // הצגת יום לועזי רק אם הוא שונה מהיום העברי
                 let gregNote = (gregDayName !== hebDayName) ? ` (לפי השעון הלועזי: יום ${gregDayName})` : ``;
 
                 let deepSunDesc = deepDict[sunSign.name] || sunSign.desc;
@@ -813,7 +809,7 @@
                 }
 
                 // ==========================================
-                // תוספת מיוחדת: סוד האותיות מספר היצירה (כולל כל השמות, ללא כפילויות, עם שיוך קוסמי בכותרת)
+                // תוספת מיוחדת: סוד האותיות מספר היצירה
                 // ==========================================
                 let lettersHtml = `
                 <div class="result-section" style="margin-top: 35px;">
@@ -831,27 +827,28 @@
                     let char = uniqueLetters[i];
                     let regularChar = finalLetters[char] ? finalLetters[char] : char;
                     
-                    // משיכת התוכן הגולמי (שמורכב מכותרת ופסקה) מתוך מסד הנתונים
                     let cosmicRaw = deepDict['cosmic_' + regularChar] || '';
                     let letterDesc = deepDict[regularChar] || "אות זו נושאת תדר אנרגטי פנימי הייחודי לשורש נשמתך.";
                     
                     let cosmicTitle = '';
                     let cosmicContent = '';
                     
-                    // מנגנון חיתוך טקסט: אם יש תגיות STRONG אנחנו שולפים את הכותרת החוצה אל ה-H4
                     if (cosmicRaw.includes('</strong><br>')) {
                         let parts = cosmicRaw.split('</strong><br>');
                         cosmicTitle = parts[0].replace('<strong>', '').replace(':', '').trim();
                         cosmicContent = parts[1].trim();
                     } else {
-                        // במקרה של תקלה או אם הטקסט לא הוזן נכון במסד הנתונים, נשתמש בטקסט כפי שהוא
-                        cosmicContent = cosmicRaw ? cosmicRaw : letterDesc;
+                        cosmicContent = cosmicRaw;
                     }
 
                     lettersHtml += `
-                    <div class="result-item" style="border-right-color: var(--premium-color); background-color: #faf5fc; margin-bottom: 10px; padding: 12px;">
-                        <h4 style="color: var(--premium-color); margin-bottom: 5px; font-size: 1.15em;">האות ${char}' ${cosmicTitle ? ' - ' + cosmicTitle : ''}</h4>
-                        <p class="light-text" style="margin: 0; line-height: 1.6;">${cosmicContent}</p>
+                    <div class="result-item" style="border-right-color: var(--premium-color); background-color: #faf5fc; margin-bottom: 15px; padding: 15px;">
+                        <h4 style="color: var(--premium-color); margin-bottom: 10px; font-size: 1.2em;">האות ${char}' ${cosmicTitle ? ' - ' + cosmicTitle : ''}</h4>
+                        <p class="light-text" style="margin: 0 0 10px 0; line-height: 1.6; text-align: justify;">${letterDesc}</p>
+                        ${cosmicContent ? `
+                        <div style="background-color: #ffffff; padding: 10px 15px; border-radius: 6px; border-right: 3px solid #d2b4de; margin-top: 10px;">
+                            <p class="light-text" style="margin: 0; line-height: 1.6; text-align: justify;"><strong>ההשפעה הקוסמית:</strong> ${cosmicContent}</p>
+                        </div>` : ''}
                     </div>`;
                 }
                 lettersHtml += `</div>`;
