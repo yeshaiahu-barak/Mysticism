@@ -3,381 +3,245 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
+    <title>מסך ניהול - הדוח המיסטי</title>
     
-    <title>מסך ניהול מרכזי - דוחות מיסטיקה</title>
-    
+    <!-- חיבור ל-Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
-
+    
     <style>
         :root {
             --primary-color: #2c3e50;
             --accent-color: #3498db;
-            --bg-color: #f4f7f6;
-            --card-bg: #ffffff;
-            --danger-color: #e74c3c;
-            --google-color: #4285F4;
-            --excel-color: #27ae60;
-            --border-color: #bdc3c7;
+            --bg-color: #f4f6f9;
+            --table-border: #bdc3c7;
         }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); margin: 0; padding: 20px; color: #333; }
-        .container { max-width: 1200px; margin: 0 auto; background: var(--card-bg); padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        
-        #loginView, #unauthView, #adminView { display: none; }
-        .unauth-container, .login-container { max-width: 600px; text-align: center; margin: 0 auto; }
-        
-        h1 { color: var(--primary-color); border-bottom: 2px solid var(--accent-color); padding-bottom: 10px; }
-        
-        .header-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--accent-color); padding-bottom: 10px; margin-bottom: 20px; }
-        .header-top h1 { border: none; padding: 0; margin: 0; }
-        .header-actions { display: flex; gap: 15px; align-items: center; }
 
-        .stats-section { background-color: #ecf0f1; padding: 20px; border-radius: 8px; margin-bottom: 30px; color: var(--primary-color); }
-        .stats-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #bdc3c7; padding-bottom: 15px; margin-bottom: 15px; }
-        .stats-total { font-size: 22px; font-weight: bold; }
-        .action-breakdown { list-style-type: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; gap: 15px; }
-        .action-breakdown li { background: #fff; padding: 10px 15px; border-radius: 6px; border: 1px solid #ccc; flex: 1; min-width: 200px; display: flex; justify-content: space-between; box-shadow: 0 2px 4px rgba(0,0,0,0.05);}
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: var(--bg-color); padding: 20px; color: #333; }
+        .container { max-width: 1200px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h1 { text-align: center; color: var(--primary-color); border-bottom: 2px solid var(--accent-color); padding-bottom: 10px; }
         
-        .filters-section { display: flex; flex-wrap: wrap; gap: 15px; align-items: flex-end; background: #e8f4f8; padding: 20px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #d1e8f0; }
-        .form-group { display: flex; flex-direction: column; gap: 5px; }
-        .form-group label { font-weight: bold; color: var(--primary-color); }
-        .form-group input[type="datetime-local"] { padding: 10px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 16px; font-family: inherit; }
-        
-        button { padding: 10px 20px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; transition: background-color 0.3s; color: white; }
-        .google-btn { background-color: var(--google-color); margin-top: 20px; font-size: 18px; padding: 12px 25px; }
-        .google-btn:hover { background-color: #357abd; }
-        .refresh-btn { background-color: #f39c12; font-size: 14px; }
-        .refresh-btn:hover { background-color: #d68910; }
-        .report-btn { background-color: var(--accent-color); height: 42px; }
-        .report-btn:hover { background-color: #2980b9; }
-        .export-btn { background-color: var(--excel-color); height: 42px; display: inline-block; }
-        .export-btn:hover { background-color: #2ecc71; }
-        .logout-btn { background-color: var(--danger-color); font-size: 14px; padding: 10px 15px; }
-        .logout-btn:hover { background-color: #c0392b; }
+        /* אזור הסינון */
+        .controls { display: flex; gap: 15px; margin-bottom: 20px; background: #ecf0f1; padding: 15px; border-radius: 8px; }
+        .controls select { padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid var(--table-border); flex: 1; }
+        .controls button { padding: 10px 20px; font-size: 16px; background: var(--accent-color); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .controls button:hover { background: #2980b9; }
 
-        .table-responsive { overflow-x: auto; max-height: 500px; border: 1px solid #ddd; border-radius: 4px; }
-        table { width: 100%; border-collapse: collapse; }
-        th, td { padding: 8px 10px; font-size: 14px; text-align: right; border-bottom: 1px solid #ddd; white-space: nowrap; }
-        th { background-color: var(--primary-color); color: white; position: sticky; top: 0; z-index: 10; }
-        tr:hover { background-color: #f5f5f5; }
-        .loading { text-align: center; font-size: 18px; color: var(--accent-color); font-weight: bold; display: none; margin: 20px 0; }
+        /* עיצוב הטבלה */
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; border: 1px solid var(--table-border); text-align: right; }
+        th { background-color: var(--primary-color); color: white; position: sticky; top: 0; }
+        tr:nth-child(even) { background-color: #f9f9f9; }
+        tr:hover { background-color: #f1f8ff; }
+        
+        .edit-btn { background-color: #f39c12; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .edit-btn:hover { background-color: #d68910; }
+        
+        /* חלון עריכה צף (Modal) */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center; }
+        .modal { background: white; padding: 25px; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .modal h2 { margin-top: 0; color: var(--primary-color); }
+        .modal label { font-weight: bold; display: block; margin-top: 15px; margin-bottom: 5px; }
+        .modal input, .modal textarea { width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; font-family: inherit; }
+        .modal textarea { height: 200px; resize: vertical; direction: rtl; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+        .save-btn { background-color: #27ae60; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        .save-btn:hover { background-color: #219653; }
+        .cancel-btn { background-color: #e74c3c; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+        
+        #loading { text-align: center; font-weight: bold; color: var(--accent-color); margin: 20px 0; display: none; }
+        .badge-basic { background: #3498db; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.85em; }
+        .badge-deep { background: #8e44ad; color: white; padding: 3px 8px; border-radius: 12px; font-size: 0.85em; }
     </style>
 </head>
 <body>
 
-    <div id="loginView" class="container login-container">
-        <h1>כניסת מנהל</h1>
-        <p>מערכת הניהול מאובטחת. אנא התחבר עם חשבון Google מורשה כדי להמשיך.</p>
-        <button class="google-btn" onclick="signInWithGoogle()">התחבר באמצעות Google</button>
-    </div>
-
-    <div id="unauthView" class="container unauth-container">
-        <h1 style="color: var(--danger-color); border-color: var(--danger-color);">גישה נדחתה</h1>
-        <p>חשבון ה-Google שאיתו התחברת אינו מורשה לגשת למסך זה.</p>
-        <p><strong>גישה מותרת לכתובת: 4990920@gmail.com בלבד.</strong></p>
-        <button class="logout-btn" onclick="signOut()" style="margin-top: 20px;">התנתק וחזור להתחברות</button>
-    </div>
-
-    <div id="adminView" class="container">
-        <div class="header-top">
-            <h1>פאנל ניהול ודוחות - המרכז למיסטיקה</h1>
-            <div class="header-actions">
-                <button class="refresh-btn" onclick="loadStatistics()">רענן סטטיסטיקות</button>
-                <button class="logout-btn" onclick="signOut()">יציאה מהמערכת</button>
-            </div>
-        </div>
-
-        <div class="stats-section">
-            <div class="stats-header">
-                <div class="stats-total">
-                    סה"כ פעולות במערכת: <span id="totalRecordsCounter" style="color: var(--accent-color);">טוען...</span>
-                </div>
-            </div>
-            
-            <ul id="actionBreakdownList" class="action-breakdown">
-                <li>טוען נתונים...</li>
-            </ul>
-        </div>
-
-        <h2 style="color: var(--primary-color); margin-bottom: 15px;">דוח נתונים גולמיים ומפורטים</h2>
+    <div class="container">
+        <h1>מערכת ניהול תוכן - טבלה מאוחדת</h1>
         
-        <div class="filters-section">
-            <div class="form-group">
-                <label for="fromDate">מתאריך ושעה:</label>
-                <input type="datetime-local" id="fromDate" step="1">
-            </div>
-            <div class="form-group">
-                <label for="toDate">עד תאריך ושעה:</label>
-                <input type="datetime-local" id="toDate" step="1">
-            </div>
+        <div class="controls">
+            <select id="filterReportType" onchange="renderTable()">
+                <option value="all">-- כל סוגי הדוחות --</option>
+                <option value="basic">דוח בסיסי (Basic)</option>
+                <option value="deep">דוח עמוק (Deep)</option>
+            </select>
             
-            <button class="report-btn" onclick="generateReport()">הפק דוח למסך</button>
-            <button id="exportBtn" class="export-btn" onclick="downloadCSV()">ייצא ל-Sheets (CSV)</button>
+            <select id="filterCategory" onchange="renderTable()">
+                <option value="all">-- כל הקטגוריות --</option>
+                <!-- ימולא אוטומטית מקוד ה-JS -->
+            </select>
+            
+            <button onclick="loadData()">🔄 רענן נתונים</button>
         </div>
 
-        <div id="loadingMsg" class="loading">מעבד נתונים מול השרת, אנא המתן...</div>
+        <div id="loading">טוען נתונים ממסד הנתונים...</div>
 
-        <div class="table-responsive">
-            <table id="reportTable">
-                <thead id="tableHead"></thead>
-                <tbody id="tableBody"></tbody>
-            </table>
+        <table>
+            <thead>
+                <tr>
+                    <th width="5%">ID</th>
+                    <th width="10%">סוג דוח</th>
+                    <th width="15%">קטגוריה</th>
+                    <th width="10%">מפתח (Key)</th>
+                    <th width="20%">כותרת (Title)</th>
+                    <th width="30%">תצוגה מקדימה לתוכן</th>
+                    <th width="10%">פעולות</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <!-- נתונים יוזרקו לכאן -->
+            </tbody>
+        </table>
+    </div>
+
+    <!-- מודל עריכה -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal">
+            <h2>עריכת רשומה</h2>
+            <input type="hidden" id="editId">
+            
+            <div style="display:flex; gap: 10px; margin-top:10px;">
+                <div style="flex:1;"><label>סוג דוח:</label><input type="text" id="editType" readonly style="background:#eee;"></div>
+                <div style="flex:1;"><label>מפתח:</label><input type="text" id="editKey" readonly style="background:#eee;"></div>
+            </div>
+
+            <label>כותרת (Title):</label>
+            <input type="text" id="editTitle">
+            
+            <label>תוכן (Content - תומך HTML):</label>
+            <textarea id="editContent"></textarea>
+            
+            <div class="modal-actions">
+                <button class="cancel-btn" onclick="closeModal()">ביטול</button>
+                <button class="save-btn" onclick="saveRecord()">💾 שמור שינויים</button>
+            </div>
         </div>
     </div>
 
     <script>
-        const AUTHORIZED_EMAIL = '4990920@gmail.com';
-        let currentReportData = []; 
+        let allRecords = [];
 
-        const actionTranslations = {
-            'basic_report': 'דוחות בסיסיים',
-            'deep_report': 'דוחות עמוקים',
-            'whatsapp_share': 'שיתופים לוואטסאפ',
-            'pdf_download': 'הורדות PDF'
-        };
-
-        const columnTranslations = {
-            'id': 'מפתח שורה',
-            'created_at': 'זמן רישום במערכת',
-            'action_date': 'תאריך הזנה',
-            'action_time': 'שעת הזנה',
-            'ip_address': 'כתובת IP',
-            'browser_info': 'פרטי דפדפן',
-            'action_type': 'סוג פעולה',
-            'first_name': 'שם פרטי',
-            'middle_name': 'שם אמצעי',
-            'last_name': 'שם משפחה',
-            'extra_last_name': 'שם משפחה נוסף',
-            'phone': 'מספר טלפון',
-            'id_number': 'תעודת זהות',
-            'birth_date': 'תאריך לידה',
-            'birth_time': 'שעת לידה',
-            'city': 'עיר'
-        };
-
-        async function checkAuthStatus() {
-            const { data: { session } } = await supabaseClient.auth.getSession();
-            routeUser(session);
-        }
-
-        supabaseClient.auth.onAuthStateChange((event, session) => {
-            routeUser(session);
-        });
-
-        function routeUser(session) {
-            document.getElementById('loginView').style.display = 'none';
-            document.getElementById('unauthView').style.display = 'none';
-            document.getElementById('adminView').style.display = 'none';
-
-            if (!session) {
-                document.getElementById('loginView').style.display = 'block';
-            } else {
-                if (session.user.email === AUTHORIZED_EMAIL) {
-                    document.getElementById('adminView').style.display = 'block';
-                    loadStatistics(); 
-                    initDateFilters(); 
-                } else {
-                    document.getElementById('unauthView').style.display = 'block';
-                }
-            }
-        }
-
-        async function signInWithGoogle() {
-            const { error } = await supabaseClient.auth.signInWithOAuth({
-                provider: 'google',
-                options: { redirectTo: window.location.href }
-            });
-            if (error) alert("שגיאה בהתחברות ל-Google: " + error.message);
-        }
-
-        async function signOut() {
-            await supabaseClient.auth.signOut();
-        }
-
-        async function loadStatistics() {
-            const counterElement = document.getElementById('totalRecordsCounter');
-            const breakdownList = document.getElementById('actionBreakdownList');
-            
-            counterElement.innerText = "טוען...";
-            breakdownList.innerHTML = "<li>טוען נתונים...</li>";
-
-            try {
-                const { data, error } = await supabaseClient.from('reports_log').select('action_type');
-                if (error) throw error;
-
-                counterElement.innerText = data.length;
-
-                const actionCounts = {};
-                data.forEach(row => {
-                    const type = row.action_type || 'לא ידוע';
-                    actionCounts[type] = (actionCounts[type] || 0) + 1;
-                });
-
-                breakdownList.innerHTML = '';
-                
-                if (Object.keys(actionCounts).length === 0) {
-                    breakdownList.innerHTML = "<li>אין נתונים במערכת.</li>";
-                } else {
-                    for (const [actionKey, count] of Object.entries(actionCounts)) {
-                        const li = document.createElement('li');
-                        const translatedName = actionTranslations[actionKey] || actionKey;
-                        li.innerHTML = `<span>${translatedName}</span> <strong style="color: var(--primary-color);">${count}</strong>`;
-                        breakdownList.appendChild(li);
-                    }
-                }
-            } catch (err) {
-                counterElement.innerText = "שגיאה בטעינה";
-                breakdownList.innerHTML = "<li>שגיאה בטעינת הסטטיסטיקה.</li>";
-            }
-        }
-
-        function formatDateTimeLocal(dateObj) {
-            return `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}T${String(dateObj.getHours()).padStart(2, '0')}:${String(dateObj.getMinutes()).padStart(2, '0')}:${String(dateObj.getSeconds()).padStart(2, '0')}`;
-        }
-
-        async function initDateFilters() {
-            const toDate = new Date(); toDate.setHours(23, 59, 59, 999);
-            document.getElementById('toDate').value = formatDateTimeLocal(toDate);
-            
-            let fromDate = new Date(); fromDate.setHours(0, 0, 0, 0);
-            try {
-                const { data } = await supabaseClient.from('reports_log').select('created_at').order('created_at', { ascending: true }).limit(1);
-                if (data && data.length > 0 && data[0].created_at) fromDate = new Date(data[0].created_at);
-                fromDate.setHours(0, 0, 0, 0);
-            } catch (err) {}
-            
-            document.getElementById('fromDate').value = formatDateTimeLocal(fromDate);
-        }
-
-        async function generateReport() {
-            const fromVal = document.getElementById('fromDate').value;
-            const toVal = document.getElementById('toDate').value;
-            
-            if (!fromVal || !toVal) return;
-
-            const fromIso = new Date(fromVal).toISOString();
-            const toIso = new Date(toVal).toISOString();
-            
-            document.getElementById('loadingMsg').style.display = 'block';
-            document.getElementById('tableHead').innerHTML = '';
+        // 1. טעינת נתונים ראשונית
+        async function loadData() {
+            document.getElementById('loading').style.display = 'block';
             document.getElementById('tableBody').innerHTML = '';
-
+            
             try {
+                // שליפת כל הנתונים מהטבלה המאוחדת ומיון לפי ID
                 const { data, error } = await supabaseClient
-                    .from('reports_log')
+                    .from('unified_report_texts')
                     .select('*')
-                    .gte('created_at', fromIso)
-                    .lte('created_at', toIso)
-                    .order('created_at', { ascending: false });
-                    
+                    .order('id', { ascending: true });
+
                 if (error) throw error;
                 
-                currentReportData = data || [];
-                renderDynamicTable(currentReportData);
-                
-            } catch (err) { 
-                console.error("Fetch error:", err);
-                alert("שגיאה במשיכת הנתונים מהשרת:\n" + err.message); 
-            } finally { 
-                document.getElementById('loadingMsg').style.display = 'none'; 
+                allRecords = data || [];
+                populateCategoryFilter();
+                renderTable();
+            } catch (err) {
+                alert('שגיאה בטעינת הנתונים: ' + err.message);
+            } finally {
+                document.getElementById('loading').style.display = 'none';
             }
         }
 
-        function renderDynamicTable(dataArray) {
-            const thead = document.getElementById('tableHead');
+        // 2. מילוי דינמי של תפריט הקטגוריות
+        function populateCategoryFilter() {
+            const select = document.getElementById('filterCategory');
+            const categories = [...new Set(allRecords.map(r => r.category))].filter(Boolean);
+            
+            // שמירת ערך נוכחי
+            const currentValue = select.value;
+            
+            select.innerHTML = '<option value="all">-- כל הקטגוריות --</option>';
+            categories.forEach(cat => {
+                select.innerHTML += `<option value="${cat}">${cat}</option>`;
+            });
+            
+            if (categories.includes(currentValue)) select.value = currentValue;
+        }
+
+        // 3. רינדור (הצגת) הטבלה עם סינון
+        function renderTable() {
+            const filterType = document.getElementById('filterReportType').value;
+            const filterCategory = document.getElementById('filterCategory').value;
             const tbody = document.getElementById('tableBody');
             
-            if (!dataArray || dataArray.length === 0) {
-                tbody.innerHTML = '<tr><td style="text-align: center;" colspan="8">לא נמצאו רשומות בטווח התאריכים המבוקש.</td></tr>';
-                return;
-            }
+            tbody.innerHTML = '';
 
-            const screenKeys = ['id', 'action_date', 'action_time', 'action_type', 'first_name', 'last_name', 'phone', 'birth_date'];
-
-            let headRow = '<tr>';
-            screenKeys.forEach(key => {
-                const translatedHeader = columnTranslations[key] || key;
-                headRow += `<th>${translatedHeader}</th>`;
-            });
-            headRow += '</tr>';
-            thead.innerHTML = headRow;
-
-            // כאן תוקנה טעות ההקלדה - שימוש במשתנה tbody שכבר מצביע ל-tableBody
-            tbody.innerHTML = dataArray.map(row => 
-                `<tr>${screenKeys.map(key => {
-                    let cellValue = row[key];
-                    
-                    if (cellValue === null || cellValue === undefined || cellValue === '') {
-                        cellValue = '-';
-                    }
-                    
-                    if ((key === 'action_date' || key === 'birth_date') && typeof cellValue === 'string' && cellValue.includes('-') && cellValue !== '-') {
-                        cellValue = cellValue.split('-').reverse().join('-');
-                    }
-                    
-                    if (key === 'action_type' && actionTranslations[cellValue]) {
-                        cellValue = actionTranslations[cellValue];
-                    }
-                    
-                    let isLtr = ['id', 'action_date', 'action_time', 'phone', 'birth_date'].includes(key);
-                    return `<td ${isLtr ? 'dir="ltr"' : ''}>${cellValue}</td>`;
-                }).join('')}</tr>`
-            ).join('');
-        }
-
-        async function downloadCSV() {
-            await generateReport();
-            exportToCSV();
-        }
-
-        function formatCompactDateForFilename(dateString) {
-            const d = new Date(dateString);
-            const day = String(d.getDate()).padStart(2, '0');
-            const month = String(d.getMonth() + 1).padStart(2, '0');
-            const year = d.getFullYear();
-            return `${day}${month}${year}`;
-        }
-
-        function exportToCSV() {
-            if (!currentReportData || currentReportData.length === 0) {
-                alert("אין נתונים בטווח התאריכים המבוקש. לא ניתן לייצא קובץ ריק.");
-                return;
-            }
-
-            const keys = Object.keys(currentReportData[0]);
-            const translatedHeaders = keys.map(key => columnTranslations[key] || key);
-            let csvContent = "\uFEFF" + translatedHeaders.join(",") + "\n";
-
-            currentReportData.forEach(row => {
-                let rowData = keys.map(key => {
-                    let val = row[key] === null || row[key] === undefined ? "" : String(row[key]);
-                    if (key === 'action_type' && actionTranslations[val]) val = actionTranslations[val];
-                    return `"${val.replace(/"/g, '""')}"`; 
-                });
-                csvContent += rowData.join(",") + "\n";
+            const filteredData = allRecords.filter(row => {
+                const matchType = (filterType === 'all' || row.report_type === filterType);
+                const matchCat = (filterCategory === 'all' || row.category === filterCategory);
+                return matchType && matchCat;
             });
 
-            const fromValue = document.getElementById('fromDate').value;
-            const toValue = document.getElementById('toDate').value;
-            const fromStr = formatCompactDateForFilename(fromValue);
-            const toStr = formatCompactDateForFilename(toValue);
-            const filename = `Report-from-${fromStr}-to-${toStr}.csv`;
-            
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = filename;
-            document.body.appendChild(link); 
-            link.click(); 
-            document.body.removeChild(link);
+            filteredData.forEach(row => {
+                const typeBadge = row.report_type === 'deep' ? '<span class="badge-deep">Deep</span>' : '<span class="badge-basic">Basic</span>';
+                
+                // חיתוך טקסט ארוך לתצוגה מקדימה
+                let preview = row.content || '';
+                if (preview.length > 60) preview = preview.substring(0, 60) + '...';
+                preview = preview.replace(/<[^>]*>?/gm, ''); // הסרת תגיות HTML לתצוגה נקייה
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${row.id}</td>
+                    <td>${typeBadge}</td>
+                    <td>${row.category || ''}</td>
+                    <td><strong>${row.section_key || ''}</strong></td>
+                    <td>${row.title || '-'}</td>
+                    <td dir="auto">${preview}</td>
+                    <td><button class="edit-btn" onclick="openModal(${row.id})">✏️ ערוך</button></td>
+                `;
+                tbody.appendChild(tr);
+            });
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            checkAuthStatus();
-        });
+        // 4. פתיחת חלון העריכה
+        function openModal(id) {
+            const record = allRecords.find(r => r.id === id);
+            if (!record) return;
+
+            document.getElementById('editId').value = record.id;
+            document.getElementById('editType').value = record.report_type;
+            document.getElementById('editKey').value = record.section_key;
+            document.getElementById('editTitle').value = record.title || '';
+            document.getElementById('editContent').value = record.content || '';
+
+            document.getElementById('editModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('editModal').style.display = 'none';
+        }
+
+        // 5. שמירת שינויים למסד הנתונים
+        async function saveRecord() {
+            const id = document.getElementById('editId').value;
+            const newTitle = document.getElementById('editTitle').value;
+            const newContent = document.getElementById('editContent').value;
+
+            try {
+                const { error } = await supabaseClient
+                    .from('unified_report_texts')
+                    .update({ 
+                        title: newTitle, 
+                        content: newContent 
+                    })
+                    .eq('id', id);
+
+                if (error) throw error;
+
+                alert('השינויים נשמרו בהצלחה!');
+                closeModal();
+                loadData(); // רענון הנתונים כדי להציג את העדכון
+            } catch (err) {
+                alert('שגיאה בשמירה: ' + err.message);
+            }
+        }
+
+        // טעינה ראשונית בעליית הדף
+        window.addEventListener('DOMContentLoaded', loadData);
     </script>
 </body>
 </html>
