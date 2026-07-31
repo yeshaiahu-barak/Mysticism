@@ -563,19 +563,20 @@
                 else if (h >= 17 && h < 20) timeDesc = "בערב";
                 else timeDesc = "בלילה";
 
+                // בנייה חדשה לתיאור היום המודגש (השעה והעיר בחוץ)
                 let exactDayString = "";
                 if (isAfterSunset) {
-                    exactDayString = `אור ל<strong>יום ${hebDayName}</strong> בשבוע, בשעה ${timeVal} ${timeDesc}`;
+                    exactDayString = `<strong>אור ליום ${hebDayName} בשבוע</strong>`;
                 } else {
-                    exactDayString = `ב<strong>יום ${hebDayName}</strong> בשבוע, בשעה ${timeVal} ${timeDesc}`;
+                    exactDayString = `<strong>ביום ${hebDayName} בשבוע</strong>`;
                 }
 
                 let gregNote = (gregDayName !== hebDayName) ? ` (לפי השעון הלועזי: יום ${gregDayName})` : ``;
 
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date">
-                        <p style="font-size: 1.2em; color: #1b4f72; margin-bottom: 5px;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
-                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px; margin-bottom: 5px;">הלידה התרחשה ${exactDayString}${gregNote}, ב${city}.</p>
+                        <p style="font-size: 1.2em; color: #1b4f72; margin-bottom: 5px;">תאריך הלידה העברי הוא: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
+                        <p style="font-size: 1em; color: #5d6d7e; margin-top: 3px; margin-bottom: 5px;">הלידה התרחשה ב${city}, ${exactDayString} בשעה ${timeVal} ${timeDesc}${gregNote}.</p>
                         <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום ההולדת העברי הקרוב [<strong>${hebrewYearOnly}</strong>] יחול בתאריך: <strong>${nextBdayFormatted}</strong></p>
                     </div>
                     <div class="result-item result-zodiac">
@@ -716,11 +717,12 @@
                 else if (h >= 17 && h < 20) timeDesc = "בערב";
                 else timeDesc = "בלילה";
 
+                // בנייה חדשה לתיאור היום המודגש (השעה והעיר בחוץ)
                 let exactDayString = "";
                 if (isAfterSunset) {
-                    exactDayString = `אור ל<strong>יום ${hebDayName}</strong> בשבוע, בשעה ${timeVal} ${timeDesc}`;
+                    exactDayString = `<strong>אור ליום ${hebDayName} בשבוע</strong>`;
                 } else {
-                    exactDayString = `ב<strong>יום ${hebDayName}</strong> בשבוע, בשעה ${timeVal} ${timeDesc}`;
+                    exactDayString = `<strong>ביום ${hebDayName} בשבוע</strong>`;
                 }
 
                 let gregNote = (gregDayName !== hebDayName) ? ` (לפי השעון הלועזי: יום ${gregDayName})` : ``;
@@ -732,8 +734,8 @@
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date" style="border-right-color: var(--premium-color); background-color: var(--premium-bg);">
                         <h3 style="color: var(--premium-color); margin-top: 0;">דוח מיסטי עמוק (פרימיום)</h3>
-                        <p style="font-size: 1.2em; color: #1b4f72; margin-bottom: 5px;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
-                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px; margin-bottom: 5px;">הלידה התרחשה ${exactDayString}${gregNote}, ב${city}.</p>
+                        <p style="font-size: 1.2em; color: #1b4f72; margin-bottom: 5px;">תאריך הלידה העברי הוא: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
+                        <p style="font-size: 1em; color: #5d6d7e; margin-top: 3px; margin-bottom: 5px;">הלידה התרחשה ב${city}, ${exactDayString} בשעה ${timeVal} ${timeDesc}${gregNote}.</p>
                         <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום ההולדת העברי הקרוב [<strong>${hebrewYearOnly}</strong>] יחול בתאריך: <strong>${nextBdayFormatted}</strong></p>
                     </div>
                     <div class="result-item result-zodiac" style="border-right-color: var(--premium-color);">
@@ -833,7 +835,6 @@
                     let cosmicTitle = '';
                     let cosmicContent = '';
                     
-                    // מנגנון חיתוך טקסט מתקדם בעזרת ביטויים רגולריים (Regex)
                     if (cosmicRaw) {
                         const regex = /<strong>(.*?)<\/strong><br>/;
                         const match = cosmicRaw.match(regex);
