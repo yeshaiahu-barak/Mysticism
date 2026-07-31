@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>ממיר CSV ל-SQL - הטבלה המאוחדת</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #f0f4f8; }
+        .container { max-width: 600px; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin: auto; text-align: center; }
+        input[type="file"], select { margin: 15px 0; font-size: 16px; padding: 8px; width: 100%; box-sizing: border-box; }
+        .checkbox-group { text-align: right; margin: 15px 0; font-size: 16px; display: flex; align-items: center; gap: 10px; background: #fff3cd; padding: 10px; border-radius: 6px; border: 1px solid #ffe69c;}
+        input[type="checkbox"] { width: auto; transform: scale(1.5); margin: 0 10px; cursor: pointer;}
+        button { background: #3498db; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold; width: 100%; margin-top: 10px; transition: background 0.3s;}
+        button:hover { background: #2980b9; }
+        .note { color: #7f8c8d; font-size: 0.9em; margin-top: 15px; }
+        label { cursor: pointer; font-weight: bold;}
+    </style>
+    <!-- שימוש בספריית PapaParse לקריאה בטוחה של קובץ CSV -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h2>כלי המרה לטבלה המאוחדת</h2>
+        
+        <div style="text-align: right; margin-bottom: 5px; font-weight: bold; color: #2c3e50;">1. בחר לאיזה דוח שייך הקובץ:</div>
+        <select id="reportType">
+            <option value="basic">דוח בסיסי (basic)</option>
+            <option value="deep">דוח עמוק / פרימיום (deep)</option>
+        </select>
+
+        <div class="checkbox-group">
+            <input type="checkbox" id="truncateTable" checked>
+            <label for="truncateTable">רוקן את הטבלה לפני הטעינה (השאר מסומן לקובץ הראשון, בטל לקובץ השני!)</label>
+        </div>
+        
+        <input type="file" id="csvFile" accept=".csv">
+        <button onclick="convertCSV()">המר והורד קובץ SQL</button>
+        <p class="note">הקוד מטפל אוטומטית בגרשיים, מזהה את סוג הדוח ומזין ערכי NULL לשדות העתידיים.</p>
+    </div>
+
+    <script>
+        function convertCSV() {
+            const fileInput = document.getElementById('csvFile');
+            if (!fileInput.files.length) {
+                alert("אנא בחר קובץ CSV.");
+                return;
+            }
+
+            const reportType = document.getElementById('reportType').value;
+            const shouldTruncate = document.getElementById('truncateTable').checked;
+
+            Papa.parse(fileInput.files[0], {
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    let sql = "-- סקריפט לטעינת נתונים לטבלה המאוחדת (" + reportType + ")\n";
+                    
+                    // אם התיבה מסומנת, נוסיף פקודת מחיקה בראש הקובץ
+                    if (shouldTruncate) {
+                        sql += "TRUNCATE TABLE unified_report_texts;\n\n";
+                    }
+                    
+                    sql += "INSERT INTO unified_report_texts (report_type, category, section_key, title, content, extra_num, extra_text) VALUES\n";
+                    
+                    let values = [];
+                    results.data.forEach(row => {
+                        // המרת גרשיים למניעת שגיאות תחביר ב-SQL
+                        let category = (row.category || '').replace(/'/g, "''");
+                        let section_key = (row.section_key || '').replace(/'/g, "''");
+                        let title = (row.title || '').replace(/'/g, "''");
+                        let content = (row.content || '').replace(/'/g, "''");
+                        
+                        // השתלת האינדיקטור והשדות הריקים
+                        values.push(`('${reportType}', '${category}', '${section_key}', '${title}', '${content}', NULL, NULL)`);
+                    });
+                    
+                    // חיבור כל השורות ושמירה
+                    sql += values.join(",\n") + ";\n";
+                    downloadSQL(sql, reportType);
+                }
+            });
+        }
+
+        function downloadSQL(sqlContent, type) {
+            const blob = new Blob([sqlContent], { type: 'text/sql;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `insert_${type}_report.sql`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
