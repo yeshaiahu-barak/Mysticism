@@ -5,13 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>הדוח המיסטי שלי</title>
     
-    <!-- חיבור לקובץ ההגדרות (Manifest) כדי לאפשר התקנת PWA -->
+    <!-- חיבור לקובץ ההגדרות (Manifest) -->
     <link rel="manifest" href="manifest.json">
     
+    <!-- [למתחזק]: כאן מתבצעת האינטגרציה ל-Supabase. ודא שגרסת הספריה מעודכנת. -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     
     <style>
+        /* [למתחזק]: כל צבעי המערכת מרוכזים כאן. לשינוי מיתוג המערכת (Theme), ערוך את המשתנים הללו בלבד. */
         :root {
             --primary-color: #3498db;
             --primary-dark: #2980b9;
@@ -30,41 +32,15 @@
         .container { max-width: 850px; margin: auto; background: var(--card-bg); padding: 30px; border-radius: 12px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
         h1, h2, h3 { text-align: center; color: var(--text-color); }
         
-        /* עיצוב באנר ההתקנה */
-        #installBanner {
-            display: none;
-            background-color: var(--accent-color);
-            color: white;
-            text-align: center;
-            padding: 12px;
-            cursor: pointer;
-            font-weight: bold;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: background 0.3s;
-        }
+        #installBanner { display: none; background-color: var(--accent-color); color: white; text-align: center; padding: 12px; cursor: pointer; font-weight: bold; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: background 0.3s; }
         #installBanner:hover { background-color: var(--accent-dark); }
 
-        /* עיצוב באנר הדרכה לאייפון (iOS) */
-        #iosInstallBanner {
-            display: none;
-            background-color: var(--ios-color);
-            color: white;
-            text-align: center;
-            padding: 12px;
-            font-weight: bold;
-            border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        }
+        #iosInstallBanner { display: none; background-color: var(--ios-color); color: white; text-align: center; padding: 12px; font-weight: bold; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
 
         .form-row { display: flex; gap: 15px; margin-bottom: 15px; }
         .form-group { flex: 1; margin-bottom: 0; min-width: 0; position: relative; } 
         
-        @media (max-width: 600px) {
-            .form-row { flex-direction: column; gap: 15px; }
-        }
+        @media (max-width: 600px) { .form-row { flex-direction: column; gap: 15px; } }
 
         label { display: block; margin-bottom: 5px; font-weight: bold; color: var(--primary-color); font-size: 0.95em; transform: translateX(-2ch); }
         input { width: 100%; height: 38px; padding: 6px 12px; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 6px; font-size: 15px; background: #ffffff; box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.04); text-align: right; transition: all 0.3s; }
@@ -75,11 +51,11 @@
         .suggestion-item:hover { background-color: #ebf5fb; color: var(--primary-dark); }
         
         .action-buttons-top { display: flex; gap: 15px; margin-top: 25px; }
-        .main-btn { background-color: var(--primary-color); color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s;}
+        .main-btn, .premium-btn { color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s;}
+        .main-btn { background-color: var(--primary-color); }
         .main-btn:hover { background-color: var(--primary-dark); }
         .main-btn:disabled { background-color: #95a5a6; cursor: not-allowed; }
-        
-        .premium-btn { background-color: var(--accent-color); color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; font-size: 18px; cursor: pointer; font-weight: bold; transition: background 0.3s;}
+        .premium-btn { background-color: var(--accent-color); }
         .premium-btn:hover { background-color: var(--accent-dark); }
         .premium-btn:disabled { background-color: #f5cba7; cursor: not-allowed; }
         
@@ -97,8 +73,9 @@
         .light-text { color: #555 !important; }
 
         .actions { display: flex; gap: 15px; margin-top: 25px; }
-        .whatsapp-btn { background-color: #25D366; color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
-        .pdf-btn { background-color: #e74c3c; color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
+        .whatsapp-btn, .pdf-btn { color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
+        .whatsapp-btn { background-color: #25D366; }
+        .pdf-btn { background-color: #e74c3c; }
         
         #loadingMsg { display: none; text-align: center; color: var(--primary-color); font-weight: bold; margin-top: 15px; font-size: 1.1em;}
 
@@ -119,6 +96,7 @@
 <body>
 
     <div class="container">
+        <!-- [לבודק]: נתק את האינטרנט כדי לבדוק שהבאנר הזה אכן מופיע ומתריע על מצב אופליין -->
         <div id="networkStatus">מצב אופליין: אין חיבור לאינטרנט. הפעולות נשמרות מקומית.</div>
         
         <div id="installBanner" onclick="installApp()">📲 התקן את האפליקציה על המכשיר שלך לחוויה מהירה ומושלמת</div>
@@ -151,8 +129,8 @@
         </div>
 
         <div class="action-buttons-top">
-            <button id="calcBtn" class="main-btn" onclick="handleUserAction('basic_report')">הפק דוח בסיסי</button>
-            <button class="premium-btn" onclick="handleUserAction('deep_report')">הפק דוח עמוק</button>
+            <button id="calcBtn" class="main-btn" onclick="handleUserAction('basic')">הפק דוח בסיסי</button>
+            <button class="premium-btn" onclick="handleUserAction('deep')">הפק דוח עמוק</button>
         </div>
         
         <div id="loadingMsg">מעבד נתונים מול כוכבי השמיים ומאגרי התאריכים... נא להמתין...</div>
@@ -160,20 +138,45 @@
         <div id="results">
             <div id="contentToPrint">
                 <h2><span id="resName"></span> - דוח מיסטי</h2>
-                <div class="result-section"><div id="resAstro"></div></div>
-                <div class="result-section"><div id="resNamesNum"></div></div>
+                <div class="result-section" id="resAstro"></div>
+                <div class="result-section" id="resNamesNum"></div>
             </div>
             
             <div class="actions">
-                <button class="whatsapp-btn" onclick="handleUserAction('whatsapp_share')">שלח דוח לוואטסאפ</button>
-                <button class="pdf-btn" onclick="handleUserAction('pdf_download')">הורד דוח כ-PDF</button>
+                <button class="whatsapp-btn" onclick="executeWhatsAppShare()">שלח דוח לוואטסאפ</button>
+                <button class="pdf-btn" onclick="executePDFDownload()">הורד דוח כ-PDF</button>
             </div>
         </div>
     </div>
 
     <script>
         // ==========================================
-        // מילוני נתונים (גיבוי אופליין / דוח בסיסי)
+        // 1. הגדרות וניהול זיכרון - חיסכון ויעילות
+        // ==========================================
+        // [למתחזק]: שמירת האלמנטים במשתנה מרכזי חוסכת פניות ל-DOM ומשפרת משמעותית את הביצועים.
+        const DOM = {
+            fName: document.getElementById('firstName'),
+            mName: document.getElementById('middleName'),
+            lName: document.getElementById('lastName'),
+            eName: document.getElementById('extraLastName'),
+            phone: document.getElementById('phone'),
+            idNumber: document.getElementById('idNumber'),
+            dateVal: document.getElementById('birthDate'),
+            timeVal: document.getElementById('birthTime'),
+            city: document.getElementById('city'),
+            calcBtn: document.getElementById('calcBtn'),
+            premiumBtn: document.querySelector('.premium-btn'),
+            loadingMsg: document.getElementById('loadingMsg'),
+            resultsDiv: document.getElementById('results'),
+            resAstro: document.getElementById('resAstro'),
+            resNamesNum: document.getElementById('resNamesNum'),
+            resNameTitle: document.getElementById('resName'),
+            networkStatus: document.getElementById('networkStatus'),
+            citySuggestionsBox: document.getElementById('citySuggestionsBox')
+        };
+
+        // ==========================================
+        // 2. מילוני נתונים (Hardcoded Fallback)
         // ==========================================
         const gematriaDict = {
             'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,
@@ -224,62 +227,51 @@
         };
 
         let chineseZodiacTexts = {
-            "קוף": "אינטליגנציה, סקרנות ושובבות. יכולת אלתור ופתרון בעיות יצירתי.",
-            "תרנגול": "ביטחון עצמי, חריצות וסדר. נטייה לארגון, דייקנות ותשומת לב לפרטים.",
-            "כלב": "נאמנות, צדק והגנה. חברות אמתית, כנות ורצון לעזור לזולת.",
-            "חזיר": "טוב לב, כנות ושפע. אופי נדיב, סבלני ואוהב שלום והרמוניה.",
-            "חולדה": "פיקחות, כושר הסתגלות וקסם אישי. מחשבה מהירה ויכולת הישרדות גבוהה.",
-            "שור": "כוח, התמדה ואמינות. יציבות עמוקה, סבלנות ומוסר עבודה גבוה.",
-            "נמר": "אומץ, תחרותיות ומנהיגות. אנרגיה דינמית, נועזות ורצון לפרוץ דרך.",
-            "ארנב": "עדינות, אלגנטיות ורגישות. גישה דיפלומטית, נימוס וחיפוש אחר שלווה.",
-            "דרקון": "כריזמה, כוח ומזל. שאפתנות גבוהה, נוכחות בולטת ויכולת הובלה.",
-            "נחש": "חוכמה, אינטואיציה ומסתוריות. עומק מחשבתי, רגישות לסביבה ותכנון מוקפד.",
-            "סוס": "מרץ, עצמאות ואהבת חופש. פעילות מתמדת, הרפתקנות ורוח חופשייה.",
-            "עז": "יצירתיות, רוגע ואמפתיה. נשמה אמנותית, סבלנות והבנה רגשית עמוקה."
+            "קוף": "אינטליגנציה, סקרנות ושובבות.",
+            "תרנגול": "ביטחון עצמי, חריצות וסדר.",
+            "כלב": "נאמנות, צדק והגנה.",
+            "חזיר": "טוב לב, כנות ושפע.",
+            "חולדה": "פיקחות, כושר הסתגלות וקסם אישי.",
+            "שור": "כוח, התמדה ואמינות.",
+            "נמר": "אומץ, תחרותיות ומנהיגות.",
+            "ארנב": "עדינות, אלגנטיות ורגישות.",
+            "דרקון": "כריזמה, כוח ומזל.",
+            "נחש": "חוכמה, אינטואיציה ומסתוריות.",
+            "סוס": "מרץ, עצמאות ואהבת חופש.",
+            "עז": "יצירתיות, רוגע ואמפתיה."
         };
 
         // ==========================================
-        // פונקציות תשתית ותקשורת שרת
+        // 3. אינטגרציה לתשתיות ושרתים
         // ==========================================
         async function fetchDynamicTexts() {
             if (!navigator.onLine || typeof supabaseClient === 'undefined') return;
-            const COL_CATEGORY = 'category';     
-            const COL_KEY_NAME = 'item_key';     
-            const COL_TEXT_CONTENT = 'content'; 
-
             try {
                 const { data, error } = await supabaseClient.from('dynamic_texts').select('*');
                 if (error) return;
-                
-                if (data && data.length > 0) {
+                if (data) {
                     data.forEach(item => {
-                        const category = item[COL_CATEGORY]; 
-                        const key = item[COL_KEY_NAME];      
-                        const content = item[COL_TEXT_CONTENT]; 
-
-                        if (category === 'numerology' || category === 'נומרולוגיה') {
-                            if (numerologyTexts[key]) numerologyTexts[key] = content;
-                        } else if (category === 'zodiac' || category === 'מזלות') {
+                        const key = item.item_key;      
+                        const content = item.content; 
+                        if (item.category === 'numerology' || item.category === 'נומרולוגיה') numerologyTexts[key] = content;
+                        else if (item.category === 'zodiac' || item.category === 'מזלות') {
                             let zIndex = zodiacSigns.findIndex(z => z.name === key);
                             if (zIndex !== -1) zodiacSigns[zIndex].desc = content;
-                        } else if (category === 'ascendant' || category === 'אופק') {
-                            if (ascendantTexts[key]) ascendantTexts[key] = content;
-                        } else if (category === 'chinese_zodiac' || category === 'מזל_סיני') {
-                            if (chineseZodiacTexts[key]) chineseZodiacTexts[key] = content;
-                        }
+                        } 
+                        else if (item.category === 'ascendant' || item.category === 'אופק') ascendantTexts[key] = content;
+                        else if (item.category === 'chinese_zodiac' || item.category === 'מזל_סיני') chineseZodiacTexts[key] = content;
                     });
                 }
             } catch (err) {}
         }
 
         function updateNetworkStatus() {
-            const statusEl = document.getElementById('networkStatus');
             if (navigator.onLine) {
-                statusEl.classList.remove('status-offline');
+                DOM.networkStatus.classList.remove('status-offline');
                 syncOfflineLogs(); 
                 fetchDynamicTexts(); 
             } else {
-                statusEl.classList.add('status-offline');
+                DOM.networkStatus.classList.add('status-offline');
             }
         }
         window.addEventListener('online', updateNetworkStatus);
@@ -298,25 +290,22 @@
         async function writeToExperimentLog(actionType) {
             try {
                 const now = new Date();
-                const getFieldValue = (id) => { const el = document.getElementById(id); return el && el.value.trim() !== '' ? el.value.trim() : null; };
-
-                let cityValue = getFieldValue('city');
-                if (!cityValue) cityValue = "יפו";
+                let cityValue = DOM.city.value.trim() || "יפו";
 
                 let logEntry = {
                     action_date: now.toISOString().split('T')[0],
                     action_time: now.toTimeString().split(' ')[0],
-                    ip_address: await fetchUserIP(),
+                    ip_address: navigator.onLine ? await (await fetch('https://api.ipify.org?format=json').catch(()=>({json:()=>({ip:"Unknown"})}))).json().ip : "Offline",
                     browser_info: navigator.userAgent,
                     action_type: actionType,
-                    first_name: getFieldValue('firstName'),
-                    middle_name: getFieldValue('middleName'),
-                    last_name: getFieldValue('lastName'),
-                    extra_last_name: getFieldValue('extraLastName'),
-                    phone: getFieldValue('phone'),
-                    id_number: getFieldValue('idNumber'),
-                    birth_date: getFieldValue('birthDate'),
-                    birth_time: getFieldValue('birthTime'),
+                    first_name: DOM.fName.value.trim() || null,
+                    middle_name: DOM.mName.value.trim() || null,
+                    last_name: DOM.lName.value.trim() || null,
+                    extra_last_name: DOM.eName.value.trim() || null,
+                    phone: DOM.phone.value.trim() || null,
+                    id_number: DOM.idNumber.value.trim() || null,
+                    birth_date: DOM.dateVal.value || null,
+                    birth_time: DOM.timeVal.value || null,
                     city: cityValue
                 };
 
@@ -332,14 +321,40 @@
             } catch (err) {}
         }
 
-        async function fetchUserIP() {
-            if (!navigator.onLine) return "Offline";
-            try { return (await (await fetch('https://api.ipify.org?format=json')).json()).ip; } 
-            catch { return "Unknown"; }
+        let cityTimeout = null;
+        async function fetchCitySuggestions(query) {
+            if (!query || query.length < 2) { DOM.citySuggestionsBox.style.display = 'none'; return; }
+            if (!navigator.onLine) return; 
+            
+            clearTimeout(cityTimeout);
+            cityTimeout = setTimeout(async () => {
+                try {
+                    let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
+                    let data = await res.json();
+                    DOM.citySuggestionsBox.innerHTML = '';
+                    if (data && data.length > 0) {
+                        data.forEach(item => {
+                            let cityName = item.display_name.split(',')[0];
+                            let div = document.createElement('div');
+                            div.className = 'suggestion-item';
+                            div.innerText = cityName;
+                            div.onclick = () => { DOM.city.value = cityName; DOM.citySuggestionsBox.style.display = 'none'; };
+                            DOM.citySuggestionsBox.appendChild(div);
+                        });
+                        DOM.citySuggestionsBox.style.display = 'block';
+                    } else { DOM.citySuggestionsBox.style.display = 'none'; }
+                } catch (err) { DOM.citySuggestionsBox.style.display = 'none'; }
+            }, 300);
         }
 
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#city') && !e.target.closest('#citySuggestionsBox')) {
+                DOM.citySuggestionsBox.style.display = 'none';
+            }
+        });
+
         // ==========================================
-        // פונקציות חישוב טהורות
+        // 4. לוגיקה מתמטית וחישובית (Core Logic)
         // ==========================================
         function calcGematria(word) {
             let sum = 0; if (!word) return 0;
@@ -394,286 +409,68 @@
             return animals[year % 12];
         }
 
-        let cityTimeout = null;
-        async function fetchCitySuggestions(query) {
-            const box = document.getElementById('citySuggestionsBox');
-            if (!query || query.length < 2) { box.style.display = 'none'; return; }
-            if (!navigator.onLine) return; 
-            
-            clearTimeout(cityTimeout);
-            cityTimeout = setTimeout(async () => {
-                try {
-                    let res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`);
-                    let data = await res.json();
-                    box.innerHTML = '';
-                    if (data && data.length > 0) {
-                        data.forEach(item => {
-                            let cityName = item.display_name.split(',')[0];
-                            let div = document.createElement('div');
-                            div.className = 'suggestion-item';
-                            div.innerText = cityName;
-                            div.onclick = () => { document.getElementById('city').value = cityName; box.style.display = 'none'; };
-                            box.appendChild(div);
-                        });
-                        box.style.display = 'block';
-                    } else { box.style.display = 'none'; }
-                } catch (err) { box.style.display = 'none'; }
-            }, 300);
+        // ==========================================
+        // 5. ניהול ובקרת תצוגה (UI Controllers)
+        // ==========================================
+        function toggleUIState(isLoading) {
+            DOM.calcBtn.disabled = isLoading;
+            DOM.premiumBtn.disabled = isLoading;
+            DOM.loadingMsg.style.display = isLoading ? 'block' : 'none';
+            if(isLoading) DOM.resultsDiv.style.display = 'none';
         }
 
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('#city') && !e.target.closest('#citySuggestionsBox')) {
-                document.getElementById('citySuggestionsBox').style.display = 'none';
-            }
-        });
+        async function handleUserAction(reportType) {
+            // טיפול בשיתוף והורדה נשאר בפונקציות הייעודיות מחוץ לזרימה זו
+            await writeToExperimentLog(reportType + '_report');
 
-        // ==========================================
-        // הניתוב המרכזי לפעולות המשתמש
-        // ==========================================
-        async function handleUserAction(actionType) {
-            await writeToExperimentLog(actionType);
+            const fName = DOM.fName.value.trim();
+            const lName = DOM.lName.value.trim();
+            const phone = DOM.phone.value.trim();
+            const dateVal = DOM.dateVal.value;
 
-            if (actionType === 'whatsapp_share') { executeWhatsAppShare(); return; }
+            // [לבודק]: אימות השדות לפני שליחה
+            if (!fName || !lName || !phone || !dateVal) { alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון ותאריך לידה."); return; }
             
-            if (actionType === 'pdf_download') {
-                let pFirstName = document.getElementById('firstName').value.trim() || 'דוח';
-                let pLastName = document.getElementById('lastName').value.trim() || 'מיסטי';
-                let pBirthDate = document.getElementById('birthDate').value;
-                let formattedDate = '';
-                
-                if (pBirthDate) {
-                    let parts = pBirthDate.split('-');
-                    formattedDate = `-${parts[2]}${parts[1]}${parts[0]}`; 
-                }
-
-                const originalTitle = document.title;
-                document.title = `${pFirstName}-${pLastName}${formattedDate}`;
-                
-                window.print();
-                
-                setTimeout(() => {
-                    document.title = originalTitle;
-                }, 1000);
-                
-                return;
+            const hebrewRegex = /^[\u0590-\u05FF\s'-]+$/;
+            if ((fName && !hebrewRegex.test(fName)) || (DOM.mName.value.trim() && !hebrewRegex.test(DOM.mName.value.trim())) || 
+                (lName && !hebrewRegex.test(lName)) || (DOM.eName.value.trim() && !hebrewRegex.test(DOM.eName.value.trim()))) {
+                alert("שדות השם חייבים להכיל אותיות בעברית בלבד."); return;
             }
+            if (!/^\d+$/.test(phone)) { alert("מספר טלפון חייב להכיל ספרות בלבד."); return; }
+            if (DOM.idNumber.value.trim() && !/^\d+$/.test(DOM.idNumber.value.trim())) { alert("מספר תעודת זהות חייב להכיל ספרות בלבד."); return; }
 
-            const fName = document.getElementById('firstName').value.trim();
-            const mName = document.getElementById('middleName').value.trim();
-            const lName = document.getElementById('lastName').value.trim();
-            const eName = document.getElementById('extraLastName').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-            const idNumber = document.getElementById('idNumber').value.trim();
-            const dateVal = document.getElementById('birthDate').value;
-            let city = document.getElementById('city').value.trim();
-
-            if (!city) { city = "יפו"; }
-
-            if (actionType === 'basic_report' || actionType === 'deep_report') {
-                if (!fName || !lName || !phone || !dateVal) { alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון ותאריך לידה."); return; }
-                const hebrewRegex = /^[\u0590-\u05FF\s'-]+$/;
-                if ((fName && !hebrewRegex.test(fName)) || (mName && !hebrewRegex.test(mName)) || 
-                    (lName && !hebrewRegex.test(lName)) || (eName && !hebrewRegex.test(eName))) {
-                    alert("שדות השם חייבים להכיל אותיות בעברית בלבד."); return;
-                }
-                const cityRegex = /^[\u0590-\u05FFa-zA-Z\s'-]+$/;
-                if (city && !cityRegex.test(city)) { alert("שדה עיר חייב להכיל אותיות בלבד."); return; }
-                if (!/^\d+$/.test(phone)) { alert("מספר טלפון חייב להכיל ספרות בלבד."); return; }
-                if (idNumber && !/^\d+$/.test(idNumber)) { alert("מספר תעודת זהות חייב להכיל ספרות בלבד."); return; }
-
-                if (actionType === 'basic_report') {
-                    runBasicReportCalculation();
-                } else {
-                    runDeepReportCalculation();
-                }
-            }
+            // קריאה לפונקציה המרכזית האחודה!
+            generateReport(reportType === 'deep');
         }
 
-        // ==========================================
-        // דוח בסיסי - חישוב ותצוגה
-        // ==========================================
-        async function runBasicReportCalculation() {
-            const fName = document.getElementById('firstName').value.trim();
-            const mName = document.getElementById('middleName').value.trim();
-            const lName = document.getElementById('lastName').value.trim();
-            const eName = document.getElementById('extraLastName').value.trim();
-            const dateVal = document.getElementById('birthDate').value;
-            const timeVal = document.getElementById('birthTime').value;
-            let city = document.getElementById('city').value.trim() || "יפו";
-            const phone = document.getElementById('phone').value.trim();
-            const idNumber = document.getElementById('idNumber').value.trim();
-
-            document.getElementById('calcBtn').disabled = true;
-            document.querySelector('.premium-btn').disabled = true;
-            document.getElementById('loadingMsg').style.display = 'block';
-            document.getElementById('results').style.display = 'none';
-
+        // [למתחזק]: זוהי פונקציית הליבה המודולרית החדשה שמחליפה את שתי הפונקציות הארוכות הישנות!
+        async function generateReport(isDeep) {
+            toggleUIState(true);
             try {
+                const dateVal = DOM.dateVal.value;
+                const timeVal = DOM.timeVal.value || "15:00";
+                let city = DOM.city.value.trim() || "יפו";
+                
+                // בדיקת רשת
                 if (!navigator.onLine) throw new Error("אין חיבור אינטרנט פעיל. לא ניתן להמיר תאריכים עבריים.");
 
-                let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=5`);
-                let geoData = await geoRes.json();
-                if (geoData.length === 0) throw new Error("העיר לא נמצאה.");
-                let matchedGeo = geoData.find(item => item.display_name.toLowerCase().includes(city.toLowerCase())) || geoData[0];
-
-                let sunsetRes = await fetch(`https://api.sunrise-sunset.org/json?lat=${matchedGeo.lat}&lng=${matchedGeo.lon}&date=${dateVal}&formatted=0`);
-                let sunsetData = await sunsetRes.json();
-                let isAfterSunset = new Date(`${dateVal}T${timeVal}:00`) > new Date(sunsetData.results.sunset);
-
-                let birthDt = new Date(`${dateVal}T${timeVal}:00`);
-                if (isAfterSunset) birthDt.setDate(birthDt.getDate() + 1);
-
-                let hebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${birthDt.getFullYear()}&gm=${birthDt.getMonth()+1}&gd=${birthDt.getDate()}&g2h=1`);
-                let hebData = await hebRes.json();
-
-                let today = new Date();
-                let todayHebRes = await fetch(`https://www.hebcal.com/converter?cfg=json&gy=${today.getFullYear()}&gm=${today.getMonth()+1}&gd=${today.getDate()}&g2h=1`);
-                let todayHebData = await todayHebRes.json();
-
-                let targetHy = todayHebData.hy;
-                let bdayCheckRes = await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`);
-                let bdayCheckData = await bdayCheckRes.json();
-                let bdayGregorian = new Date(bdayCheckData.gy, bdayCheckData.gm - 1, bdayCheckData.gd);
-
-                if (bdayGregorian < today) {
-                    targetHy++;
-                    bdayCheckData = await (await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`)).json();
-                }
-
-                let hebrewYearOnly = bdayCheckData.hebrew ? "ה'" + bdayCheckData.hebrew.split(' ').pop().replace(/״/g, '"').replace(/׳/g, "'") : bdayCheckData.hy;
-                let nextBdayFormatted = `${bdayCheckData.gd}/${bdayCheckData.gm}/${bdayCheckData.gy}`;
-                let hebrewBdayFull = hebData.hebrew ? hebData.hebrew.replace(/״/g, '"').replace(/׳/g, "'") : hebData.hebrew;
-
-                let dateObj = new Date(dateVal);
-                let zIndex = getZodiacIndex(dateObj.getDate(), dateObj.getMonth() + 1);
-                let sunSign = zodiacSigns[zIndex];
-                let ascendant = calculateAscendant(zIndex, timeVal);
-                let birthYear = dateObj.getFullYear();
-                let chineseAnimal = getChineseZodiac(birthYear);
-
-                const daysHebrewArr = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
-                let gregDayName = daysHebrewArr[dateObj.getDay()];
-                let hebDayName = daysHebrewArr[birthDt.getDay()]; 
-
-                let h = parseInt(timeVal.split(':')[0]);
-                let timeDesc = "";
-                if (h >= 0 && h < 5) timeDesc = "לפנות בוקר";
-                else if (h >= 5 && h < 12) timeDesc = "בבוקר";
-                else if (h >= 12 && h < 17) timeDesc = "בצהריים";
-                else if (h >= 17 && h < 20) timeDesc = "בערב";
-                else timeDesc = "בלילה";
-
-                // בנייה חדשה לתיאור היום המודגש (השעה והעיר בחוץ)
-                let exactDayString = "";
-                if (isAfterSunset) {
-                    exactDayString = `<strong>אור ליום ${hebDayName} בשבוע</strong>`;
-                } else {
-                    exactDayString = `<strong>ביום ${hebDayName} בשבוע</strong>`;
-                }
-
-                let gregNote = (gregDayName !== hebDayName) ? ` (לפי השעון הלועזי: יום ${gregDayName})` : ``;
-
-                document.getElementById('resAstro').innerHTML = `
-                    <div class="result-item result-date">
-                        <p style="font-size: 1.2em; color: #1b4f72; margin-bottom: 5px;">תאריך הלידה העברי הוא: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
-                        <p style="font-size: 1em; color: #5d6d7e; margin-top: 3px; margin-bottom: 5px;">הלידה התרחשה ב${city}, ${exactDayString} בשעה ${timeVal} ${timeDesc}${gregNote}.</p>
-                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום ההולדת העברי הקרוב [<strong>${hebrewYearOnly}</strong>] יחול בתאריך: <strong>${nextBdayFormatted}</strong></p>
-                    </div>
-                    <div class="result-item result-zodiac">
-                        <h4>מזל שמש: ${sunSign.name}</h4><p class="light-text">${sunSign.desc}</p>
-                    </div>
-                    <div class="result-item result-zodiac">
-                        <h4>מזל אופק: ${ascendant}</h4><p class="light-text">${ascendantTexts[ascendant]}</p>
-                    </div>
-                    <div class="result-item result-zodiac">
-                        <h4>מזל סיני: ${chineseAnimal}</h4><p class="light-text">${chineseZodiacTexts[chineseAnimal]}</p>
-                    </div>
-                `;
-
-                let namesHtml = "";
-                const namesList = [
-                    { label: "שם פרטי", val: fName }, { label: "שם פרטי נוסף", val: mName },
-                    { label: "שם משפחה", val: lName }, { label: "שם משפחה נוסף", val: eName }
-                ];
-
-                namesList.forEach(item => {
-                    if (item.val) {
-                        let g = calcGematria(item.val); let n = calcNumerology(g);
-                        namesHtml += `<div class="result-item"><h4>${item.label}: ${item.val} (${g})</h4><p><strong>מספר נומרולוגי: ${n}</strong></p><p class="light-text">${numerologyTexts[n]}</p></div>`;
-                    }
-                });
-
-                let totGematria = calcGematria(fName + (mName||"") + lName + (eName||""));
-                let totNum = calcNumerology(totGematria);
-                namesHtml += `<div class="result-item"><h4>כל השמות יחד (${totGematria})</h4><p><strong>מספר נומרולוגי: ${totNum}</strong></p><p class="light-text">${numerologyTexts[totNum]}</p></div>`;
-
-                let dParts = dateVal.split('-');
-                let dateNumValue = calcNumerology(calcNumFromDigits(dateVal));
-                namesHtml += `<div class="result-item"><h4>מספר מזל: ${dParts[2]}/${dParts[1]}/${dParts[0]}</h4><p><strong>מספר נומרולוגי: ${dateNumValue}</strong></p><p class="light-text">${numerologyTexts[dateNumValue]}</p></div>`;
-
-                if (phone) {
-                    let pNum = calcNumerology(calcNumFromDigits(phone));
-                    namesHtml += `<div class="result-item"><h4>מספר תקשורת: ${phone}</h4><p><strong>מספר נומרולוגי: ${pNum}</strong></p><p class="light-text">${numerologyTexts[pNum]}</p></div>`;
-                }
-
-                if (idNumber) {
-                    let idNumValue = calcNumerology(calcNumFromDigits(idNumber));
-                    namesHtml += `<div class="result-item"><h4>מספר זהות: ${idNumber}</h4><p><strong>מספר נומרולוגי: ${idNumValue}</strong></p><p class="light-text">${numerologyTexts[idNumValue]}</p></div>`;
-                }
-
-                document.getElementById('resNamesNum').innerHTML = namesHtml;
-                document.getElementById('resName').innerText = `${fName} ${lName}`;
-                document.getElementById('results').style.display = 'block';
-
-            } catch (err) { alert("אירעה שגיאה בחישוב הנתונים: " + err.message); } 
-            finally { 
-                document.getElementById('calcBtn').disabled = false; 
-                document.querySelector('.premium-btn').disabled = false;
-                document.getElementById('loadingMsg').style.display = 'none'; 
-            }
-        }
-
-        // ==========================================
-        // דוח עמוק - חישוב ותצוגה (מבוסס שרת + ספר היצירה)
-        // ==========================================
-        async function runDeepReportCalculation() {
-            const fName = document.getElementById('firstName').value.trim();
-            const mName = document.getElementById('middleName').value.trim();
-            const lName = document.getElementById('lastName').value.trim();
-            const eName = document.getElementById('extraLastName').value.trim();
-            const dateVal = document.getElementById('birthDate').value;
-            const timeVal = document.getElementById('birthTime').value;
-            let city = document.getElementById('city').value.trim() || "יפו";
-            const phone = document.getElementById('phone').value.trim();
-            const idNumber = document.getElementById('idNumber').value.trim();
-
-            document.getElementById('calcBtn').disabled = true;
-            document.querySelector('.premium-btn').disabled = true;
-            document.getElementById('loadingMsg').style.display = 'block';
-            document.getElementById('results').style.display = 'none';
-
-            try {
-                if (!navigator.onLine) throw new Error("אין חיבור אינטרנט פעיל. נדרש חיבור מקוון לשליפת נתוני הדוח העמוק.");
-
-                const { data: deepData, error: deepError } = await supabaseClient.from('deep_report_texts').select('section_key, content');
-                if (deepError) throw deepError;
-                
+                // 1. שליפת מילון פרימיום במידת הצורך
                 let deepDict = {};
-                if (deepData) {
-                    deepData.forEach(item => {
-                        deepDict[item.section_key] = item.content;
-                    });
+                if (isDeep) {
+                    const { data, error } = await supabaseClient.from('deep_report_texts').select('section_key, content');
+                    if (error) throw error;
+                    if (data) data.forEach(item => deepDict[item.section_key] = item.content);
                 }
 
-                let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=5`);
+                // 2. קריאות ל-API לחישובי תאריכים ומקומות
+                let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=1`);
                 let geoData = await geoRes.json();
                 if (geoData.length === 0) throw new Error("העיר לא נמצאה.");
-                let matchedGeo = geoData.find(item => item.display_name.toLowerCase().includes(city.toLowerCase())) || geoData[0];
-
+                let matchedGeo = geoData[0];
                 let sunsetRes = await fetch(`https://api.sunrise-sunset.org/json?lat=${matchedGeo.lat}&lng=${matchedGeo.lon}&date=${dateVal}&formatted=0`);
                 let sunsetData = await sunsetRes.json();
+                
                 let isAfterSunset = new Date(`${dateVal}T${timeVal}:00`) > new Date(sunsetData.results.sunset);
-
                 let birthDt = new Date(`${dateVal}T${timeVal}:00`);
                 if (isAfterSunset) birthDt.setDate(birthDt.getDate() + 1);
 
@@ -694,6 +491,7 @@
                     bdayCheckData = await (await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`)).json();
                 }
 
+                // 3. עיבוד תוצאות וחישוב אסטרולוגיה
                 let hebrewYearOnly = bdayCheckData.hebrew ? "ה'" + bdayCheckData.hebrew.split(' ').pop().replace(/״/g, '"').replace(/׳/g, "'") : bdayCheckData.hy;
                 let nextBdayFormatted = `${bdayCheckData.gd}/${bdayCheckData.gm}/${bdayCheckData.gy}`;
                 let hebrewBdayFull = hebData.hebrew ? hebData.hebrew.replace(/״/g, '"').replace(/׳/g, "'") : hebData.hebrew;
@@ -702,180 +500,140 @@
                 let zIndex = getZodiacIndex(dateObj.getDate(), dateObj.getMonth() + 1);
                 let sunSign = zodiacSigns[zIndex];
                 let ascendant = calculateAscendant(zIndex, timeVal);
-                let birthYear = dateObj.getFullYear();
-                let chineseAnimal = getChineseZodiac(birthYear);
+                let chineseAnimal = getChineseZodiac(dateObj.getFullYear());
 
                 const daysHebrewArr = ["ראשון", "שני", "שלישי", "רביעי", "חמישי", "שישי", "שבת"];
                 let gregDayName = daysHebrewArr[dateObj.getDay()];
                 let hebDayName = daysHebrewArr[birthDt.getDay()]; 
 
                 let h = parseInt(timeVal.split(':')[0]);
-                let timeDesc = "";
-                if (h >= 0 && h < 5) timeDesc = "לפנות בוקר";
-                else if (h >= 5 && h < 12) timeDesc = "בבוקר";
-                else if (h >= 12 && h < 17) timeDesc = "בצהריים";
-                else if (h >= 17 && h < 20) timeDesc = "בערב";
-                else timeDesc = "בלילה";
-
-                // בנייה חדשה לתיאור היום המודגש (השעה והעיר בחוץ)
-                let exactDayString = "";
-                if (isAfterSunset) {
-                    exactDayString = `<strong>אור ליום ${hebDayName} בשבוע</strong>`;
-                } else {
-                    exactDayString = `<strong>ביום ${hebDayName} בשבוע</strong>`;
-                }
-
+                let timeDesc = (h >= 0 && h < 5) ? "לפנות בוקר" : (h >= 5 && h < 12) ? "בבוקר" : (h >= 12 && h < 17) ? "בצהריים" : (h >= 17 && h < 20) ? "בערב" : "בלילה";
+                
+                let exactDayString = isAfterSunset ? `<strong>אור ליום ${hebDayName} בשבוע</strong>` : `<strong>ביום ${hebDayName} בשבוע</strong>`;
                 let gregNote = (gregDayName !== hebDayName) ? ` (לפי השעון הלועזי: יום ${gregDayName})` : ``;
 
-                let deepSunDesc = deepDict[sunSign.name] || sunSign.desc;
-                let deepAscDesc = deepDict[ascendant] || ascendantTexts[ascendant];
-                let deepChineseDesc = deepDict[chineseAnimal] || chineseZodiacTexts[chineseAnimal];
+                // בחירת תיאורים לפי סוג דוח (עמוק או בסיסי)
+                let sunDesc = isDeep ? (deepDict[sunSign.name] || sunSign.desc) : sunSign.desc;
+                let ascDesc = isDeep ? (deepDict[ascendant] || ascendantTexts[ascendant]) : ascendantTexts[ascendant];
+                let chineseDesc = isDeep ? (deepDict[chineseAnimal] || chineseZodiacTexts[chineseAnimal]) : chineseZodiacTexts[chineseAnimal];
 
-                document.getElementById('resAstro').innerHTML = `
-                    <div class="result-item result-date" style="border-right-color: var(--premium-color); background-color: var(--premium-bg);">
-                        <h3 style="color: var(--premium-color); margin-top: 0;">דוח מיסטי עמוק (פרימיום)</h3>
-                        <p style="font-size: 1.2em; color: #1b4f72; margin-bottom: 5px;">תאריך הלידה העברי הוא: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
-                        <p style="font-size: 1em; color: #5d6d7e; margin-top: 3px; margin-bottom: 5px;">הלידה התרחשה ב${city}, ${exactDayString} בשעה ${timeVal} ${timeDesc}${gregNote}.</p>
-                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום ההולדת העברי הקרוב [<strong>${hebrewYearOnly}</strong>] יחול בתאריך: <strong>${nextBdayFormatted}</strong></p>
+                // 4. בניית פסקת אסטרולוגיה מעוצבת
+                let premiumStyle = isDeep ? 'style="border-right-color: var(--premium-color); background-color: var(--premium-bg);"' : '';
+                DOM.resAstro.innerHTML = `
+                    <div class="result-item result-date" ${premiumStyle}>
+                        ${isDeep ? '<h3 style="color: var(--premium-color); margin-top: 0; margin-bottom: 15px;">דוח מיסטי עמוק (פרימיום)</h3>' : ''}
+                        <p style="font-size: 1.3em; color: #1b4f72; margin: 8px 0;">תאריך הלידה העברי שלך הוא: <strong style="font-size: 1.4em;">${hebrewBdayFull}</strong></p>
+                        <p style="font-size: 1.1em; color: #1b4f72; margin: 8px 0;">הלידה התרחשה ב${city} ${exactDayString} בשעה ${timeVal} ${timeDesc}${gregNote}.</p>
+                        <p style="font-size: 1.1em; color: #1b4f72; margin: 8px 0;">יום ההולדת העברי הקרוב <strong style="font-size: 1.4em;">[${hebrewYearOnly}]</strong> יחול בתאריך: <strong style="font-size: 1.7em;">${nextBdayFormatted}</strong></p>
                     </div>
-                    <div class="result-item result-zodiac" style="border-right-color: var(--premium-color);">
-                        <h4 style="color: var(--premium-color);">מזל שמש: ${sunSign.name}</h4><p class="light-text">${deepSunDesc}</p>
+                    <div class="result-item result-zodiac" ${isDeep ? 'style="border-right-color: var(--premium-color);"' : ''}>
+                        <h4 ${isDeep ? 'style="color: var(--premium-color);"' : ''}>מזל שמש: ${sunSign.name}</h4><p class="light-text">${sunDesc}</p>
                     </div>
-                    <div class="result-item result-zodiac" style="border-right-color: var(--premium-color);">
-                        <h4 style="color: var(--premium-color);">מזל אופק: ${ascendant}</h4><p class="light-text">${deepAscDesc}</p>
+                    <div class="result-item result-zodiac" ${isDeep ? 'style="border-right-color: var(--premium-color);"' : ''}>
+                        <h4 ${isDeep ? 'style="color: var(--premium-color);"' : ''}>מזל אופק: ${ascendant}</h4><p class="light-text">${ascDesc}</p>
                     </div>
-                    <div class="result-item result-zodiac" style="border-right-color: var(--premium-color);">
-                        <h4 style="color: var(--premium-color);">מזל סיני: ${chineseAnimal}</h4><p class="light-text">${deepChineseDesc}</p>
+                    <div class="result-item result-zodiac" ${isDeep ? 'style="border-right-color: var(--premium-color);"' : ''}>
+                        <h4 ${isDeep ? 'style="color: var(--premium-color);"' : ''}>מזל סיני: ${chineseAnimal}</h4><p class="light-text">${chineseDesc}</p>
                     </div>
                 `;
 
+                // 5. בניית פסקת נומרולוגיה
                 let namesHtml = "";
                 const namesList = [
-                    { label: "שם פרטי", val: fName }, { label: "שם פרטי נוסף", val: mName },
-                    { label: "שם משפחה", val: lName }, { label: "שם משפחה נוסף", val: eName }
+                    { label: "שם פרטי", val: DOM.fName.value.trim() }, { label: "שם פרטי נוסף", val: DOM.mName.value.trim() },
+                    { label: "שם משפחה", val: DOM.lName.value.trim() }, { label: "שם משפחה נוסף", val: DOM.eName.value.trim() }
                 ];
+                let combinedNames = "";
 
                 namesList.forEach(item => {
                     if (item.val) {
+                        combinedNames += item.val;
                         let g = calcGematria(item.val); let n = calcNumerology(g);
-                        let nDesc = deepDict[n.toString()] || numerologyTexts[n];
-                        namesHtml += `
-                        <div class="result-item" style="border-right-color: var(--premium-color);">
-                            <h4 style="color: var(--premium-color);">${item.label}: ${item.val} (${g})</h4>
-                            <p><strong>מספר נומרולוגי: ${n}</strong></p>
-                            <p class="light-text">${nDesc}</p>
-                        </div>`;
+                        let desc = isDeep ? (deepDict[n.toString()] || numerologyTexts[n]) : numerologyTexts[n];
+                        namesHtml += `<div class="result-item" ${isDeep ? 'style="border-right-color: var(--premium-color);"' : ''}><h4 ${isDeep ? 'style="color: var(--premium-color);"' : ''}>${item.label}: ${item.val} (${g})</h4><p><strong>מספר נומרולוגי: ${n}</strong></p><p class="light-text">${desc}</p></div>`;
                     }
                 });
 
-                let totGematria = calcGematria(fName + (mName||"") + lName + (eName||""));
-                let totNum = calcNumerology(totGematria);
-                let totDesc = deepDict[totNum.toString()] || numerologyTexts[totNum];
-                namesHtml += `
-                <div class="result-item" style="border-right-color: var(--premium-color);">
-                    <h4 style="color: var(--premium-color);">כל השמות יחד (${totGematria})</h4>
-                    <p><strong>מספר נומרולוגי: ${totNum}</strong></p>
-                    <p class="light-text">${totDesc}</p>
-                </div>`;
+                let totG = calcGematria(combinedNames); let totN = calcNumerology(totG);
+                let totDesc = isDeep ? (deepDict[totN.toString()] || numerologyTexts[totN]) : numerologyTexts[totN];
+                namesHtml += `<div class="result-item" ${isDeep ? 'style="border-right-color: var(--premium-color);"' : ''}><h4 ${isDeep ? 'style="color: var(--premium-color);"' : ''}>כל השמות יחד (${totG})</h4><p><strong>מספר נומרולוגי: ${totN}</strong></p><p class="light-text">${totDesc}</p></div>`;
 
-                let dParts = dateVal.split('-');
-                let dateNumValue = calcNumerology(calcNumFromDigits(dateVal));
-                let dateDesc = deepDict[dateNumValue.toString()] || numerologyTexts[dateNumValue];
-                namesHtml += `
-                <div class="result-item" style="border-right-color: var(--premium-color);">
-                    <h4 style="color: var(--premium-color);">מספר מזל: ${dParts[2]}/${dParts[1]}/${dParts[0]}</h4>
-                    <p><strong>מספר נומרולוגי: ${dateNumValue}</strong></p>
-                    <p class="light-text">${dateDesc}</p>
-                </div>`;
+                let dateNum = calcNumerology(calcNumFromDigits(dateVal));
+                let dDesc = isDeep ? (deepDict[dateNum.toString()] || numerologyTexts[dateNum]) : numerologyTexts[dateNum];
+                namesHtml += `<div class="result-item" ${isDeep ? 'style="border-right-color: var(--premium-color);"' : ''}><h4 ${isDeep ? 'style="color: var(--premium-color);"' : ''}>מספר מזל: ${dateVal.split('-').reverse().join('/')}</h4><p><strong>מספר נומרולוגי: ${dateNum}</strong></p><p class="light-text">${dDesc}</p></div>`;
 
+                const phone = DOM.phone.value.trim();
+                const idNumber = DOM.idNumber.value.trim();
+                
                 if (phone) {
-                    let pNum = calcNumerology(calcNumFromDigits(phone));
-                    let pDesc = deepDict[pNum.toString()] || numerologyTexts[pNum];
-                    namesHtml += `
-                    <div class="result-item" style="border-right-color: var(--premium-color);">
-                        <h4 style="color: var(--premium-color);">מספר תקשורת: ${phone}</h4>
-                        <p><strong>מספר נומרולוגי: ${pNum}</strong></p>
-                        <p class="light-text">${pDesc}</p>
-                    </div>`;
+                    let pN = calcNumerology(calcNumFromDigits(phone));
+                    let pDesc = isDeep ? (deepDict[pN.toString()] || numerologyTexts[pN]) : numerologyTexts[pN];
+                    namesHtml += `<div class="result-item" ${isDeep ? 'style="border-right-color: var(--premium-color);"' : ''}><h4 ${isDeep ? 'style="color: var(--premium-color);"' : ''}>מספר תקשורת: ${phone}</h4><p><strong>מספר נומרולוגי: ${pN}</strong></p><p class="light-text">${pDesc}</p></div>`;
                 }
-
                 if (idNumber) {
-                    let idNumValue = calcNumerology(calcNumFromDigits(idNumber));
-                    let idDesc = deepDict[idNumValue.toString()] || numerologyTexts[idNumValue];
-                    namesHtml += `
-                    <div class="result-item" style="border-right-color: var(--premium-color);">
-                        <h4 style="color: var(--premium-color);">מספר זהות: ${idNumber}</h4>
-                        <p><strong>מספר נומרולוגי: ${idNumValue}</strong></p>
-                        <p class="light-text">${idDesc}</p>
-                    </div>`;
+                    let idN = calcNumerology(calcNumFromDigits(idNumber));
+                    let idDesc = isDeep ? (deepDict[idN.toString()] || numerologyTexts[idN]) : numerologyTexts[idN];
+                    namesHtml += `<div class="result-item" ${isDeep ? 'style="border-right-color: var(--premium-color);"' : ''}><h4 ${isDeep ? 'style="color: var(--premium-color);"' : ''}>מספר זהות: ${idNumber}</h4><p><strong>מספר נומרולוגי: ${idN}</strong></p><p class="light-text">${idDesc}</p></div>`;
                 }
 
-                // ==========================================
-                // תוספת מיוחדת: סוד האותיות מספר היצירה
-                // ==========================================
-                let lettersHtml = `
-                <div class="result-section" style="margin-top: 35px;">
-                    <h3 style="color: var(--premium-color); border-bottom: 2px solid var(--premium-color); padding-bottom: 5px; text-align: right;">סוד האותיות: חוכמת ספר היצירה בשמך</h3>
-                    <p style="margin-bottom: 15px; color: #555; text-align: right;">ניתוח מהותן של האותיות המרכיבות את שמותיך, החושפות את כוחות הנפש הפנימיים שלך.</p>
-                `;
-                
-                let combinedNames = fName + mName + lName + eName;
-                let cleanNames = combinedNames.replace(/[^א-ת]/g, ''); 
-                let uniqueLetters = [...new Set(cleanNames.split(''))];
-                
-                const finalLetters = {'ך':'כ', 'ם':'מ', 'ן':'נ', 'ף':'פ', 'ץ':'צ'};
+                // 6. תוספת סוד האותיות מתוך ספר היצירה (אך ורק בדוח עמוק)
+                if (isDeep) {
+                    namesHtml += `<div class="result-section" style="margin-top: 35px;"><h3 style="color: var(--premium-color); border-bottom: 2px solid var(--premium-color); padding-bottom: 5px; text-align: right;">סוד האותיות: חוכמת ספר היצירה בשמך</h3><p style="margin-bottom: 15px; color: #555; text-align: right;">ניתוח מהותן של האותיות המרכיבות את שמותיך, החושפות את כוחות הנפש הפנימיים שלך.</p>`;
+                    
+                    let cleanNames = combinedNames.replace(/[^א-ת]/g, ''); 
+                    let uniqueLetters = [...new Set(cleanNames.split(''))];
+                    const finalLetters = {'ך':'כ', 'ם':'מ', 'ן':'נ', 'ף':'פ', 'ץ':'צ'};
 
-                for (let i = 0; i < uniqueLetters.length; i++) {
-                    let char = uniqueLetters[i];
-                    let regularChar = finalLetters[char] ? finalLetters[char] : char;
-                    
-                    let cosmicRaw = deepDict['cosmic_' + regularChar] || '';
-                    let letterDesc = deepDict[regularChar] || "אות זו נושאת תדר אנרגטי פנימי הייחודי לשורש נשמתך.";
-                    
-                    let cosmicTitle = '';
-                    let cosmicContent = '';
-                    
-                    if (cosmicRaw) {
-                        const regex = /<strong>(.*?)<\/strong><br>/;
-                        const match = cosmicRaw.match(regex);
-                        if (match && match[1]) {
-                            cosmicTitle = match[1].replace(':', '').trim();
-                            cosmicContent = cosmicRaw.replace(match[0], '').trim();
-                        } else {
-                            cosmicContent = cosmicRaw;
+                    uniqueLetters.forEach(char => {
+                        let regularChar = finalLetters[char] || char;
+                        let cosmicRaw = deepDict['cosmic_' + regularChar] || '';
+                        let letterDesc = deepDict[regularChar] || "אות זו נושאת תדר אנרגטי פנימי הייחודי לשורש נשמתך.";
+                        let cosmicTitle = '', cosmicContent = '';
+                        
+                        if (cosmicRaw) {
+                            const regex = /<strong>(.*?)<\/strong><br>/;
+                            const match = cosmicRaw.match(regex);
+                            if (match && match[1]) {
+                                cosmicTitle = match[1].replace(':', '').trim();
+                                cosmicContent = cosmicRaw.replace(match[0], '').trim();
+                            } else { cosmicContent = cosmicRaw; }
                         }
-                    }
 
-                    lettersHtml += `
-                    <div class="result-item" style="border-right-color: var(--premium-color); background-color: #faf5fc; margin-bottom: 15px; padding: 15px;">
-                        <h4 style="color: var(--premium-color); margin-bottom: 10px; font-size: 1.2em;">האות ${char}' ${cosmicTitle ? ' • שיוך קוסמי: ' + cosmicTitle : ''}</h4>
-                        <p class="light-text" style="margin: 0 0 10px 0; line-height: 1.6; text-align: justify;">${letterDesc}</p>
-                        ${cosmicContent ? `
-                        <div style="background-color: #ffffff; padding: 10px 15px; border-radius: 6px; border-right: 3px solid #d2b4de; margin-top: 10px;">
-                            <p class="light-text" style="margin: 0; line-height: 1.6; text-align: justify;"><strong>ההשפעה הקוסמית:</strong> ${cosmicContent}</p>
-                        </div>` : ''}
-                    </div>`;
+                        namesHtml += `<div class="result-item" style="border-right-color: var(--premium-color); background-color: #faf5fc; margin-bottom: 15px; padding: 15px;">
+                            <h4 style="color: var(--premium-color); margin-bottom: 10px; font-size: 1.2em;">האות ${char}' ${cosmicTitle ? ' • שיוך קוסמי: ' + cosmicTitle : ''}</h4>
+                            <p class="light-text" style="margin: 0 0 10px 0; line-height: 1.6; text-align: justify;">${letterDesc}</p>
+                            ${cosmicContent ? `<div style="background-color: #ffffff; padding: 10px 15px; border-radius: 6px; border-right: 3px solid #d2b4de; margin-top: 10px;"><p class="light-text" style="margin: 0; line-height: 1.6; text-align: justify;"><strong>ההשפעה הקוסמית:</strong> ${cosmicContent}</p></div>` : ''}
+                        </div>`;
+                    });
+                    namesHtml += `</div>`;
                 }
-                lettersHtml += `</div>`;
-                // ==========================================
 
-                document.getElementById('resNamesNum').innerHTML = namesHtml + lettersHtml;
-                document.getElementById('resName').innerText = `${fName} ${lName}`;
-                document.getElementById('results').style.display = 'block';
+                // 7. הצגה סופית
+                DOM.resNamesNum.innerHTML = namesHtml;
+                DOM.resNameTitle.innerText = `${DOM.fName.value.trim()} ${DOM.lName.value.trim()}`;
+                DOM.resultsDiv.style.display = 'block';
 
             } catch (err) { alert("אירעה שגיאה בחישוב הנתונים: " + err.message); } 
-            finally { 
-                document.getElementById('calcBtn').disabled = false; 
-                document.querySelector('.premium-btn').disabled = false;
-                document.getElementById('loadingMsg').style.display = 'none'; 
-            }
+            finally { toggleUIState(false); }
         }
 
         // ==========================================
-        // פונקציית שיתוף לוואטסאפ (עם מעקף לדוחות ארוכים)
+        // 6. פונקציות יצוא (וואטסאפ ו-PDF)
         // ==========================================
+        function executePDFDownload() {
+            let pFirstName = DOM.fName.value.trim() || 'דוח';
+            let pLastName = DOM.lName.value.trim() || 'מיסטי';
+            let pBirthDate = DOM.dateVal.value;
+            let formattedDate = pBirthDate ? `-${pBirthDate.split('-').reverse().join('')}` : '';
+            
+            const originalTitle = document.title;
+            document.title = `${pFirstName}-${pLastName}${formattedDate}`;
+            window.print();
+            setTimeout(() => document.title = originalTitle, 1000);
+        }
+
         async function executeWhatsAppShare() {
-            const phone = document.getElementById('phone').value.trim();
+            const phone = DOM.phone.value.trim();
             if (!phone) return alert("אנא הזן מספר טלפון לשיתוף.");
             
             const reportText = document.getElementById('contentToPrint').innerText;
@@ -895,58 +653,38 @@
         }
 
         // ==========================================
-        // PWA - רישום האפליקציה והתקנה
+        // PWA - רישום האפליקציה
         // ==========================================
-        
         if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Error:', err));
-            });
+            window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Error:', err)));
         }
 
         let deferredPrompt;
-        
         const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
         const isInstalledLocally = localStorage.getItem('mysticAppInstalled') === 'true';
 
         window.addEventListener('beforeinstallprompt', (e) => {
-            e.preventDefault(); 
-            deferredPrompt = e;
-            
-            if (!isStandalone && !isInstalledLocally) {
-                document.getElementById('installBanner').style.display = 'block';
-            }
+            e.preventDefault(); deferredPrompt = e;
+            if (!isStandalone && !isInstalledLocally) document.getElementById('installBanner').style.display = 'block';
         });
 
         async function installApp() {
             if (deferredPrompt) {
                 deferredPrompt.prompt();
                 const { outcome } = await deferredPrompt.userChoice;
-                
-                if (outcome === 'accepted') {
-                    console.log('המשתמש אישר את ההתקנה');
-                    localStorage.setItem('mysticAppInstalled', 'true');
-                }
-                
+                if (outcome === 'accepted') localStorage.setItem('mysticAppInstalled', 'true');
                 deferredPrompt = null; 
                 document.getElementById('installBanner').style.display = 'none';
             }
         }
 
-        window.addEventListener('appinstalled', (evt) => {
-            console.log('ההתקנה הושלמה בהצלחה ברמת מערכת ההפעלה');
+        window.addEventListener('appinstalled', () => {
             localStorage.setItem('mysticAppInstalled', 'true');
             document.getElementById('installBanner').style.display = 'none';
         });
 
-        const isIos = () => {
-            const userAgent = window.navigator.userAgent.toLowerCase();
-            return /iphone|ipad|ipod/.test(userAgent);
-        };
-        
-        if (isIos() && !isStandalone && !isInstalledLocally) {
-            document.getElementById('iosInstallBanner').style.display = 'block';
-        }
+        const isIos = () => /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+        if (isIos() && !isStandalone && !isInstalledLocally) document.getElementById('iosInstallBanner').style.display = 'block';
 
         window.addEventListener('DOMContentLoaded', () => { updateNetworkStatus(); fetchDynamicTexts(); syncOfflineLogs(); });
     </script>
