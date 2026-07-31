@@ -142,10 +142,10 @@
 
         <div class="form-row">
             <div class="form-group"><label>תאריך לידה (חובה):</label><input type="date" id="birthDate" autocomplete="bday"></div>
-            <div class="form-group"><label>שעת לידה (24 שעות):</label><input type="time" id="birthTime" value="12:00"></div>
+            <div class="form-group"><label>שעת לידה (24 שעות):</label><input type="time" id="birthTime" value="15:00"></div>
             <div class="form-group">
                 <label>עיר לידה (לא חובה):</label>
-                <input type="text" id="city" value="ירושלים" autocomplete="off" oninput="fetchCitySuggestions(this.value)">
+                <input type="text" id="city" value="יפו" autocomplete="off" oninput="fetchCitySuggestions(this.value)">
                 <div id="citySuggestionsBox" class="suggestions-box"></div>
             </div>
         </div>
@@ -301,7 +301,7 @@
                 const getFieldValue = (id) => { const el = document.getElementById(id); return el && el.value.trim() !== '' ? el.value.trim() : null; };
 
                 let cityValue = getFieldValue('city');
-                if (!cityValue) cityValue = "ירושלים";
+                if (!cityValue) cityValue = "יפו";
 
                 let logEntry = {
                     action_date: now.toISOString().split('T')[0],
@@ -467,7 +467,7 @@
             const dateVal = document.getElementById('birthDate').value;
             let city = document.getElementById('city').value.trim();
 
-            if (!city) { city = "ירושלים"; }
+            if (!city) { city = "יפו"; }
 
             if (actionType === 'basic_report' || actionType === 'deep_report') {
                 if (!fName || !lName || !phone || !dateVal) { alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון ותאריך לידה."); return; }
@@ -499,7 +499,7 @@
             const eName = document.getElementById('extraLastName').value.trim();
             const dateVal = document.getElementById('birthDate').value;
             const timeVal = document.getElementById('birthTime').value;
-            let city = document.getElementById('city').value.trim() || "ירושלים";
+            let city = document.getElementById('city').value.trim() || "יפו";
             const phone = document.getElementById('phone').value.trim();
             const idNumber = document.getElementById('idNumber').value.trim();
 
@@ -563,20 +563,21 @@
                 else if (h >= 17 && h < 20) timeDesc = "בערב";
                 else timeDesc = "בלילה";
 
+                // בנייה מעודכנת לתיאור היום המודגש (הפסיק הוסר מהמשפט השלם בהמשך)
                 let exactDayString = "";
                 if (isAfterSunset) {
-                    exactDayString = `אור ליום ${hebDayName} בשבוע, בשעה ${timeVal} ${timeDesc}`;
+                    exactDayString = `<strong>אור ליום ${hebDayName} בשבוע</strong>`;
                 } else {
-                    exactDayString = `ביום ${hebDayName} בשבוע, בשעה ${timeVal} ${timeDesc}`;
+                    exactDayString = `<strong>ביום ${hebDayName} בשבוע</strong>`;
                 }
 
                 let gregNote = (gregDayName !== hebDayName) ? ` (לפי השעון הלועזי: יום ${gregDayName})` : ``;
 
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date">
-                        <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
-                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong> <span style="font-weight: bold; font-size: 1.5em;">[${hebrewYearOnly}]</span></p>
-                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">הלידה התרחשה <strong>${exactDayString}</strong>${gregNote}, בעיר ${city}.</p>
+                        <p style="font-size: 1.2em; color: #1b4f72; margin-bottom: 5px;">תאריך הלידה העברי הוא: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
+                        <p style="font-size: 1em; color: #5d6d7e; margin-top: 3px; margin-bottom: 5px;">הלידה התרחשה ב${city} ${exactDayString} בשעה ${timeVal} ${timeDesc}${gregNote}.</p>
+                        <p style="font-size: 1.05em; color: #1b4f72; margin-top: 5px;">יום ההולדת העברי הקרוב [<strong style="font-size: 1.4em;">${hebrewYearOnly}</strong>] יחול בתאריך: <strong style="font-size: 1.7em;">${nextBdayFormatted}</strong></p>
                     </div>
                     <div class="result-item result-zodiac">
                         <h4>מזל שמש: ${sunSign.name}</h4><p class="light-text">${sunSign.desc}</p>
@@ -642,7 +643,7 @@
             const eName = document.getElementById('extraLastName').value.trim();
             const dateVal = document.getElementById('birthDate').value;
             const timeVal = document.getElementById('birthTime').value;
-            let city = document.getElementById('city').value.trim() || "ירושלים";
+            let city = document.getElementById('city').value.trim() || "יפו";
             const phone = document.getElementById('phone').value.trim();
             const idNumber = document.getElementById('idNumber').value.trim();
 
@@ -716,11 +717,12 @@
                 else if (h >= 17 && h < 20) timeDesc = "בערב";
                 else timeDesc = "בלילה";
 
+                // בנייה מעודכנת לתיאור היום המודגש (הפסיק הוסר מהמשפט השלם בהמשך)
                 let exactDayString = "";
                 if (isAfterSunset) {
-                    exactDayString = `אור ליום ${hebDayName} בשבוע, בשעה ${timeVal} ${timeDesc}`;
+                    exactDayString = `<strong>אור ליום ${hebDayName} בשבוע</strong>`;
                 } else {
-                    exactDayString = `ביום ${hebDayName} בשבוע, בשעה ${timeVal} ${timeDesc}`;
+                    exactDayString = `<strong>ביום ${hebDayName} בשבוע</strong>`;
                 }
 
                 let gregNote = (gregDayName !== hebDayName) ? ` (לפי השעון הלועזי: יום ${gregDayName})` : ``;
@@ -732,9 +734,9 @@
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date" style="border-right-color: var(--premium-color); background-color: var(--premium-bg);">
                         <h3 style="color: var(--premium-color); margin-top: 0;">דוח מיסטי עמוק (פרימיום)</h3>
-                        <p style="font-size: 1.2em; color: #1b4f72;">תאריך לידה עברי: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
-                        <p style="font-size: 0.9em; color: #1b4f72; margin-top: 5px;">יום הולדת עברי עתידי קרוב: <strong style="font-size: 1.3em;">${nextBdayFormatted}</strong> <span style="font-weight: bold; font-size: 1.5em;">[${hebrewYearOnly}]</span></p>
-                        <p style="font-size: 0.85em; color: #5d6d7e; margin-top: 3px;">הלידה התרחשה <strong>${exactDayString}</strong>${gregNote}, בעיר ${city}.</p>
+                        <p style="font-size: 1.2em; color: #1b4f72; margin-bottom: 5px;">תאריך הלידה העברי הוא: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
+                        <p style="font-size: 1em; color: #5d6d7e; margin-top: 3px; margin-bottom: 5px;">הלידה התרחשה ב${city} ${exactDayString} בשעה ${timeVal} ${timeDesc}${gregNote}.</p>
+                        <p style="font-size: 1.05em; color: #1b4f72; margin-top: 5px;">יום ההולדת העברי הקרוב [<strong style="font-size: 1.4em;">${hebrewYearOnly}</strong>] יחול בתאריך: <strong style="font-size: 1.7em;">${nextBdayFormatted}</strong></p>
                     </div>
                     <div class="result-item result-zodiac" style="border-right-color: var(--premium-color);">
                         <h4 style="color: var(--premium-color);">מזל שמש: ${sunSign.name}</h4><p class="light-text">${deepSunDesc}</p>
@@ -833,17 +835,20 @@
                     let cosmicTitle = '';
                     let cosmicContent = '';
                     
-                    if (cosmicRaw.includes('</strong><br>')) {
-                        let parts = cosmicRaw.split('</strong><br>');
-                        cosmicTitle = parts[0].replace('<strong>', '').replace(':', '').trim();
-                        cosmicContent = parts[1].trim();
-                    } else {
-                        cosmicContent = cosmicRaw;
+                    if (cosmicRaw) {
+                        const regex = /<strong>(.*?)<\/strong><br>/;
+                        const match = cosmicRaw.match(regex);
+                        if (match && match[1]) {
+                            cosmicTitle = match[1].replace(':', '').trim();
+                            cosmicContent = cosmicRaw.replace(match[0], '').trim();
+                        } else {
+                            cosmicContent = cosmicRaw;
+                        }
                     }
 
                     lettersHtml += `
                     <div class="result-item" style="border-right-color: var(--premium-color); background-color: #faf5fc; margin-bottom: 15px; padding: 15px;">
-                        <h4 style="color: var(--premium-color); margin-bottom: 10px; font-size: 1.2em;">האות ${char}' ${cosmicTitle ? ' - ' + cosmicTitle : ''}</h4>
+                        <h4 style="color: var(--premium-color); margin-bottom: 10px; font-size: 1.2em;">האות ${char}' ${cosmicTitle ? ' • שיוך קוסמי: ' + cosmicTitle : ''}</h4>
                         <p class="light-text" style="margin: 0 0 10px 0; line-height: 1.6; text-align: justify;">${letterDesc}</p>
                         ${cosmicContent ? `
                         <div style="background-color: #ffffff; padding: 10px 15px; border-radius: 6px; border-right: 3px solid #d2b4de; margin-top: 10px;">
