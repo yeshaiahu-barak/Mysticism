@@ -563,7 +563,6 @@
                 else if (h >= 17 && h < 20) timeDesc = "בערב";
                 else timeDesc = "בלילה";
 
-                // בנייה מעודכנת לתיאור היום המודגש (הפסיק הוסר מהמשפט השלם בהמשך)
                 let exactDayString = "";
                 if (isAfterSunset) {
                     exactDayString = `<strong>אור ליום ${hebDayName} בשבוע</strong>`;
@@ -575,9 +574,9 @@
 
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date">
-                        <p style="font-size: 1.2em; color: #1b4f72; margin-bottom: 5px;">תאריך הלידה העברי הוא: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
-                        <p style="font-size: 1em; color: #5d6d7e; margin-top: 3px; margin-bottom: 5px;">הלידה התרחשה ב${city} ${exactDayString} בשעה ${timeVal} ${timeDesc}${gregNote}.</p>
-                        <p style="font-size: 1.05em; color: #1b4f72; margin-top: 5px;">יום ההולדת העברי הקרוב [<strong style="font-size: 1.4em;">${hebrewYearOnly}</strong>] יחול בתאריך: <strong style="font-size: 1.7em;">${nextBdayFormatted}</strong></p>
+                        <p style="font-size: 1.3em; color: #1b4f72; margin-bottom: 5px;">תאריך הלידה העברי הוא: <strong style="font-size: 1.4em;">${hebrewBdayFull}</strong></p>
+                        <p style="font-size: 1.05em; color: #5d6d7e; margin-top: 3px; margin-bottom: 5px;">הלידה התרחשה ב${city} ${exactDayString} בשעה ${timeVal} ${timeDesc}${gregNote}.</p>
+                        <p style="font-size: 1.05em; color: #1b4f72; margin-top: 5px;">יום ההולדת העברי הקרוב <strong style="font-size: 1.4em;">[${hebrewYearOnly}]</strong> יחול בתאריך: <strong style="font-size: 1.7em;">${nextBdayFormatted}</strong></p>
                     </div>
                     <div class="result-item result-zodiac">
                         <h4>מזל שמש: ${sunSign.name}</h4><p class="light-text">${sunSign.desc}</p>
@@ -717,7 +716,6 @@
                 else if (h >= 17 && h < 20) timeDesc = "בערב";
                 else timeDesc = "בלילה";
 
-                // בנייה מעודכנת לתיאור היום המודגש (הפסיק הוסר מהמשפט השלם בהמשך)
                 let exactDayString = "";
                 if (isAfterSunset) {
                     exactDayString = `<strong>אור ליום ${hebDayName} בשבוע</strong>`;
@@ -734,9 +732,9 @@
                 document.getElementById('resAstro').innerHTML = `
                     <div class="result-item result-date" style="border-right-color: var(--premium-color); background-color: var(--premium-bg);">
                         <h3 style="color: var(--premium-color); margin-top: 0;">דוח מיסטי עמוק (פרימיום)</h3>
-                        <p style="font-size: 1.2em; color: #1b4f72; margin-bottom: 5px;">תאריך הלידה העברי הוא: <strong style="font-size: 1.3em;">${hebrewBdayFull}</strong></p>
-                        <p style="font-size: 1em; color: #5d6d7e; margin-top: 3px; margin-bottom: 5px;">הלידה התרחשה ב${city} ${exactDayString} בשעה ${timeVal} ${timeDesc}${gregNote}.</p>
-                        <p style="font-size: 1.05em; color: #1b4f72; margin-top: 5px;">יום ההולדת העברי הקרוב [<strong style="font-size: 1.4em;">${hebrewYearOnly}</strong>] יחול בתאריך: <strong style="font-size: 1.7em;">${nextBdayFormatted}</strong></p>
+                        <p style="font-size: 1.3em; color: #1b4f72; margin-bottom: 5px;">תאריך הלידה העברי הוא: <strong style="font-size: 1.4em;">${hebrewBdayFull}</strong></p>
+                        <p style="font-size: 1.05em; color: #5d6d7e; margin-top: 3px; margin-bottom: 5px;">הלידה התרחשה ב${city} ${exactDayString} בשעה ${timeVal} ${timeDesc}${gregNote}.</p>
+                        <p style="font-size: 1.05em; color: #1b4f72; margin-top: 5px;">יום ההולדת העברי הקרוב <strong style="font-size: 1.4em;">[${hebrewYearOnly}]</strong> יחול בתאריך: <strong style="font-size: 1.7em;">${nextBdayFormatted}</strong></p>
                     </div>
                     <div class="result-item result-zodiac" style="border-right-color: var(--premium-color);">
                         <h4 style="color: var(--premium-color);">מזל שמש: ${sunSign.name}</h4><p class="light-text">${deepSunDesc}</p>
