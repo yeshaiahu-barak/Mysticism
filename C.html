@@ -8,12 +8,11 @@
     <!-- חיבור לקובץ ההגדרות (Manifest) -->
     <link rel="manifest" href="manifest.json">
     
-    <!-- [למתחזק]: כאן מתבצעת האינטגרציה ל-Supabase. ודא שגרסת הספריה מעודכנת. -->
+    <!-- חיבור לספריית Supabase ולקובץ ההגדרות -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     
     <style>
-        /* [למתחזק]: כל צבעי המערכת מרוכזים כאן. לשינוי מיתוג המערכת (Theme), ערוך את המשתנים הללו בלבד. */
         :root {
             --primary-color: #3498db;
             --primary-dark: #2980b9;
@@ -96,7 +95,6 @@
 <body>
 
     <div class="container">
-        <!-- [לבודק]: נתק את האינטרנט כדי לבדוק שהבאנר הזה אכן מופיע ומתריע על מצב אופליין -->
         <div id="networkStatus">מצב אופליין: אין חיבור לאינטרנט. הפעולות נשמרות מקומית.</div>
         
         <div id="installBanner" onclick="installApp()">📲 התקן את האפליקציה על המכשיר שלך לחוויה מהירה ומושלמת</div>
@@ -122,8 +120,7 @@
             <div class="form-group"><label>תאריך לידה (חובה):</label><input type="date" id="birthDate" autocomplete="bday"></div>
             <div class="form-group"><label>שעת לידה (24 שעות):</label><input type="time" id="birthTime" value="15:00"></div>
             <div class="form-group">
-                <label>עיר לידה (לא חובה):</label>
-                <input type="text" id="city" value="יפו" autocomplete="off" oninput="fetchCitySuggestions(this.value)">
+                <label>עיר לידה (לא חובה):</label><input type="text" id="city" value="יפו" autocomplete="off" oninput="fetchCitySuggestions(this.value)">
                 <div id="citySuggestionsBox" class="suggestions-box"></div>
             </div>
         </div>
@@ -150,10 +147,6 @@
     </div>
 
     <script>
-        // ==========================================
-        // 1. הגדרות וניהול זיכרון - חיסכון ויעילות
-        // ==========================================
-        // [למתחזק]: שמירת האלמנטים במשתנה מרכזי חוסכת פניות ל-DOM ומשפרת משמעותית את הביצועים.
         const DOM = {
             fName: document.getElementById('firstName'),
             mName: document.getElementById('middleName'),
@@ -175,9 +168,6 @@
             citySuggestionsBox: document.getElementById('citySuggestionsBox')
         };
 
-        // ==========================================
-        // 2. מילוני נתונים (Hardcoded Fallback)
-        // ==========================================
         const gematriaDict = {
             'א':1,'ב':2,'ג':3,'ד':4,'ה':5,'ו':6,'ז':7,'ח':8,'ט':9,'י':10,
             'כ':20,'ך':20,'ל':30,'מ':40,'ם':40,'נ':50,'ן':50,'ס':60,'ע':70,
@@ -241,25 +231,27 @@
             "עז": "יצירתיות, רוגע ואמפתיה."
         };
 
-        // ==========================================
-        // 3. אינטגרציה לתשתיות ושרתים
-        // ==========================================
         async function fetchDynamicTexts() {
             if (!navigator.onLine || typeof supabaseClient === 'undefined') return;
             try {
-                const { data, error } = await supabaseClient.from('dynamic_texts').select('*');
+                const { data, error } = await supabaseClient.from('unified_report_texts')
+                                            .select('*')
+                                            .eq('report_type', 'basic');
                 if (error) return;
-                if (data) {
+                
+                if (data && data.length > 0) {
                     data.forEach(item => {
-                        const key = item.item_key;      
+                        const category = item.category; 
+                        const key = item.section_key; 
                         const content = item.content; 
-                        if (item.category === 'numerology' || item.category === 'נומרולוגיה') numerologyTexts[key] = content;
-                        else if (item.category === 'zodiac' || item.category === 'מזלות') {
+
+                        if (category === 'numerology' || category === 'נומרולוגיה') numerologyTexts[key] = content;
+                        else if (category === 'zodiac' || category === 'מזלות') {
                             let zIndex = zodiacSigns.findIndex(z => z.name === key);
                             if (zIndex !== -1) zodiacSigns[zIndex].desc = content;
                         } 
-                        else if (item.category === 'ascendant' || item.category === 'אופק') ascendantTexts[key] = content;
-                        else if (item.category === 'chinese_zodiac' || item.category === 'מזל_סיני') chineseZodiacTexts[key] = content;
+                        else if (category === 'ascendant' || category === 'אופק') ascendantTexts[key] = content;
+                        else if (category === 'chinese_zodiac' || category === 'מזל_סיני') chineseZodiacTexts[key] = content;
                     });
                 }
             } catch (err) {}
@@ -353,9 +345,6 @@
             }
         });
 
-        // ==========================================
-        // 4. לוגיקה מתמטית וחישובית (Core Logic)
-        // ==========================================
         function calcGematria(word) {
             let sum = 0; if (!word) return 0;
             for (let i = 0; i < word.length; i++) { if (gematriaDict[word[i]]) sum += gematriaDict[word[i]]; }
@@ -409,9 +398,6 @@
             return animals[year % 12];
         }
 
-        // ==========================================
-        // 5. ניהול ובקרת תצוגה (UI Controllers)
-        // ==========================================
         function toggleUIState(isLoading) {
             DOM.calcBtn.disabled = isLoading;
             DOM.premiumBtn.disabled = isLoading;
@@ -420,7 +406,6 @@
         }
 
         async function handleUserAction(reportType) {
-            // טיפול בשיתוף והורדה נשאר בפונקציות הייעודיות מחוץ לזרימה זו
             await writeToExperimentLog(reportType + '_report');
 
             const fName = DOM.fName.value.trim();
@@ -428,7 +413,6 @@
             const phone = DOM.phone.value.trim();
             const dateVal = DOM.dateVal.value;
 
-            // [לבודק]: אימות השדות לפני שליחה
             if (!fName || !lName || !phone || !dateVal) { alert("חובה למלא: שם פרטי, שם משפחה, מספר טלפון ותאריך לידה."); return; }
             
             const hebrewRegex = /^[\u0590-\u05FF\s'-]+$/;
@@ -439,11 +423,9 @@
             if (!/^\d+$/.test(phone)) { alert("מספר טלפון חייב להכיל ספרות בלבד."); return; }
             if (DOM.idNumber.value.trim() && !/^\d+$/.test(DOM.idNumber.value.trim())) { alert("מספר תעודת זהות חייב להכיל ספרות בלבד."); return; }
 
-            // קריאה לפונקציה המרכזית האחודה!
             generateReport(reportType === 'deep');
         }
 
-        // [למתחזק]: זוהי פונקציית הליבה המודולרית החדשה שמחליפה את שתי הפונקציות הארוכות הישנות!
         async function generateReport(isDeep) {
             toggleUIState(true);
             try {
@@ -451,18 +433,17 @@
                 const timeVal = DOM.timeVal.value || "15:00";
                 let city = DOM.city.value.trim() || "יפו";
                 
-                // בדיקת רשת
                 if (!navigator.onLine) throw new Error("אין חיבור אינטרנט פעיל. לא ניתן להמיר תאריכים עבריים.");
 
-                // 1. שליפת מילון פרימיום במידת הצורך
                 let deepDict = {};
                 if (isDeep) {
-                    const { data, error } = await supabaseClient.from('deep_report_texts').select('section_key, content');
+                    const { data, error } = await supabaseClient.from('unified_report_texts')
+                                                .select('section_key, content')
+                                                .eq('report_type', 'deep');
                     if (error) throw error;
                     if (data) data.forEach(item => deepDict[item.section_key] = item.content);
                 }
 
-                // 2. קריאות ל-API לחישובי תאריכים ומקומות
                 let geoRes = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(city)}&limit=1`);
                 let geoData = await geoRes.json();
                 if (geoData.length === 0) throw new Error("העיר לא נמצאה.");
@@ -491,7 +472,6 @@
                     bdayCheckData = await (await fetch(`https://www.hebcal.com/converter?cfg=json&hy=${targetHy}&hm=${hebData.hm}&hd=${hebData.hd}&h2g=1`)).json();
                 }
 
-                // 3. עיבוד תוצאות וחישוב אסטרולוגיה
                 let hebrewYearOnly = bdayCheckData.hebrew ? "ה'" + bdayCheckData.hebrew.split(' ').pop().replace(/״/g, '"').replace(/׳/g, "'") : bdayCheckData.hy;
                 let nextBdayFormatted = `${bdayCheckData.gd}/${bdayCheckData.gm}/${bdayCheckData.gy}`;
                 let hebrewBdayFull = hebData.hebrew ? hebData.hebrew.replace(/״/g, '"').replace(/׳/g, "'") : hebData.hebrew;
@@ -512,12 +492,10 @@
                 let exactDayString = isAfterSunset ? `<strong>אור ליום ${hebDayName} בשבוע</strong>` : `<strong>ביום ${hebDayName} בשבוע</strong>`;
                 let gregNote = (gregDayName !== hebDayName) ? ` (לפי השעון הלועזי: יום ${gregDayName})` : ``;
 
-                // בחירת תיאורים לפי סוג דוח (עמוק או בסיסי)
                 let sunDesc = isDeep ? (deepDict[sunSign.name] || sunSign.desc) : sunSign.desc;
                 let ascDesc = isDeep ? (deepDict[ascendant] || ascendantTexts[ascendant]) : ascendantTexts[ascendant];
                 let chineseDesc = isDeep ? (deepDict[chineseAnimal] || chineseZodiacTexts[chineseAnimal]) : chineseZodiacTexts[chineseAnimal];
 
-                // 4. בניית פסקת אסטרולוגיה מעוצבת
                 let premiumStyle = isDeep ? 'style="border-right-color: var(--premium-color); background-color: var(--premium-bg);"' : '';
                 DOM.resAstro.innerHTML = `
                     <div class="result-item result-date" ${premiumStyle}>
@@ -537,7 +515,6 @@
                     </div>
                 `;
 
-                // 5. בניית פסקת נומרולוגיה
                 let namesHtml = "";
                 const namesList = [
                     { label: "שם פרטי", val: DOM.fName.value.trim() }, { label: "שם פרטי נוסף", val: DOM.mName.value.trim() },
@@ -576,7 +553,6 @@
                     namesHtml += `<div class="result-item" ${isDeep ? 'style="border-right-color: var(--premium-color);"' : ''}><h4 ${isDeep ? 'style="color: var(--premium-color);"' : ''}>מספר זהות: ${idNumber}</h4><p><strong>מספר נומרולוגי: ${idN}</strong></p><p class="light-text">${idDesc}</p></div>`;
                 }
 
-                // 6. תוספת סוד האותיות מתוך ספר היצירה (אך ורק בדוח עמוק)
                 if (isDeep) {
                     namesHtml += `<div class="result-section" style="margin-top: 35px;"><h3 style="color: var(--premium-color); border-bottom: 2px solid var(--premium-color); padding-bottom: 5px; text-align: right;">סוד האותיות: חוכמת ספר היצירה בשמך</h3><p style="margin-bottom: 15px; color: #555; text-align: right;">ניתוח מהותן של האותיות המרכיבות את שמותיך, החושפות את כוחות הנפש הפנימיים שלך.</p>`;
                     
@@ -608,7 +584,6 @@
                     namesHtml += `</div>`;
                 }
 
-                // 7. הצגה סופית
                 DOM.resNamesNum.innerHTML = namesHtml;
                 DOM.resNameTitle.innerText = `${DOM.fName.value.trim()} ${DOM.lName.value.trim()}`;
                 DOM.resultsDiv.style.display = 'block';
@@ -617,9 +592,6 @@
             finally { toggleUIState(false); }
         }
 
-        // ==========================================
-        // 6. פונקציות יצוא (וואטסאפ ו-PDF)
-        // ==========================================
         function executePDFDownload() {
             let pFirstName = DOM.fName.value.trim() || 'דוח';
             let pLastName = DOM.lName.value.trim() || 'מיסטי';
@@ -652,9 +624,6 @@
             }
         }
 
-        // ==========================================
-        // PWA - רישום האפליקציה
-        // ==========================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Error:', err)));
         }
