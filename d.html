@@ -279,7 +279,7 @@
             }
         }
 
-async function writeToExperimentLog(actionType) {
+        async function writeToExperimentLog(actionType) {
             try {
                 const now = new Date();
                 let cityValue = DOM.city.value.trim() || "יפו";
@@ -630,49 +630,38 @@ async function writeToExperimentLog(actionType) {
             const reportText = document.getElementById('contentToPrint').innerText;
             const cleanPhone = phone.replace(/^0/, '972').replace(/\D/g, '');
 
-            const encodedText = encodeURIComponent(reportText);
-            
-            console.log("📏 אורך הדוח נטו (תווים):", reportText.length);
-            console.log("⚖️ משקל הקישור שנוצר עבור וואטסאפ (תווים מקודדים):", encodedText.length);
-
-            // אם הקישור כבד מדי (מעל 10,000) עוברים לשיטת ההדבקה
-            if (encodedText.length > 10000) {
-                try {
-                    let copySuccess = false;
-                    
-                    // נסיון 1: מערכת העתקה מודרנית (עובדת רק בשרת מאובטח HTTPS)
-                    if (navigator.clipboard && window.isSecureContext) {
-                        await navigator.clipboard.writeText(reportText);
-                        copySuccess = true;
-                    } else {
-                        // נסיון 2: מנגנון גיבוי לעבודה מקומית על המחשב (Local File)
-                        let textArea = document.createElement("textarea");
-                        textArea.value = reportText;
-                        textArea.style.position = "fixed";  // מונע קפיצה של המסך
-                        textArea.style.opacity = "0";       // מסתיר את האלמנט מעיני המשתמש
-                        document.body.appendChild(textArea);
-                        textArea.focus();
-                        textArea.select();
-                        copySuccess = document.execCommand('copy');
-                        document.body.removeChild(textArea);
-                    }
-                    
-                    if (copySuccess) {
-                        alert("הדוח המופק מלא בתוכן עשיר ולכן הועתק אוטומטית ללוח המכשיר שלך!\n\nמיד תועבר לוואטסאפ - פשוט לחץ 'הדבק' (Paste) בשורת ההודעה כדי לשלוח אותו ללקוח.");
-                        window.location.href = `whatsapp://send?phone=${cleanPhone}`;
-                    } else {
-                        throw new Error("הדפדפן מנע את פקודת ההעתקה בכל השיטות.");
-                    }
-                } catch (err) {
-                    console.error("❌ שגיאה בהעתקה ללוח:", err);
-                    alert("הדוח ארוך מאוד ומערכת ההפעלה חסמה את ההעתקה האוטומטית. אנא השתמש בכפתור הורדת ה-PDF ושלח את הקובץ ללקוח.");
+            try {
+                let copySuccess = false;
+                
+                // נסיון 1: מערכת העתקה מודרנית (בטוחה ומהירה)
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(reportText);
+                    copySuccess = true;
+                } else {
+                    // נסיון 2: מנגנון גיבוי אמין לעבודה מקומית
+                    let textArea = document.createElement("textarea");
+                    textArea.value = reportText;
+                    textArea.style.position = "fixed";
+                    textArea.style.opacity = "0";
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    copySuccess = document.execCommand('copy');
+                    document.body.removeChild(textArea);
                 }
-            } else {
-                // הדוח קל ובטוח - נשלח אותו אוטומטית בתוך הקישור
-                window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodedText}`;
+                
+                if (copySuccess) {
+                    alert("הדוח הועתק בהצלחה ללוח המכשיר!\n\nמיד תועבר לוואטסאפ - לחץ 'הדבק' (Paste) בשורת ההודעה כדי לשלוח ללקוח.");
+                    window.location.href = `whatsapp://send?phone=${cleanPhone}`;
+                } else {
+                    throw new Error("הדפדפן מנע את פקודת ההעתקה.");
+                }
+            } catch (err) {
+                console.error("❌ שגיאה בהעתקה ללוח:", err);
+                alert("מערכת ההפעלה חסמה את ההעתקה. אנא השתמש בכפתור הורדת ה-PDF ושלח את הקובץ ללקוח.");
             }
         }
-
+        
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Error:', err)));
         }
