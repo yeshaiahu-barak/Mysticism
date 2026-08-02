@@ -12,9 +12,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     
-    <!-- ספריית המרת HTML ל-PDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    
     <style>
         :root {
             --primary-color: #3498db;
@@ -79,9 +76,7 @@
         #results { margin-top: 30px; display: none; }
         #contentToPrint { background-color: #ffffff; padding: 20px; border: 2px solid #ecf0f1; border-radius: 8px; direction: rtl; text-align: right; }
         
-        /* הסרת הקו התחתון לחלוטין כפי שביקשת למניעת שיבושים */
-        #contentToPrint h2 { text-decoration: none; border: none; margin-bottom: 25px; text-align: center;}
-        #contentToPrint .title-wrapper { text-align: center; } 
+        #contentToPrint h2 { text-align: center; margin-bottom: 25px; color: var(--text-color); }
         
         .result-section { margin-bottom: 15px; }
         .result-item { background: #f7fbfe; padding: 15px; margin-bottom: 12px; border-radius: 6px; border-right: 5px solid #85c1e9; }
@@ -90,13 +85,12 @@
         
         .result-item h4 { margin: 0 0 8px 0; font-size: 1.1em; color: var(--text-color); }
         
-        /* התיקון הגדול: החזרת היישור הדו-צדדי והגנה על הרווחים בין המילים בעזרת word-spacing */
+        /* יישור דו-צדדי (Justify) תקני ונקי בעברית */
         .result-item p { 
             margin: 0 0 5px 0; 
             color: #333; 
             text-align: justify; 
             text-justify: inter-word; 
-            word-spacing: 0.15em; 
         }
         .light-text { color: #555 !important; }
 
@@ -109,8 +103,7 @@
             .form-row, h1, .action-buttons-top, .action-buttons-bottom, #loadingMsg, #networkStatus, #installBanner, #iosInstallBanner { display: none !important; }
             #results { display: block !important; border: none; margin: 0; padding: 0; }
             #contentToPrint { border: none; padding: 0; background: white; }
-            /* החלת תיקון הרווחים והיישור הדו-צדדי גם להדפסה הישירה */
-            .result-item { page-break-inside: avoid; border-right: 4px solid #2c3e50 !important; background: #fdfdfd !important; padding: 12px; margin-bottom: 10px; box-shadow: none; text-align: justify; text-justify: inter-word; word-spacing: 0.15em; }
+            .result-item { page-break-inside: avoid; border-right: 4px solid #2c3e50 !important; background: #fdfdfd !important; padding: 12px; margin-bottom: 10px; box-shadow: none; text-align: justify; text-justify: inter-word; }
             h3, h4 { color: #000 !important; }
         }
     </style>
@@ -164,9 +157,7 @@
 
         <div id="results">
             <div id="contentToPrint" dir="rtl">
-                <div class="title-wrapper">
-                    <h2><span id="resName"></span> &nbsp;|&nbsp; דוח מיסטי</h2>
-                </div>
+                <h2><span id="resName"></span> - דוח מיסטי</h2>
                 <div class="result-section" id="resAstro"></div>
                 <div class="result-section" id="resNamesNum"></div>
             </div>
@@ -681,66 +672,47 @@
                 }
             } catch (err) {
                 console.error("❌ שגיאה בהעתקה ללוח:", err);
-                alert("מערכת ההפעלה חסמה את ההעתקה. אנא הורד את הקובץ כ-PDF ושלח ידנית.");
+                alert("מערכת ההפעלה חסמה את ההעתקה. אנא הדפס/שמור את הקובץ כ-PDF ושלח ידנית.");
             }
         }
 
-        async function handlePDFAction(actionType) {
+        // ==========================================
+        // מנהל פעולות ה-PDF מבוסס הדפסה טבעית (Print to PDF)
+        // ==========================================
+        function handlePDFAction(actionType) {
             const fName = DOM.fName.value.trim() || 'דוח';
             const lName = DOM.lName.value.trim() || 'מיסטי';
+            
+            // תבנית שם קובץ מבוקשת: שם-משפחה-DDMMYYYY
             const dateVal = DOM.dateVal.value ? DOM.dateVal.value.split('-').reverse().join('') : '';
             const fileName = `${fName}-${lName}-${dateVal}.pdf`;
             const phone = DOM.phone.value.trim();
 
-            const element = document.getElementById('contentToPrint');
-            
-            const opt = {
-                margin:       10,
-                filename:     fileName,
-                image:        { type: 'jpeg', quality: 1 },
-                html2canvas:  { scale: 2, useCORS: true },
-                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
-            };
+            // שינוי זמני של כותרת הדף כדי שהדפדפן יציע את השם המבוקש בשמירה ל-PDF
+            document.title = fileName;
 
-            try {
-                if (actionType === 'download') {
-                    html2pdf().set(opt).from(element).save();
-                } 
-                else if (actionType === 'share') {
-                    const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
-                    const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
-
-                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-                    if (navigator.canShare && navigator.canShare({ files: [file] }) && isMobile) {
-                        await navigator.share({
-                            files: [file],
-                            title: 'הדוח המיסטי של ' + fName,
-                            text: 'מצורף קובץ הדוח המיסטי שהפקתי עבורך.'
-                        });
-                    } else {
-                        alert("במחשב שולחני השיתוף הישיר משבש את שם הקובץ בעברית.\n\nהקובץ יורד כעת עם השם התקין - תוכל פשוט לגרור אותו לתוך חלון ה-WhatsApp.");
-                        html2pdf().set(opt).from(element).save();
-                    }
+            if (actionType === 'download') {
+                // פתיחת חלון ההדפסה של הדפדפן - בחירה ב"שמור כ-PDF" שומרת את הקובץ בשם המדויק
+                window.print();
+            } 
+            else if (actionType === 'share') {
+                alert("בחלון ההדפסה שייפתח, בחר באפשרות 'שמור כ-PDF' (Save as PDF).\nלאחר שהקובץ יישמור במחשב, תוכל לשתף אותו בכל אפליקציה שתבחר.");
+                window.print();
+            }
+            else if (actionType === 'whatsapp_direct') {
+                if (!phone) {
+                    alert("אנא הזן מספר טלפון בטופס כדי לשלוח לוואטסאפ.");
+                    return;
                 }
-                else if (actionType === 'whatsapp_direct') {
-                    if (!phone) {
-                        alert("אנא הזן מספר טלפון בטופס כדי לשלוח לוואטסאפ.");
-                        return;
-                    }
-                    const cleanPhone = phone.replace(/^0/, '972').replace(/\D/g, '');
-                    
-                    html2pdf().set(opt).from(element).save();
-                    
-                    alert("ה-PDF הורד כעת למכשיר שלך!\n\nמיד תועבר לצ'אט מול הלקוח. לחץ בוואטסאפ על סימן ה'אטב' (📎) או ה'פלוס' (+), וצרף את המסמך שירד.");
-                    
-                    setTimeout(() => {
-                        window.location.href = `whatsapp://send?phone=${cleanPhone}`;
-                    }, 500); 
-                }
-            } catch (error) {
-                console.error("❌ אירעה שגיאה בטיפול ב-PDF:", error);
-                alert("אירעה תקלה ביצירת הקובץ. אנא נסה שוב.");
+                const cleanPhone = phone.replace(/^0/, '972').replace(/\D/g, '');
+                
+                alert("בחלון ההדפסה שייפתח, שמור את הקובץ כ-PDF.\nמיד לאחר מכן תועבר לוואטסאפ מול הלקוח - לחץ על סמל ה'אטב' (📎) וצרף את קובץ ה-PDF שיצרת.");
+                
+                window.print();
+                
+                setTimeout(() => {
+                    window.location.href = `whatsapp://send?phone=${cleanPhone}`;
+                }, 1000);
             }
         }
 
