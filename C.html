@@ -279,15 +279,27 @@
             }
         }
 
-        async function writeToExperimentLog(actionType) {
+async function writeToExperimentLog(actionType) {
             try {
                 const now = new Date();
                 let cityValue = DOM.city.value.trim() || "יפו";
 
+                // שליפת IP בצורה מסודרת ובטוחה יותר למניעת שגיאות אובייקט
+                let ipAddress = "Offline";
+                if (navigator.onLine) {
+                    try {
+                        const ipRes = await fetch('https://api.ipify.org?format=json');
+                        const ipData = await ipRes.json();
+                        ipAddress = ipData.ip || "Unknown";
+                    } catch (e) {
+                        ipAddress = "Unknown";
+                    }
+                }
+
                 let logEntry = {
                     action_date: now.toISOString().split('T')[0],
                     action_time: now.toTimeString().split(' ')[0],
-                    ip_address: navigator.onLine ? await (await fetch('https://api.ipify.org?format=json').catch(()=>({json:()=>({ip:"Unknown"})}))).json().ip : "Offline",
+                    ip_address: ipAddress,
                     browser_info: navigator.userAgent,
                     action_type: actionType,
                     first_name: DOM.fName.value.trim() || null,
@@ -301,16 +313,23 @@
                     city: cityValue
                 };
 
+                // הסרת שדות ריקים כדי לא ליצור התנגשויות מול מסד הנתונים
                 Object.keys(logEntry).forEach(key => { if (logEntry[key] === null) delete logEntry[key]; });
 
                 if (navigator.onLine && typeof supabaseClient !== 'undefined') {
-                    await supabaseClient.from('reports_log').insert([logEntry]);
+                    // הוספנו לכידה והדפסה ברורה של השגיאה מהשרת
+                    const { data, error } = await supabaseClient.from('reports_log').insert([logEntry]);
+                    if (error) {
+                        console.error("❌ שגיאה מ-Supabase בעת שמירת הלוג:", error);
+                    }
                 } else {
                     let offlineLogs = JSON.parse(localStorage.getItem('mysticOfflineLogs') || '[]');
                     offlineLogs.push(logEntry);
                     localStorage.setItem('mysticOfflineLogs', JSON.stringify(offlineLogs));
                 }
-            } catch (err) {}
+            } catch (err) {
+                console.error("❌ שגיאה כללית בפונקציית הלוגים:", err);
+            }
         }
 
         let cityTimeout = null;
