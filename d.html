@@ -79,9 +79,9 @@
         #results { margin-top: 30px; display: none; }
         #contentToPrint { background-color: #ffffff; padding: 20px; border: 2px solid #ecf0f1; border-radius: 8px; direction: rtl; text-align: right; }
         
-        /* תיקון משמעותי ל-PDF: הסרת קו תחתון מובנה ויצירת קו נקי באמצעות גבול תחתון */
-        #contentToPrint h2 { text-decoration: none; border-bottom: 3px solid var(--primary-color); display: inline-block; padding-bottom: 8px; margin-bottom: 25px; text-align: center;}
-        #contentToPrint .title-wrapper { text-align: center; } /* עוטף למרכוז הכותרת */
+        /* הסרת הקו התחתון לחלוטין כפי שביקשת למניעת שיבושים */
+        #contentToPrint h2 { text-decoration: none; border: none; margin-bottom: 25px; text-align: center;}
+        #contentToPrint .title-wrapper { text-align: center; } 
         
         .result-section { margin-bottom: 15px; }
         .result-item { background: #f7fbfe; padding: 15px; margin-bottom: 12px; border-radius: 6px; border-right: 5px solid #85c1e9; }
@@ -90,8 +90,14 @@
         
         .result-item h4 { margin: 0 0 8px 0; font-size: 1.1em; color: var(--text-color); }
         
-        /* תיקון ל-PDF: ביטול יישור לשני הצדדים (justify) שגורם למילים להידבק בעברית */
-        .result-item p { margin: 0 0 5px 0; color: #333; text-align: right; }
+        /* התיקון הגדול: החזרת היישור הדו-צדדי והגנה על הרווחים בין המילים בעזרת word-spacing */
+        .result-item p { 
+            margin: 0 0 5px 0; 
+            color: #333; 
+            text-align: justify; 
+            text-justify: inter-word; 
+            word-spacing: 0.15em; 
+        }
         .light-text { color: #555 !important; }
 
         #networkStatus { text-align: center; font-size: 0.9em; padding: 5px; margin-bottom: 15px; border-radius: 4px; display: none; }
@@ -103,8 +109,8 @@
             .form-row, h1, .action-buttons-top, .action-buttons-bottom, #loadingMsg, #networkStatus, #installBanner, #iosInstallBanner { display: none !important; }
             #results { display: block !important; border: none; margin: 0; padding: 0; }
             #contentToPrint { border: none; padding: 0; background: white; }
-            /* תיקון ל-PDF גם בהדפסה: ביטול justify */
-            .result-item { page-break-inside: avoid; border-right: 4px solid #2c3e50 !important; background: #fdfdfd !important; padding: 12px; margin-bottom: 10px; box-shadow: none; text-align: right; }
+            /* החלת תיקון הרווחים והיישור הדו-צדדי גם להדפסה הישירה */
+            .result-item { page-break-inside: avoid; border-right: 4px solid #2c3e50 !important; background: #fdfdfd !important; padding: 12px; margin-bottom: 10px; box-shadow: none; text-align: justify; text-justify: inter-word; word-spacing: 0.15em; }
             h3, h4 { color: #000 !important; }
         }
     </style>
@@ -157,7 +163,6 @@
         <div id="loadingMsg">מעבד נתונים מול כוכבי השמיים ומאגרי התאריכים... נא להמתין...</div>
 
         <div id="results">
-            <!-- הוספנו dir=rtl ו-div עוטף לכותרת כדי שהכל ירונדר בצורה מושלמת ב-PDF -->
             <div id="contentToPrint" dir="rtl">
                 <div class="title-wrapper">
                     <h2><span id="resName"></span> &nbsp;|&nbsp; דוח מיסטי</h2>
@@ -621,11 +626,10 @@
                             } else { cosmicContent = cosmicRaw; }
                         }
 
-                        // התיקון גם כאן: ביטול text-align: justify
                         namesHtml += `<div class="result-item" style="border-right-color: var(--premium-color); background-color: #faf5fc; margin-bottom: 15px; padding: 15px;">
                             <h4 style="color: var(--premium-color); margin-bottom: 10px; font-size: 1.2em;">האות ${char}' ${cosmicTitle ? ' • שיוך קוסמי: ' + cosmicTitle : ''}</h4>
-                            <p class="light-text" style="margin: 0 0 10px 0; line-height: 1.6; text-align: right;">${letterDesc}</p>
-                            ${cosmicContent ? `<div style="background-color: #ffffff; padding: 10px 15px; border-radius: 6px; border-right: 3px solid #d2b4de; margin-top: 10px;"><p class="light-text" style="margin: 0; line-height: 1.6; text-align: right;"><strong>ההשפעה הקוסמית:</strong> ${cosmicContent}</p></div>` : ''}
+                            <p class="light-text" style="margin: 0 0 10px 0; line-height: 1.6;">${letterDesc}</p>
+                            ${cosmicContent ? `<div style="background-color: #ffffff; padding: 10px 15px; border-radius: 6px; border-right: 3px solid #d2b4de; margin-top: 10px;"><p class="light-text" style="margin: 0; line-height: 1.6;"><strong>ההשפעה הקוסמית:</strong> ${cosmicContent}</p></div>` : ''}
                         </div>`;
                     });
                     namesHtml += `</div>`;
