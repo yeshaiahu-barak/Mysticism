@@ -12,6 +12,9 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="config.js"></script>
     
+    <!-- ספריית המרת HTML ל-PDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    
     <style>
         :root {
             --primary-color: #3498db;
@@ -58,9 +61,27 @@
         .premium-btn:hover { background-color: var(--accent-dark); }
         .premium-btn:disabled { background-color: #f5cba7; cursor: not-allowed; }
         
+        .action-buttons-bottom { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
+        .action-buttons-bottom button { flex: 1 1 45%; padding: 12px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; color: white; transition: background 0.3s, opacity 0.3s; }
+        .action-buttons-bottom button:disabled { background-color: #bdc3c7 !important; cursor: not-allowed; opacity: 0.6; }
+        
+        .btn-wa-text { background-color: #25D366; }
+        .btn-wa-text:hover:not(:disabled) { background-color: #1ebe57; }
+        .btn-wa-file { background-color: #128C7E; }
+        .btn-wa-file:hover:not(:disabled) { background-color: #0e7065; }
+        .btn-share { background-color: #8e44ad; }
+        .btn-share:hover:not(:disabled) { background-color: #732d91; }
+        .btn-download { background-color: #e74c3c; }
+        .btn-download:hover:not(:disabled) { background-color: #c0392b; }
+
+        #loadingMsg { display: none; text-align: center; color: var(--primary-color); font-weight: bold; margin-top: 15px; font-size: 1.1em;}
+
         #results { margin-top: 30px; display: none; }
-        #contentToPrint { background-color: #ffffff; padding: 20px; border: 2px solid #ecf0f1; border-radius: 8px; }
-        #contentToPrint h2 { text-decoration: underline; text-underline-offset: 8px; margin-bottom: 25px;}
+        #contentToPrint { background-color: #ffffff; padding: 20px; border: 2px solid #ecf0f1; border-radius: 8px; direction: rtl; text-align: right; }
+        
+        /* תיקון משמעותי ל-PDF: הסרת קו תחתון מובנה ויצירת קו נקי באמצעות גבול תחתון */
+        #contentToPrint h2 { text-decoration: none; border-bottom: 3px solid var(--primary-color); display: inline-block; padding-bottom: 8px; margin-bottom: 25px; text-align: center;}
+        #contentToPrint .title-wrapper { text-align: center; } /* עוטף למרכוז הכותרת */
         
         .result-section { margin-bottom: 15px; }
         .result-item { background: #f7fbfe; padding: 15px; margin-bottom: 12px; border-radius: 6px; border-right: 5px solid #85c1e9; }
@@ -68,15 +89,10 @@
         .result-date { background: #d4e6f1; border-right-color: #1b4f72; }
         
         .result-item h4 { margin: 0 0 8px 0; font-size: 1.1em; color: var(--text-color); }
-        .result-item p { margin: 0 0 5px 0; color: #333; text-align: justify; }
-        .light-text { color: #555 !important; }
-
-        .actions { display: flex; gap: 15px; margin-top: 25px; }
-        .whatsapp-btn, .pdf-btn { color: white; flex: 1; padding: 12px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: bold;}
-        .whatsapp-btn { background-color: #25D366; }
-        .pdf-btn { background-color: #e74c3c; }
         
-        #loadingMsg { display: none; text-align: center; color: var(--primary-color); font-weight: bold; margin-top: 15px; font-size: 1.1em;}
+        /* תיקון ל-PDF: ביטול יישור לשני הצדדים (justify) שגורם למילים להידבק בעברית */
+        .result-item p { margin: 0 0 5px 0; color: #333; text-align: right; }
+        .light-text { color: #555 !important; }
 
         #networkStatus { text-align: center; font-size: 0.9em; padding: 5px; margin-bottom: 15px; border-radius: 4px; display: none; }
         .status-offline { background-color: #f8d7da; color: #721c24; display: block !important; }
@@ -84,10 +100,11 @@
         @media print {
             body { background-color: white; padding: 0; color: #000; }
             .container { box-shadow: none; padding: 0; max-width: 100%; }
-            .form-row, h1, .action-buttons-top, .actions, #loadingMsg, #networkStatus, #installBanner, #iosInstallBanner { display: none !important; }
+            .form-row, h1, .action-buttons-top, .action-buttons-bottom, #loadingMsg, #networkStatus, #installBanner, #iosInstallBanner { display: none !important; }
             #results { display: block !important; border: none; margin: 0; padding: 0; }
             #contentToPrint { border: none; padding: 0; background: white; }
-            .result-item { page-break-inside: avoid; border-right: 4px solid #2c3e50 !important; background: #fdfdfd !important; padding: 12px; margin-bottom: 10px; box-shadow: none; text-align: justify; }
+            /* תיקון ל-PDF גם בהדפסה: ביטול justify */
+            .result-item { page-break-inside: avoid; border-right: 4px solid #2c3e50 !important; background: #fdfdfd !important; padding: 12px; margin-bottom: 10px; box-shadow: none; text-align: right; }
             h3, h4 { color: #000 !important; }
         }
     </style>
@@ -130,18 +147,23 @@
             <button class="premium-btn" onclick="handleUserAction('deep')">הפק דוח עמוק</button>
         </div>
         
+        <div class="action-buttons-bottom">
+            <button id="btnWaText" class="btn-wa-text" onclick="executeWhatsAppText()" disabled>💬 שליחת טקסט לוואטסאפ</button>
+            <button id="btnWaFile" class="btn-wa-file" onclick="handlePDFAction('whatsapp_direct')" disabled>📎 שליחת קובץ לוואצאפ</button>
+            <button id="btnShare" class="btn-share" onclick="handlePDFAction('share')" disabled>📤 שיתוף קובץ PDF</button>
+            <button id="btnDownload" class="btn-download" onclick="handlePDFAction('download')" disabled>💾 שמירת קובץ PDF</button>
+        </div>
+        
         <div id="loadingMsg">מעבד נתונים מול כוכבי השמיים ומאגרי התאריכים... נא להמתין...</div>
 
         <div id="results">
-            <div id="contentToPrint">
-                <h2><span id="resName"></span> - דוח מיסטי</h2>
+            <!-- הוספנו dir=rtl ו-div עוטף לכותרת כדי שהכל ירונדר בצורה מושלמת ב-PDF -->
+            <div id="contentToPrint" dir="rtl">
+                <div class="title-wrapper">
+                    <h2><span id="resName"></span> &nbsp;|&nbsp; דוח מיסטי</h2>
+                </div>
                 <div class="result-section" id="resAstro"></div>
                 <div class="result-section" id="resNamesNum"></div>
-            </div>
-            
-            <div class="actions">
-                <button class="whatsapp-btn" onclick="executeWhatsAppShare()">שלח דוח לוואטסאפ</button>
-                <button class="pdf-btn" onclick="executePDFDownload()">הורד דוח כ-PDF</button>
             </div>
         </div>
     </div>
@@ -159,6 +181,10 @@
             city: document.getElementById('city'),
             calcBtn: document.getElementById('calcBtn'),
             premiumBtn: document.querySelector('.premium-btn'),
+            btnWaText: document.getElementById('btnWaText'),
+            btnWaFile: document.getElementById('btnWaFile'),
+            btnShare: document.getElementById('btnShare'),
+            btnDownload: document.getElementById('btnDownload'),
             loadingMsg: document.getElementById('loadingMsg'),
             resultsDiv: document.getElementById('results'),
             resAstro: document.getElementById('resAstro'),
@@ -284,7 +310,6 @@
                 const now = new Date();
                 let cityValue = DOM.city.value.trim() || "יפו";
 
-                // שליפת IP בצורה מסודרת ובטוחה יותר למניעת שגיאות אובייקט
                 let ipAddress = "Offline";
                 if (navigator.onLine) {
                     try {
@@ -313,23 +338,17 @@
                     city: cityValue
                 };
 
-                // הסרת שדות ריקים כדי לא ליצור התנגשויות מול מסד הנתונים
                 Object.keys(logEntry).forEach(key => { if (logEntry[key] === null) delete logEntry[key]; });
 
                 if (navigator.onLine && typeof supabaseClient !== 'undefined') {
-                    // הוספנו לכידה והדפסה ברורה של השגיאה מהשרת
                     const { data, error } = await supabaseClient.from('reports_log').insert([logEntry]);
-                    if (error) {
-                        console.error("❌ שגיאה מ-Supabase בעת שמירת הלוג:", error);
-                    }
+                    if (error) console.error("❌ שגיאה מ-Supabase בעת שמירת הלוג:", error);
                 } else {
                     let offlineLogs = JSON.parse(localStorage.getItem('mysticOfflineLogs') || '[]');
                     offlineLogs.push(logEntry);
                     localStorage.setItem('mysticOfflineLogs', JSON.stringify(offlineLogs));
                 }
-            } catch (err) {
-                console.error("❌ שגיאה כללית בפונקציית הלוגים:", err);
-            }
+            } catch (err) { console.error("❌ שגיאה כללית בפונקציית הלוגים:", err); }
         }
 
         let cityTimeout = null;
@@ -420,6 +439,14 @@
         function toggleUIState(isLoading) {
             DOM.calcBtn.disabled = isLoading;
             DOM.premiumBtn.disabled = isLoading;
+            
+            if (isLoading) {
+                DOM.btnWaText.disabled = true;
+                DOM.btnWaFile.disabled = true;
+                DOM.btnShare.disabled = true;
+                DOM.btnDownload.disabled = true;
+            }
+
             DOM.loadingMsg.style.display = isLoading ? 'block' : 'none';
             if(isLoading) DOM.resultsDiv.style.display = 'none';
         }
@@ -594,10 +621,11 @@
                             } else { cosmicContent = cosmicRaw; }
                         }
 
+                        // התיקון גם כאן: ביטול text-align: justify
                         namesHtml += `<div class="result-item" style="border-right-color: var(--premium-color); background-color: #faf5fc; margin-bottom: 15px; padding: 15px;">
                             <h4 style="color: var(--premium-color); margin-bottom: 10px; font-size: 1.2em;">האות ${char}' ${cosmicTitle ? ' • שיוך קוסמי: ' + cosmicTitle : ''}</h4>
-                            <p class="light-text" style="margin: 0 0 10px 0; line-height: 1.6; text-align: justify;">${letterDesc}</p>
-                            ${cosmicContent ? `<div style="background-color: #ffffff; padding: 10px 15px; border-radius: 6px; border-right: 3px solid #d2b4de; margin-top: 10px;"><p class="light-text" style="margin: 0; line-height: 1.6; text-align: justify;"><strong>ההשפעה הקוסמית:</strong> ${cosmicContent}</p></div>` : ''}
+                            <p class="light-text" style="margin: 0 0 10px 0; line-height: 1.6; text-align: right;">${letterDesc}</p>
+                            ${cosmicContent ? `<div style="background-color: #ffffff; padding: 10px 15px; border-radius: 6px; border-right: 3px solid #d2b4de; margin-top: 10px;"><p class="light-text" style="margin: 0; line-height: 1.6; text-align: right;"><strong>ההשפעה הקוסמית:</strong> ${cosmicContent}</p></div>` : ''}
                         </div>`;
                     });
                     namesHtml += `</div>`;
@@ -607,23 +635,16 @@
                 DOM.resNameTitle.innerText = `${DOM.fName.value.trim()} ${DOM.lName.value.trim()}`;
                 DOM.resultsDiv.style.display = 'block';
 
+                DOM.btnWaText.disabled = false;
+                DOM.btnWaFile.disabled = false;
+                DOM.btnShare.disabled = false;
+                DOM.btnDownload.disabled = false;
+
             } catch (err) { alert("אירעה שגיאה בחישוב הנתונים: " + err.message); } 
             finally { toggleUIState(false); }
         }
 
-        function executePDFDownload() {
-            let pFirstName = DOM.fName.value.trim() || 'דוח';
-            let pLastName = DOM.lName.value.trim() || 'מיסטי';
-            let pBirthDate = DOM.dateVal.value;
-            let formattedDate = pBirthDate ? `-${pBirthDate.split('-').reverse().join('')}` : '';
-            
-            const originalTitle = document.title;
-            document.title = `${pFirstName}-${pLastName}${formattedDate}`;
-            window.print();
-            setTimeout(() => document.title = originalTitle, 1000);
-        }
-
-            async function executeWhatsAppShare() {
+        async function executeWhatsAppText() {
             const phone = DOM.phone.value.trim();
             if (!phone) return alert("אנא הזן מספר טלפון לשיתוף.");
             
@@ -633,12 +654,10 @@
             try {
                 let copySuccess = false;
                 
-                // נסיון 1: מערכת העתקה מודרנית (בטוחה ומהירה)
                 if (navigator.clipboard && window.isSecureContext) {
                     await navigator.clipboard.writeText(reportText);
                     copySuccess = true;
                 } else {
-                    // נסיון 2: מנגנון גיבוי אמין לעבודה מקומית
                     let textArea = document.createElement("textarea");
                     textArea.value = reportText;
                     textArea.style.position = "fixed";
@@ -651,17 +670,76 @@
                 }
                 
                 if (copySuccess) {
-                    alert("הדוח הועתק בהצלחה ללוח המכשיר!\n\nמיד תועבר לוואטסאפ - לחץ 'הדבק' (Paste) בשורת ההודעה כדי לשלוח ללקוח.");
+                    alert("הדוח הועתק בהצלחה ללוח המכשיר!\n\nמיד תועבר לוואטסאפ של הלקוח - לחץ 'הדבק' (Paste) בשורת ההודעה כדי לשלוח.");
                     window.location.href = `whatsapp://send?phone=${cleanPhone}`;
                 } else {
                     throw new Error("הדפדפן מנע את פקודת ההעתקה.");
                 }
             } catch (err) {
                 console.error("❌ שגיאה בהעתקה ללוח:", err);
-                alert("מערכת ההפעלה חסמה את ההעתקה. אנא השתמש בכפתור הורדת ה-PDF ושלח את הקובץ ללקוח.");
+                alert("מערכת ההפעלה חסמה את ההעתקה. אנא הורד את הקובץ כ-PDF ושלח ידנית.");
             }
         }
-        
+
+        async function handlePDFAction(actionType) {
+            const fName = DOM.fName.value.trim() || 'דוח';
+            const lName = DOM.lName.value.trim() || 'מיסטי';
+            const dateVal = DOM.dateVal.value ? DOM.dateVal.value.split('-').reverse().join('') : '';
+            const fileName = `${fName}-${lName}-${dateVal}.pdf`;
+            const phone = DOM.phone.value.trim();
+
+            const element = document.getElementById('contentToPrint');
+            
+            const opt = {
+                margin:       10,
+                filename:     fileName,
+                image:        { type: 'jpeg', quality: 1 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            try {
+                if (actionType === 'download') {
+                    html2pdf().set(opt).from(element).save();
+                } 
+                else if (actionType === 'share') {
+                    const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
+                    const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                    if (navigator.canShare && navigator.canShare({ files: [file] }) && isMobile) {
+                        await navigator.share({
+                            files: [file],
+                            title: 'הדוח המיסטי של ' + fName,
+                            text: 'מצורף קובץ הדוח המיסטי שהפקתי עבורך.'
+                        });
+                    } else {
+                        alert("במחשב שולחני השיתוף הישיר משבש את שם הקובץ בעברית.\n\nהקובץ יורד כעת עם השם התקין - תוכל פשוט לגרור אותו לתוך חלון ה-WhatsApp.");
+                        html2pdf().set(opt).from(element).save();
+                    }
+                }
+                else if (actionType === 'whatsapp_direct') {
+                    if (!phone) {
+                        alert("אנא הזן מספר טלפון בטופס כדי לשלוח לוואטסאפ.");
+                        return;
+                    }
+                    const cleanPhone = phone.replace(/^0/, '972').replace(/\D/g, '');
+                    
+                    html2pdf().set(opt).from(element).save();
+                    
+                    alert("ה-PDF הורד כעת למכשיר שלך!\n\nמיד תועבר לצ'אט מול הלקוח. לחץ בוואטסאפ על סימן ה'אטב' (📎) או ה'פלוס' (+), וצרף את המסמך שירד.");
+                    
+                    setTimeout(() => {
+                        window.location.href = `whatsapp://send?phone=${cleanPhone}`;
+                    }, 500); 
+                }
+            } catch (error) {
+                console.error("❌ אירעה שגיאה בטיפול ב-PDF:", error);
+                alert("אירעה תקלה ביצירת הקובץ. אנא נסה שוב.");
+            }
+        }
+
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(err => console.log('SW Error:', err)));
         }
