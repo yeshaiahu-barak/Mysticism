@@ -433,16 +433,21 @@
             DOM.calcBtn.disabled = isLoading;
             DOM.premiumBtn.disabled = isLoading;
             
-            // השבתת 4 כפתורי הפעולה כל עוד נטען דוח חדש
-            DOM.btnWaText.disabled = true;
-            DOM.btnWaFile.disabled = true;
-            DOM.btnShare.disabled = true;
-            DOM.btnDownload.disabled = true;
+            // התיקון: אנו מכבים את כפתורי הפעולה *רק* כאשר מתחילים טעינה חדשה.
+            // כאשר הטעינה מסתיימת, הפונקציה לא תכבה אותם שוב.
+            if (isLoading) {
+                DOM.btnWaText.disabled = true;
+                DOM.btnWaFile.disabled = true;
+                DOM.btnShare.disabled = true;
+                DOM.btnDownload.disabled = true;
+            }
 
             DOM.loadingMsg.style.display = isLoading ? 'block' : 'none';
-            if(isLoading) DOM.resultsDiv.style.display = 'none';
+            if (isLoading) {
+                DOM.resultsDiv.style.display = 'none';
+            }
         }
-
+        
         async function handleUserAction(reportType) {
             await writeToExperimentLog(reportType + '_report');
 
