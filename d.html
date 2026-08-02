@@ -634,7 +634,7 @@ async function writeToExperimentLog(actionType) {
             
             const cleanPhone = phone.replace(/^0/, '972').replace(/\D/g, '');
 
-            if (reportText.length > 2500) {
+            if (reportText.length > 5400) {
                 try {
                     await navigator.clipboard.writeText(reportText);
                     alert("הדוח העמוק מלא בתוכן עשיר ולכן הועתק אוטומטית ללוח שלך!\n\nמיד תועבר לוואטסאפ - פשוט לחץ 'הדבק' (Paste) בשורת ההודעה כדי לשלוח אותו ללקוח.");
