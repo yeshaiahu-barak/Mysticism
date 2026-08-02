@@ -623,27 +623,31 @@ async function writeToExperimentLog(actionType) {
             setTimeout(() => document.title = originalTitle, 1000);
         }
 
-        async function executeWhatsAppShare() {
+            async function executeWhatsAppShare() {
             const phone = DOM.phone.value.trim();
             if (!phone) return alert("אנא הזן מספר טלפון לשיתוף.");
             
             const reportText = document.getElementById('contentToPrint').innerText;
-            
-            // ---> הוסף את השורה הזו כדי לקבל נתון אמין! <---
-            console.log("📏 אורך הדוח שהופק כעת הוא בדיוק:", reportText.length, "תווים.");
-            
             const cleanPhone = phone.replace(/^0/, '972').replace(/\D/g, '');
 
-            if (reportText.length > 5400) {
+            // 1. אנו ממירים מראש את הטקסט לקישור כדי לדעת מה המשקל האמיתי שהדפדפן מתמודד איתו
+            const encodedText = encodeURIComponent(reportText);
+            
+            console.log("📏 אורך הדוח נטו (תווים):", reportText.length);
+            console.log("⚖️ משקל הקישור שנוצר עבור וואטסאפ (תווים מקודדים):", encodedText.length);
+
+            // 2. תקרת זכוכית בטוחה: אם הקישור עוקף 10,000 תווים, תוספי דפדפן יקרסו. נעבור להעתקה ידנית.
+            if (encodedText.length > 10000) {
                 try {
                     await navigator.clipboard.writeText(reportText);
-                    alert("הדוח העמוק מלא בתוכן עשיר ולכן הועתק אוטומטית ללוח שלך!\n\nמיד תועבר לוואטסאפ - פשוט לחץ 'הדבק' (Paste) בשורת ההודעה כדי לשלוח אותו ללקוח.");
+                    alert("הדוח המופק מלא בתוכן עשיר ולכן הועתק אוטומטית ללוח המכשיר שלך!\n\nמיד תועבר לוואטסאפ - פשוט לחץ 'הדבק' (Paste) בשורת ההודעה כדי לשלוח אותו ללקוח.");
                     window.location.href = `whatsapp://send?phone=${cleanPhone}`;
                 } catch (err) {
                     alert("הדוח ארוך מאוד ולא הצלחנו להעתיק אותו אוטומטית. אנא השתמש בכפתור הורדת ה-PDF ושלח את הקובץ ללקוח.");
                 }
             } else {
-                window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodeURIComponent(reportText)}`;
+                // 3. הדוח קל ובטוח - נשלח אותו אוטומטית בתוך הקישור
+                window.location.href = `whatsapp://send?phone=${cleanPhone}&text=${encodedText}`;
             }
         }
 
