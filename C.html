@@ -704,7 +704,7 @@
 
             try {
                 if (actionType === 'download') {
-                    // פעולה 4: רק להוריד את הקובץ
+                    // פעולה 4: רק להוריד את הקובץ (שומר על השם בצורה מושלמת)
                     html2pdf().set(opt).from(element).save();
                 } 
                 else if (actionType === 'share') {
@@ -712,14 +712,19 @@
                     const pdfBlob = await html2pdf().set(opt).from(element).output('blob');
                     const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
-                    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                    // בדיקה האם המשתמש נמצא בטלפון נייד
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                    // שיתוף ישיר יתבצע רק אם המכשיר תומך ורק אם זה טלפון נייד
+                    if (navigator.canShare && navigator.canShare({ files: [file] }) && isMobile) {
                         await navigator.share({
                             files: [file],
                             title: 'הדוח המיסטי של ' + fName,
                             text: 'מצורף קובץ הדוח המיסטי שהפקתי עבורך.'
                         });
                     } else {
-                        alert("המכשיר או הדפדפן הנוכחי אינם תומכים בשיתוף ישיר. הקובץ יורד במקום זאת.");
+                        // אם זה מחשב שולחני, נוריד את הקובץ כדי למנוע את שיבוש העברית בוואטסאפ ווב
+                        alert("במחשב שולחני השיתוף הישיר משבש את שם הקובץ בעברית.\n\nהקובץ יורד כעת עם השם התקין - תוכל פשוט לגרור אותו לתוך חלון ה-WhatsApp.");
                         html2pdf().set(opt).from(element).save();
                     }
                 }
