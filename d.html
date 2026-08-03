@@ -692,7 +692,6 @@
             document.title = fileName;
 
             if (actionType === 'download') {
-                // פתיחת חלון ההדפסה של הדפדפן - בחירה ב"שמור כ-PDF" שומרת את הקובץ בשם המדויק
                 window.print();
             } 
             else if (actionType === 'share') {
@@ -706,13 +705,25 @@
                 }
                 const cleanPhone = phone.replace(/^0/, '972').replace(/\D/g, '');
                 
-                alert("בחלון ההדפסה שייפתח, שמור את הקובץ כ-PDF.\nמיד לאחר מכן תועבר לוואטסאפ מול הלקוח - לחץ על סמל ה'אטב' (📎) וצרף את קובץ ה-PDF שיצרת.");
+                alert("1. בחלון שייפתח כעת, שמור את הקובץ כ-PDF במכשיר.\n2. לאחר שתסיים ותסגור את החלון, המערכת תשאל אם תרצה לעבור לוואטסאפ.");
                 
+                // מאזין חכם שמחכה עד שחלון ההדפסה/שמירה ייסגר
+                window.onafterprint = function() {
+                    // מנקים את המאזין מיד כדי שלא יפעל שוב בטעות בעתיד
+                    window.onafterprint = null;
+                    
+                    // נותנים חצי שנייה של חסד כדי לוודא שהחלון נעלם לחלוטין, ואז שואלים את המשתמש
+                    setTimeout(() => {
+                        const isSaved = confirm("האם סיימת לשמור את הקובץ בהצלחה?\n\nלחץ 'אישור' כדי לעבור כעת לוואטסאפ ולצרף את ה-PDF אל הלקוח.");
+                        
+                        if (isSaved) {
+                            window.location.href = `whatsapp://send?phone=${cleanPhone}`;
+                        }
+                    }, 500);
+                };
+                
+                // פתיחת חלון השמירה
                 window.print();
-                
-                setTimeout(() => {
-                    window.location.href = `whatsapp://send?phone=${cleanPhone}`;
-                }, 1000);
             }
         }
 
