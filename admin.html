@@ -191,11 +191,15 @@
             document.getElementById('adminDashboard').style.display = sectionId === 'adminDashboard' ? 'block' : 'none';
         }
 
-        // הפעלת חלון ההתחברות של גוגל
+        // הפעלת חלון ההתחברות של גוגל עם ניתוב מדויק חזרה לאדמין
         async function loginWithGoogle() {
             try {
                 const { error } = await supabaseClient.auth.signInWithOAuth({
                     provider: 'google',
+                    options: {
+                        // הפקודה הזו מכריחה את המערכת לחזור בדיוק לדף הנוכחי (admin.html)
+                        redirectTo: window.location.href
+                    }
                 });
                 if (error) throw error;
             } catch (err) {
