@@ -58,7 +58,6 @@
         .premium-btn:hover { background-color: var(--accent-dark); }
         .premium-btn:disabled { background-color: #f5cba7; cursor: not-allowed; }
         
-        /* אזור 3 הכפתורים התחתונים */
         .action-buttons-bottom { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
         .action-buttons-bottom button { flex: 1 1 30%; padding: 12px; border: none; border-radius: 6px; font-size: 16px; cursor: pointer; font-weight: bold; color: white; transition: background 0.3s, opacity 0.3s; }
         .action-buttons-bottom button:disabled { background-color: #bdc3c7 !important; cursor: not-allowed; opacity: 0.6; }
@@ -536,12 +535,14 @@
                 let chineseDesc = isDeep ? (deepDict[chineseAnimal] || chineseZodiacTexts[chineseAnimal]) : chineseZodiacTexts[chineseAnimal];
 
                 let premiumStyle = isDeep ? 'style="border-right-color: var(--premium-color); background-color: var(--premium-bg);"' : '';
+                
+                // התיקונים בסעיף התאריכים: תוספת של נקודות בסוף המשפטים והגדלת פונט השורה השנייה
                 DOM.resAstro.innerHTML = `
                     <div class="result-item result-date" ${premiumStyle}>
                         ${isDeep ? '<h3 style="color: var(--premium-color); margin-top: 0; margin-bottom: 15px;">דוח מיסטי עמוק (פרימיום)</h3>' : ''}
-                        <p style="font-size: 1.3em; color: #1b4f72; margin: 8px 0;">תאריך הלידה העברי שלך הוא: <strong style="font-size: 1.4em;">${hebrewBdayFull}</strong></p>
-                        <p style="font-size: 1.1em; color: #1b4f72; margin: 8px 0;">הלידה התרחשה ב${city} ${exactDayString} בשעה ${timeVal} ${timeDesc}${gregNote}.</p>
-                        <p style="font-size: 1.1em; color: #1b4f72; margin: 8px 0;">יום ההולדת העברי הקרוב <strong style="font-size: 1.4em;">[${hebrewYearOnly}]</strong> יחול בתאריך: <strong style="font-size: 1.7em;">${nextBdayFormatted}</strong></p>
+                        <p style="font-size: 1.3em; color: #1b4f72; margin: 8px 0;">תאריך הלידה העברי שלך הוא: <strong style="font-size: 1.4em;">${hebrewBdayFull}</strong>.</p>
+                        <p style="font-size: 1.2em; color: #1b4f72; margin: 8px 0;">הלידה התרחשה ב${city} ${exactDayString} בשעה ${timeVal} ${timeDesc}${gregNote}.</p>
+                        <p style="font-size: 1.1em; color: #1b4f72; margin: 8px 0;">יום ההולדת העברי הקרוב <strong style="font-size: 1.4em;">[${hebrewYearOnly}]</strong> יחול בתאריך: <strong style="font-size: 1.7em;">${nextBdayFormatted}</strong>.</p>
                     </div>
                     <div class="result-item result-zodiac" ${isDeep ? 'style="border-right-color: var(--premium-color);"' : ''}>
                         <h4 ${isDeep ? 'style="color: var(--premium-color);"' : ''}>מזל שמש: ${sunSign.name}</h4><p class="light-text">${sunDesc}</p>
@@ -634,7 +635,6 @@
             finally { toggleUIState(false); }
         }
 
-        // כפתור 1: שליחת טקסט
         async function executeWhatsAppText() {
             const phone = DOM.phone.value.trim();
             if (!phone) return alert("אנא הזן מספר טלפון לשיתוף.");
@@ -669,7 +669,6 @@
             }
         }
 
-        // כפתור 2: יצירת PDF חכמה - ללא הודעות קופצות
         function handlePDFCreation() {
             const fName = DOM.fName.value.trim() || 'דוח';
             const lName = DOM.lName.value.trim() || 'מיסטי';
@@ -686,7 +685,6 @@
             window.print();
         }
 
-        // כפתור 3: שליחת ה-PDF לוואטסאפ - ללא הודעות קופצות
         function handlePDFWhatsApp() {
             const phone = DOM.phone.value.trim();
             if (!phone) {
